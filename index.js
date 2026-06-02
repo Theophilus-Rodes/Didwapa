@@ -9,7 +9,7 @@ const fs = require("fs");
 
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
