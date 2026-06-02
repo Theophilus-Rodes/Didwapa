@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>DIDWAPA - Report Problem</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --primary: #ff6600;
+      --secondary: #0a2d73;
+      --bg: #f6f7fb;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --green: #16a34a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 620px;
+      margin: auto;
+      min-height: 100vh;
+      background: white;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      color: white;
+      padding: 18px 14px 24px;
+      border-bottom-left-radius: 26px;
+      border-bottom-right-radius: 26px;
+      animation: slideDown .5s ease;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .back-btn {
+      border: none;
+      background: rgba(255,255,255,.22);
+      color: white;
+      padding: 9px 13px;
+      border-radius: 999px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .support-card {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 22px;
+      padding: 14px;
+      backdrop-filter: blur(12px);
+    }
+
+    .support-card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+    }
+
+    .support-card p {
+      font-size: .85rem;
+      opacity: .9;
+      line-height: 1.5;
+    }
+
+    .contact-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .contact-btn {
+      text-decoration: none;
+      background: white;
+      color: var(--secondary);
+      padding: 12px;
+      border-radius: 15px;
+      font-size: .8rem;
+      font-weight: 900;
+      text-align: center;
+      transition: .25s ease;
+    }
+
+    .contact-btn:hover {
+      transform: translateY(-3px);
+    }
+
+    .chat-area {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .message {
+      max-width: 78%;
+      padding: 11px 13px;
+      border-radius: 18px;
+      font-size: .88rem;
+      line-height: 1.45;
+      animation: pop .25s ease;
+      word-wrap: break-word;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: var(--primary);
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
+
+    .admin {
+      align-self: flex-start;
+      background: #eef2ff;
+      color: #111827;
+      border-bottom-left-radius: 5px;
+    }
+
+    .time {
+      display: block;
+      font-size: .65rem;
+      opacity: .7;
+      margin-top: 5px;
+    }
+
+    .input-area {
+      position: sticky;
+      bottom: 0;
+      background: white;
+      padding: 10px;
+      display: flex;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .input-area textarea {
+      flex: 1;
+      resize: none;
+      height: 48px;
+      max-height: 100px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 13px;
+      outline: none;
+      font-size: .9rem;
+      background: #f9fafb;
+    }
+
+    .input-area textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(255,102,0,.1);
+    }
+
+    .send-btn {
+      width: 50px;
+      height: 48px;
+      border: none;
+      border-radius: 16px;
+      background: var(--primary);
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      margin-top: 20px;
+      line-height: 1.6;
+      font-size: .88rem;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-25px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes pop {
+      from { transform: scale(.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @media(max-width: 420px) {
+      .app {
+        max-width: 100%;
+      }
+
+      .header {
+        padding: 15px 12px 20px;
+      }
+
+      .contact-row {
+        grid-template-columns: 1fr;
+      }
+
+      .message {
+        max-width: 86%;
+        font-size: .82rem;
+      }
+
+      .support-card h2 {
+        font-size: 1.05rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<main class="app">
+
+  <section class="header">
+    <div class="top-row">
+      <h3>Report Problem</h3>
+      <button class="back-btn" onclick="window.location.href='you.html'">← Back</button>
+    </div>
+
+    <div class="support-card">
+      <h2>How can we help?</h2>
+      <p>
+        Chat with support below or contact DIDWAPA directly through WhatsApp or email.
+      </p>
+
+      <div class="contact-row">
+        <a class="contact-btn" href="https://wa.me/233546961635" target="_blank">
+          💬 WhatsApp: 0546961635
+        </a>
+
+        <a class="contact-btn" href="mailto:support@didwapa.com">
+          📧 support@didwapa.com
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="chat-area" id="chatArea">
+    <div class="empty">Loading messages...</div>
+  </section>
+
+  <section class="input-area">
+    <textarea id="messageInput" placeholder="Type your report here..."></textarea>
+    <button class="send-btn" onclick="sendMessage()">➤</button>
+  </section>
+
+</main>
+
+<script>
+ const API_BASE = `http://${window.location.hostname}:5000`;
+  const chatArea = document.getElementById("chatArea");
+  const messageInput = document.getElementById("messageInput");
+
+  function formatTime(dateText) {
+    if (!dateText) return "";
+    return new Date(dateText).toLocaleString();
+  }
+
+  async function loadMessages() {
+    try {
+      const res = await fetch(`${API_BASE}/api/report/messages`, {
+        credentials: "include"
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        window.location.href = "userlogin.html";
+        return;
+      }
+
+      if (data.messages.length === 0) {
+        chatArea.innerHTML = `
+          <div class="empty">
+            No messages yet.<br>
+            Send your first report below.
+          </div>
+        `;
+        return;
+      }
+
+      chatArea.innerHTML = data.messages.map(msg => `
+        <div class="message ${msg.sender === "admin" ? "admin" : "user"}">
+          ${msg.message}
+          <span class="time">${formatTime(msg.created_at)}</span>
+        </div>
+      `).join("");
+
+      chatArea.scrollTop = chatArea.scrollHeight;
+
+      await markReportMessagesAsRead();
+
+    } catch (error) {
+      chatArea.innerHTML = `
+        <div class="empty">
+          Failed to load messages.
+        </div>
+      `;
+    }
+  }
+
+  async function sendMessage() {
+    const message = messageInput.value.trim();
+
+    if (!message) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/report/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({ message })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message);
+        return;
+      }
+
+      messageInput.value = "";
+      loadMessages();
+
+    } catch (error) {
+      alert("Failed to send message.");
+    }
+  }
+
+  messageInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+ async function markReportMessagesAsRead() {
+  try {
+    const res = await fetch(`${API_BASE}/api/report/messages/mark-read`, {
+      method: "POST",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    console.log("MARK REPORT READ RESPONSE:", data);
+
+    if (!data.success) {
+      console.error("Mark read failed:", data.message);
+    }
+  } catch (error) {
+    console.error("Mark report messages read error:", error);
+  }
+}
+
+  loadMessages();
+  setInterval(loadMessages, 4000);
+</script>
+
+</body>
+</html>

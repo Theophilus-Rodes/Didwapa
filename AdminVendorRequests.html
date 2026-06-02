@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIDWAPA Admin - Vendor Requests</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+:root{--dark:#06152f;--orange:#ff6600;--green:#16a34a;--red:#dc2626;--bg:#f4f7fb;--muted:#6b7280;--border:#e5e7eb}
+body{background:var(--bg);color:var(--dark)}
+.page{width:min(1050px,96%);margin:auto;padding:22px 0}
+.top{background:white;border-radius:24px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 18px 38px rgba(6,21,47,.08);margin-bottom:18px}
+.brand{font-weight:900;font-size:1.1rem}
+.back{background:var(--dark);color:white;text-decoration:none;padding:11px 15px;border-radius:14px;font-weight:900}
+.header{background:linear-gradient(135deg,var(--dark),var(--orange));color:white;padding:28px;border-radius:28px;margin-bottom:18px}
+.header h1{font-size:2rem;margin-bottom:8px}
+.header p{color:#f8fafc;line-height:1.6}
+
+.controls{background:white;border-radius:22px;padding:14px;display:grid;grid-template-columns:1fr 180px;gap:12px;margin-bottom:16px;box-shadow:0 12px 26px rgba(6,21,47,.06)}
+input,select{height:46px;border:1px solid var(--border);border-radius:15px;padding:0 13px;background:#f8fafc;outline:none}
+
+.list{display:grid;gap:14px}
+.card{background:white;border:1px solid var(--border);border-radius:24px;padding:18px;display:grid;grid-template-columns:1fr auto;gap:15px;box-shadow:0 14px 30px rgba(6,21,47,.07)}
+.card h3{font-size:1.1rem;margin-bottom:6px}
+.card p{font-size:.85rem;color:var(--muted);margin:5px 0;line-height:1.5}
+.message{background:#f8fafc;border-radius:16px;padding:12px;margin-top:10px;color:#374151}
+
+.status{display:inline-block;padding:7px 11px;border-radius:999px;font-size:.75rem;font-weight:900;text-transform:capitalize}
+.pending{background:#fef3c7;color:#b45309}
+.approved{background:#d1fae5;color:#047857}
+.rejected{background:#fee2e2;color:#b91c1c}
+
+.actions{display:flex;flex-direction:column;gap:10px;min-width:160px}
+.btn{height:44px;border:none;border-radius:14px;color:white;font-weight:900;cursor:pointer}
+.approve{background:linear-gradient(135deg,var(--green),#047857)}
+.reject{background:linear-gradient(135deg,var(--red),#991b1b)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.empty{background:white;border-radius:22px;padding:28px;text-align:center;color:var(--muted)}
+.alert{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:white;padding:14px 20px;border-radius:15px;box-shadow:0 15px 40px rgba(0,0,0,.2);display:none;font-weight:900;z-index:9999}
+.success{color:green}.error{color:red}
+
+@media(max-width:750px){
+  .controls{grid-template-columns:1fr}
+  .card{grid-template-columns:1fr}
+  .actions{flex-direction:row;min-width:0}
+  .btn{width:100%}
+}
+</style>
+</head>
+
+<body>
+
+<div class="alert" id="alertBox"></div>
+
+<div class="page">
+  <div class="top">
+    <div class="brand">DIDWAPA Vendor Requests</div>
+    <a href="admin.html" class="back">← Dashboard</a>
+  </div>
+
+  <div class="header">
+    <h1>Seller Verification Requests</h1>
+    <p>Review users who requested to become vendors and approve or reject them.</p>
+  </div>
+
+  <section class="controls">
+    <input id="searchInput" placeholder="Search name, phone, email..." oninput="filterRequests()">
+    <select id="statusFilter" onchange="filterRequests()">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+    </select>
+  </section>
+
+  <section class="list" id="requestsBox">
+    <div class="empty">Loading vendor requests...</div>
+  </section>
+</div>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+let requests = [];
+
+const alertBox = document.getElementById("alertBox");
+
+function showAlert(message,type="success"){
+  alertBox.textContent = message;
+  alertBox.className = `alert ${type}`;
+  alertBox.style.display = "block";
+
+  setTimeout(()=>{
+    alertBox.style.display = "none";
+  },2500);
+}
+
+async function loadRequests(){
+  try{
+    const res = await fetch(`${API_BASE}/api/admin/vendor-requests`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      document.getElementById("requestsBox").innerHTML =
+        `<div class="empty">${data.message}</div>`;
+      return;
+    }
+
+    requests = data.requests || [];
+    renderRequests(requests);
+
+  }catch(error){
+    console.error(error);
+    document.getElementById("requestsBox").innerHTML =
+      `<div class="empty">Failed to load vendor requests.</div>`;
+  }
+}
+
+function renderRequests(list){
+  const box = document.getElementById("requestsBox");
+
+  if(list.length === 0){
+    box.innerHTML = `<div class="empty">No vendor requests found.</div>`;
+    return;
+  }
+
+  box.innerHTML = list.map(r => {
+    const status = r.status || "pending";
+
+    return `
+      <div class="card">
+        <div>
+          <h3>${r.fullname || `${r.firstname || ""} ${r.lastname || ""}`}</h3>
+          <p><strong>User ID:</strong> ${r.user_id}</p>
+          <p><strong>Phone:</strong> ${r.telephone || "N/A"}</p>
+          <p><strong>Email:</strong> ${r.email || "N/A"}</p>
+          <p><strong>User Verification:</strong> ${r.verification_status || "not_submitted"}</p>
+          <p><strong>Date:</strong> ${new Date(r.created_at).toLocaleString()}</p>
+
+          <div class="message">
+            ${r.message || "No message provided."}
+          </div>
+
+          <p style="margin-top:10px;">
+            <span class="status ${status}">${status}</span>
+          </p>
+        </div>
+
+        <div class="actions">
+          <button
+            class="btn approve"
+            ${status === "approved" ? "disabled" : ""}
+            onclick="approveRequest(${r.id})">
+            Approve
+          </button>
+
+          <button
+            class="btn reject"
+            ${status === "rejected" ? "disabled" : ""}
+            onclick="rejectRequest(${r.id})">
+            Reject
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function filterRequests(){
+  const key = document.getElementById("searchInput").value.toLowerCase();
+  const status = document.getElementById("statusFilter").value;
+
+  const filtered = requests.filter(r => {
+    const text = `
+      ${r.fullname || ""}
+      ${r.firstname || ""}
+      ${r.lastname || ""}
+      ${r.telephone || ""}
+      ${r.email || ""}
+      ${r.status || ""}
+    `.toLowerCase();
+
+    return text.includes(key) && (!status || r.status === status);
+  });
+
+  renderRequests(filtered);
+}
+
+
+
+async function checkAdminSession() {
+  try {
+
+    const res = await fetch(`${API_BASE}/api/admin/check-session`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (
+      !data.success ||
+      !data.user ||
+      !["admin", "vendor"].includes(data.user.role)
+    ) {
+
+      localStorage.removeItem("didwapaAdmin");
+      localStorage.removeItem("didwapaVendor");
+
+      window.location.href = "login.html";
+      return;
+    }
+
+  } catch (err) {
+
+    localStorage.removeItem("didwapaAdmin");
+    localStorage.removeItem("didwapaVendor");
+
+    window.location.href = "login.html";
+  }
+}
+
+
+async function approveRequest(id){
+  if(!confirm("Approve this user as vendor?")) return;
+
+  try{
+    const res = await fetch(`${API_BASE}/api/admin/vendor-requests/approve/${id}`, {
+      method:"POST",
+      credentials:"include"
+    });
+
+    const data = await res.json();
+    showAlert(data.message, data.success ? "success" : "error");
+
+
+    if(data.success){
+      loadRequests();
+    }
+
+  }catch(error){
+    console.error(error);
+    showAlert("Failed to approve request.", "error");
+  }
+}
+
+async function rejectRequest(id){
+  if(!confirm("Reject this vendor request?")) return;
+
+  try{
+    const res = await fetch(`${API_BASE}/api/admin/vendor-requests/reject/${id}`, {
+      method:"POST",
+      credentials:"include"
+    });
+
+    const data = await res.json();
+    showAlert(data.message, data.success ? "success" : "error");
+
+    if(data.success){
+      loadRequests();
+    }
+
+  }catch(error){
+    console.error(error);
+    showAlert("Failed to reject request.", "error");
+  }
+}
+
+checkAdminSession();
+loadRequests();
+</script>
+
+</body>
+</html>

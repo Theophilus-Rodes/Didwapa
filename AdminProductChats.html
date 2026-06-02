@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIDWAPA Admin - Product Chats</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+:root{--dark:#06152f;--green:#20c463;--orange:#ff6600;--bg:#f4f7fb;--muted:#6b7280;--border:#e5e7eb}
+body{background:var(--bg);color:var(--dark)}
+.page{width:min(1200px,96%);margin:auto;padding:22px 0}
+.top{background:white;border-radius:24px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 18px 38px rgba(6,21,47,.08);margin-bottom:18px;animation:down .5s ease}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900}
+.logo{width:42px;height:42px;border-radius:15px;background:var(--dark);color:var(--green);display:grid;place-items:center}
+.back{background:var(--dark);color:white;text-decoration:none;padding:11px 15px;border-radius:14px;font-weight:900}
+.header{background:linear-gradient(135deg,var(--dark),#0b244d);color:white;padding:28px;border-radius:28px;margin-bottom:18px;animation:up .6s ease}
+.header h1{font-size:2.1rem;margin-bottom:8px}
+.header p{color:#cbd5e1;line-height:1.6}
+.layout{display:grid;grid-template-columns:380px 1fr;gap:18px}
+.panel{background:white;border-radius:24px;box-shadow:0 18px 38px rgba(6,21,47,.08);overflow:hidden;animation:up .7s ease}
+.panel-head{padding:15px;border-bottom:1px solid var(--border);font-weight:900}
+.search{padding:12px;border-bottom:1px solid var(--border)}
+.search input{width:100%;height:45px;border:1px solid var(--border);border-radius:15px;background:#f8fafc;padding:0 13px;outline:none}
+.search input:focus{border-color:var(--green);box-shadow:0 0 0 4px rgba(32,196,99,.12)}
+.conversation-list{height:620px;overflow-y:auto;padding:10px;display:grid;gap:10px}
+.conv{border:1px solid var(--border);border-radius:18px;padding:12px;display:grid;grid-template-columns:58px 1fr;gap:10px;cursor:pointer;transition:.25s}
+.conv:hover,.conv.active{transform:translateY(-2px);border-color:var(--green);background:#f7fff9;box-shadow:0 12px 25px rgba(6,21,47,.08)}
+.conv-img{width:58px;height:58px;border-radius:15px;overflow:hidden;background:#f3f4f6}
+.conv-img img{width:100%;height:100%;object-fit:cover}
+.conv h3{font-size:.9rem;margin-bottom:4px}
+.conv p{font-size:.73rem;color:var(--muted);line-height:1.4;margin:2px 0}
+.count{display:inline-block;margin-top:5px;padding:5px 8px;border-radius:999px;background:#dcfce7;color:#047857;font-size:.68rem;font-weight:900}
+.chat-panel{display:flex;flex-direction:column;height:720px}
+.chat-user{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.avatar{width:48px;height:48px;border-radius:17px;background:var(--dark);color:var(--green);display:grid;place-items:center;font-weight:900}
+.chat-user h3{font-size:1rem;margin-bottom:3px}
+.chat-user p{color:var(--muted);font-size:.78rem}
+.chat-area{flex:1;padding:16px;overflow-y:auto;background:linear-gradient(180deg,#f8fafc,#fff);display:flex;flex-direction:column;gap:10px}
+.msg{max-width:75%;padding:11px 13px;border-radius:18px;font-size:.88rem;line-height:1.5;animation:pop .25s ease;word-wrap:break-word}
+.msg.left{align-self:flex-start;background:#eef2ff;color:#111827;border-bottom-left-radius:5px}
+.msg.right{align-self:flex-end;background:var(--green);color:white;border-bottom-right-radius:5px}
+.msg small{display:block;font-size:.65rem;opacity:.75;margin-top:5px}
+.empty{text-align:center;color:var(--muted);padding:30px 15px;line-height:1.6}
+@keyframes down{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.conversation-list{height:300px}.chat-panel{height:540px}}
+@media(max-width:480px){.page{width:100%;padding:10px}.top,.header,.panel{border-radius:20px}.header h1{font-size:1.45rem}.msg{max-width:88%;font-size:.8rem}.conv{grid-template-columns:50px 1fr}.conv-img{width:50px;height:50px}}
+</style>
+</head>
+
+<body>
+
+<div class="page">
+  <div class="top">
+    <div class="brand"><div class="logo">DW</div> Product Chats Monitor</div>
+    <a href="admin.html" class="back">← Dashboard</a>
+  </div>
+
+  <div class="header">
+    <h1>Product Conversations</h1>
+    <p>Monitor chats between buyers and sellers for product enquiries.</p>
+  </div>
+
+  <section class="layout">
+    <aside class="panel">
+      <div class="panel-head">All Conversations</div>
+      <div class="search">
+        <input id="searchInput" placeholder="Search product, buyer, seller..." oninput="filterConversations()">
+      </div>
+      <div class="conversation-list" id="conversationList">
+        <div class="empty">Loading conversations...</div>
+      </div>
+    </aside>
+
+    <section class="panel chat-panel">
+      <div class="chat-user" id="chatUser">
+        <div class="avatar">?</div>
+        <div>
+          <h3>Select conversation</h3>
+          <p>Click any product chat to monitor messages.</p>
+        </div>
+      </div>
+
+      <div class="chat-area" id="chatArea">
+        <div class="empty">No conversation selected.</div>
+      </div>
+    </section>
+  </section>
+</div>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+
+let conversations = [];
+let selectedProductId = null;
+
+const listBox = document.getElementById("conversationList");
+const chatArea = document.getElementById("chatArea");
+const chatUser = document.getElementById("chatUser");
+
+function getFirstImage(images){
+  try{
+    let parsed = images;
+    if(typeof images === "string") parsed = JSON.parse(images);
+    if(!Array.isArray(parsed) || parsed.length === 0) return "https://via.placeholder.com/300?text=No+Image";
+
+    let img = String(parsed[0]).replace(/\\/g,"/");
+    if(img.startsWith("http")) return img;
+    if(img.startsWith("/")) return API_BASE + img;
+    return API_BASE + "/" + img;
+  }catch{
+    return "https://via.placeholder.com/300?text=No+Image";
+  }
+}
+
+function formatDate(date){
+  return date ? new Date(date).toLocaleString() : "";
+}
+
+async function checkAdminSession(){
+  try{
+    const res = await fetch(`${API_BASE}/api/admin/check-session`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success || !data.user || !["admin","vendor"].includes(data.user.role)){
+      localStorage.removeItem("didwapaAdmin");
+      localStorage.removeItem("didwapaVendor");
+      window.location.href = "login.html";
+    }
+  }catch(error){
+    localStorage.removeItem("didwapaAdmin");
+    localStorage.removeItem("didwapaVendor");
+    window.location.href = "login.html";
+  }
+}
+
+async function loadConversations(){
+  try{
+    const res = await fetch(`${API_BASE}/api/admin/product-conversations`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      listBox.innerHTML = `<div class="empty">${data.message}</div>`;
+      return;
+    }
+
+    conversations = data.conversations || [];
+    renderConversations(conversations);
+
+  }catch(error){
+    listBox.innerHTML = `<div class="empty">Failed to load conversations.</div>`;
+  }
+}
+
+function renderConversations(list){
+  if(list.length === 0){
+    listBox.innerHTML = `<div class="empty">No product conversations found.</div>`;
+    return;
+  }
+
+  listBox.innerHTML = list.map(c=>{
+    const image = getFirstImage(c.images);
+
+    return `
+      <div class="conv ${Number(selectedProductId) === Number(c.product_id) ? "active" : ""}" onclick="selectConversation(${c.product_id})">
+        <div class="conv-img"><img src="${image}"></div>
+        <div>
+          <h3>${c.product_name || "Product"}</h3>
+          <p><strong>Buyer:</strong> ${c.buyer_firstname || ""} ${c.buyer_lastname || ""}</p>
+          <p><strong>Seller:</strong> ${c.seller_firstname || ""} ${c.seller_lastname || ""}</p>
+          <p>${c.last_message || ""}</p>
+          <span class="count">${c.total_messages || 0} message(s)</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function filterConversations(){
+  const key = document.getElementById("searchInput").value.toLowerCase();
+
+  const filtered = conversations.filter(c=>{
+    const text = `
+      ${c.product_name || ""}
+      ${c.buyer_firstname || ""}
+      ${c.buyer_lastname || ""}
+      ${c.seller_firstname || ""}
+      ${c.seller_lastname || ""}
+      ${c.last_message || ""}
+    `.toLowerCase();
+
+    return text.includes(key);
+  });
+
+  renderConversations(filtered);
+}
+
+async function selectConversation(productId){
+  selectedProductId = productId;
+
+  const conv = conversations.find(c => Number(c.product_id) === Number(productId));
+
+  chatUser.innerHTML = `
+    <div class="avatar">💬</div>
+    <div>
+      <h3>${conv?.product_name || "Product Chat"}</h3>
+      <p>Buyer: ${conv?.buyer_firstname || ""} ${conv?.buyer_lastname || ""} | Seller: ${conv?.seller_firstname || ""} ${conv?.seller_lastname || ""}</p>
+    </div>
+  `;
+
+  renderConversations(conversations);
+  await loadMessages(productId);
+}
+
+async function loadMessages(productId){
+  try{
+    chatArea.innerHTML = `<div class="empty">Loading messages...</div>`;
+
+    const res = await fetch(`${API_BASE}/api/admin/product-conversations/${productId}`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      chatArea.innerHTML = `<div class="empty">${data.message}</div>`;
+      return;
+    }
+
+    const messages = data.messages || [];
+
+    if(messages.length === 0){
+      chatArea.innerHTML = `<div class="empty">No messages found.</div>`;
+      return;
+    }
+
+    chatArea.innerHTML = messages.map((m,index)=>{
+      const side = index % 2 === 0 ? "left" : "right";
+
+      return `
+        <div class="msg ${side}">
+          <strong>${m.sender_firstname || "User"} ${m.sender_lastname || ""}</strong><br>
+          ${m.message}
+          <small>${formatDate(m.created_at)}</small>
+        </div>
+      `;
+    }).join("");
+
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+  }catch(error){
+    chatArea.innerHTML = `<div class="empty">Failed to load messages.</div>`;
+  }
+}
+
+checkAdminSession();
+loadConversations();
+
+setInterval(()=>{
+  loadConversations();
+  if(selectedProductId){
+    loadMessages(selectedProductId);
+  }
+},5000);
+</script>
+
+</body>
+</html>

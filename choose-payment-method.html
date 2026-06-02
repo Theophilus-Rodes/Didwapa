@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIDWAPA - Choose Payment</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+:root{--dark:#06152f;--orange:#ff6600;--bg:#f4f7fb;--border:#e5e7eb;--muted:#6b7280}
+body{background:var(--bg);color:var(--dark)}
+.app{max-width:650px;margin:auto;background:white;min-height:100vh}
+.header{background:linear-gradient(135deg,#12367d,var(--orange));color:white;padding:25px 18px 55px;border-bottom-left-radius:30px;border-bottom-right-radius:30px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.back{border:none;background:rgba(255,255,255,.2);color:white;padding:10px 14px;border-radius:999px;font-weight:900;cursor:pointer}
+.header h1{margin-top:25px;font-size:1.7rem}
+.header p{margin-top:8px;opacity:.9;line-height:1.5}
+.content{padding:16px;margin-top:-35px}
+.card{background:white;border-radius:26px;padding:20px;box-shadow:0 18px 40px rgba(0,0,0,.1)}
+.form-group{margin-bottom:16px}
+label{display:block;font-weight:900;margin-bottom:8px;color:#374151}
+input,select{width:100%;height:54px;border:1px solid var(--border);border-radius:17px;background:#f8fafc;padding:0 15px;font-size:1rem;outline:none}
+input:focus,select:focus{border-color:var(--orange);box-shadow:0 0 0 4px rgba(255,102,0,.13);background:white}
+.momo-fields{display:none}
+.note{background:#fff7ed;border:1px dashed #fdba74;color:#92400e;padding:14px;border-radius:18px;font-size:.9rem;line-height:1.6;margin-bottom:16px}
+.btn{width:100%;height:55px;border:none;border-radius:18px;background:linear-gradient(135deg,var(--orange),#ff4500);color:white;font-weight:900;font-size:1rem;cursor:pointer}
+.alert{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:white;padding:15px 20px;border-radius:15px;box-shadow:0 15px 40px rgba(0,0,0,.2);display:none;font-weight:900;z-index:9999}
+.success{color:green}.error{color:red}
+</style>
+</head>
+
+<body>
+
+<div class="alert" id="alertBox"></div>
+
+<main class="app">
+  <section class="header">
+    <div class="top">
+      <h3>Payment Method</h3>
+      <button class="back" onclick="history.back()">← Back</button>
+    </div>
+
+    <h1>Choose How To Pay</h1>
+    <p>Select account wallet payment or mobile money payment.</p>
+  </section>
+
+  <section class="content">
+    <form class="card" id="paymentMethodForm">
+
+      <div class="note">
+        Account payment will continue to the normal wallet payment page. Mobile money will be added soon.
+      </div>
+
+      <div class="form-group">
+        <label>Payment Method</label>
+        <select id="payment_method" required>
+          <option value="">Select payment method</option>
+          <option value="account">Use My Account Wallet</option>
+          <option value="momo">Use Mobile Money</option>
+        </select>
+      </div>
+
+      <div class="momo-fields" id="momoFields">
+        <div class="form-group">
+          <label>MoMo Number</label>
+          <input type="tel" id="momo_number" placeholder="Example: 0532687733">
+        </div>
+
+        <div class="form-group">
+          <label>Network</label>
+          <select id="network">
+            <option value="">Select network</option>
+            <option value="MTN">MTN</option>
+            <option value="Telecel">Telecel</option>
+            <option value="AirtelTigo">AirtelTigo</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Account Name</label>
+          <input type="text" id="account_name" placeholder="Enter MoMo account name">
+        </div>
+      </div>
+
+      <button class="btn" type="submit" id="finishBtn">
+        Proceed
+      </button>
+
+    </form>
+  </section>
+</main>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const productId = params.get("id");
+const qty = params.get("qty") || 1;
+
+const paymentMethod = document.getElementById("payment_method");
+const momoFields = document.getElementById("momoFields");
+const finishBtn = document.getElementById("finishBtn");
+const alertBox = document.getElementById("alertBox");
+
+function showAlert(message,type="success"){
+  alertBox.textContent = message;
+  alertBox.className = `alert ${type}`;
+  alertBox.style.display = "block";
+
+  setTimeout(()=>{
+    alertBox.style.display = "none";
+  },2500);
+}
+
+paymentMethod.addEventListener("change", () => {
+  if(paymentMethod.value === "momo"){
+    momoFields.style.display = "block";
+    finishBtn.textContent = "Finish";
+  }else{
+    momoFields.style.display = "none";
+    finishBtn.textContent = "Proceed";
+  }
+});
+
+document.getElementById("paymentMethodForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  if(!productId){
+    showAlert("Product ID missing.", "error");
+    return;
+  }
+
+  if(paymentMethod.value === "account"){
+    window.location.href = `payment.html?id=${productId}&qty=${qty}`;
+    return;
+  }
+
+  if(paymentMethod.value === "momo"){
+    const momoNumber = document.getElementById("momo_number").value.trim();
+    const network = document.getElementById("network").value;
+    const accountName = document.getElementById("account_name").value.trim();
+
+    if(!momoNumber || !network || !accountName){
+      showAlert("Please fill all MoMo details.", "error");
+      return;
+    }
+
+finishBtn.disabled = true;
+finishBtn.textContent = "Sending prompt...";
+
+try {
+  const res = await fetch(`http://${window.location.hostname}:5000/api/product/momo/initiate`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      product_id: productId,
+      quantity: qty,
+      momo_number: momoNumber,
+      network: network,
+      account_name: accountName
+    })
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    showAlert(data.message || "Could not start payment.", "error");
+    finishBtn.disabled = false;
+    finishBtn.textContent = "Finish";
+    return;
+  }
+
+  window.location.href = `momo-product-payment.html?reference=${data.reference}`;
+
+} catch (error) {
+  console.error(error);
+  showAlert("Payment request failed.", "error");
+  finishBtn.disabled = false;
+  finishBtn.textContent = "Finish";
+}
+return;
+  }
+
+  showAlert("Please select payment method.", "error");
+});
+</script>
+
+</body>
+</html>

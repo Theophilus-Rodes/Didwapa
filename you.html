@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA - You</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --primary: #ff6600;
+      --secondary: #0a2d73;
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --green: #078b12;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 90px;
+    }
+
+    .app {
+      max-width: 520px;
+      margin: auto;
+      min-height: 100vh;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      color: white;
+      padding: 22px 16px 35px;
+      border-bottom-left-radius: 25px;
+      border-bottom-right-radius: 25px;
+      animation: slideDown .6s ease;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .back-btn {
+      background: rgba(255,255,255,.2);
+      color: white;
+      border: none;
+      padding: 9px 13px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .profile-box {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: white;
+      color: var(--primary);
+      display: grid;
+      place-items: center;
+      font-size: 1.8rem;
+      font-weight: 900;
+      box-shadow: 0 12px 25px rgba(0,0,0,.18);
+    }
+
+    .profile-box h2 {
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+    }
+
+    .profile-box p {
+      font-size: .85rem;
+      opacity: .9;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 16px;
+      margin-top: -22px;
+    }
+
+    .quick-card {
+      background: white;
+      border-radius: 18px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 25px rgba(0,0,0,.08);
+      cursor: pointer;
+      transition: .3s ease;
+      animation: fadeUp .7s ease both;
+    }
+
+    .quick-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 18px 35px rgba(0,0,0,.13);
+    }
+
+    .quick-card .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: #fff1e6;
+      display: grid;
+      place-items: center;
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+    }
+
+    .quick-card h3 {
+      font-size: .95rem;
+      margin-bottom: 5px;
+    }
+
+    .quick-card p {
+      font-size: .75rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .section {
+      padding: 0 16px 16px;
+      animation: fadeUp .8s ease;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .notification-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .notification {
+      background: #fff7f0;
+      border-left: 5px solid var(--primary);
+      padding: 12px;
+      border-radius: 14px;
+      animation: swipeIn .5s ease both;
+    }
+
+    .notification h4 {
+      font-size: .92rem;
+      margin-bottom: 5px;
+    }
+
+    .notification p {
+      font-size: .78rem;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    .notification small {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: .7rem;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: 520px;
+      width: 100%;
+      background: rgba(255,255,255,0.94);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid #ddd;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      padding: 8px 4px 10px;
+      z-index: 70;
+    }
+
+    .nav-item {
+      text-align: center;
+      text-decoration: none;
+      color: #111;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .nav-item div {
+      font-size: 1.35rem;
+      margin-bottom: 3px;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeUp {
+      from { transform: translateY(25px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes swipeIn {
+      from { transform: translateX(25px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @media (max-width: 380px) {
+      .header {
+        padding: 18px 12px 30px;
+      }
+
+      .quick-grid {
+        gap: 9px;
+        padding: 12px;
+      }
+
+      .quick-card {
+        padding: 11px;
+        border-radius: 15px;
+      }
+
+      .quick-card h3 {
+        font-size: .82rem;
+      }
+
+      .quick-card p {
+        font-size: .68rem;
+      }
+
+      .avatar {
+        width: 50px;
+        height: 50px;
+      }
+    }
+
+     .badge {
+      position: absolute;
+      top: -3px;
+      right: 24%;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 2px 5px;
+      border-radius: 999px;
+      animation: badgeBounce 1.4s infinite;
+    }
+
+    .count-card {
+  position: relative;
+}
+
+.card-count-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.count-card {
+  position: relative;
+}
+
+.card-count-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+  </style>
+</head>
+
+<body>
+
+  <main class="app">
+    <section class="header">
+      <div class="header-top">
+        <h3>DIDWAPA Account</h3>
+        <button class="back-btn" onclick="window.location.href='index.html'">← Back</button>
+      </div>
+
+      <div class="profile-box">
+        <div class="avatar">👤</div>
+        <div>
+          <h2 id="userName">Welcome</h2>
+          <p>Manage your activities and updates</p>
+        </div>
+      </div>
+    </section>
+
+
+    <section class="quick-grid">
+
+<div class="quick-card count-card" onclick="window.location.href='report-problem.html'">
+  <span class="card-count-badge" id="reportMessagesCount">0</span>
+
+  <div class="icon">⚠️</div>
+  <h3>Report Problem</h3>
+  <p>Send issues about orders, payments, or products.</p>
+</div>
+
+
+
+  <div class="quick-card" onclick="window.location.href='my-bought-products.html'">
+    <div class="icon">✅</div>
+    <h3>Approve Received</h3>
+    <p>Confirm that your purchase has been received.</p>
+  </div>
+
+  <div class="quick-card" onclick="window.location.href='become-vendor.html'">
+    <div class="icon">🏪</div>
+    <h3>Become Vendor</h3>
+    <p>Request permission to sell on DIDWAPA.</p>
+  </div>
+
+  <div class="quick-card" onclick="window.location.href='user-profile.html'">
+    <div class="icon">⚙️</div>
+    <h3>My Profile</h3>
+    <p>View and update your personal account details.</p>
+  </div>
+
+  <div class="quick-card count-card" onclick="window.location.href='cart.html'">
+  <span class="card-count-badge" id="myCartCount">0</span>
+
+  <div class="icon">🛒</div>
+  <h3>My Cart</h3>
+  <p>View all products currently added to your shopping cart.</p>
+</div>
+
+  <div class="quick-card" onclick="window.location.href='sell-products.html'">
+    <div class="icon">📦</div>
+    <h3>Sell Products</h3>
+    <p>Upload and manage products you want to sell on DIDWAPA.</p>
+  </div>
+
+  <div class="quick-card count-card" onclick="window.location.href='purchased-products.html'">
+  <span class="card-count-badge" id="purchasedProductsCount">0</span>
+
+  <div class="icon">📋</div>
+  <h3>Purchased Products</h3>
+  <p>Track all products you have purchased from vendors.</p>
+</div>
+
+
+  <div class="quick-card count-card" onclick="window.location.href='product-messages.html'">
+  <span class="card-count-badge" id="productMessagesCount">0</span>
+
+  <div class="icon">💬</div>
+  <h3>Product Messages</h3>
+  <p>Chat with buyers and sellers about products and deliveries.</p>
+</div>
+
+
+  <div class="quick-card" onclick="window.location.href='my-wallet.html'">
+  <div class="icon">💰</div>
+  <h3>My Wallet</h3>
+  <p>View your total account balance and wallet history.</p>
+</div>
+
+  <div class="quick-card"
+onclick="
+window.location.href=
+'my-products.html'
+">
+
+<div class="quick-card count-card" onclick="window.location.href='my-products.html'">
+  <span class="card-count-badge" id="myProductsCount">0</span>
+
+  <div class="icon">📦</div>
+  <h3>My Products</h3>
+  <p>View, edit and manage all products you posted.</p>
+</div>
+
+</section>
+
+    <section class="section">
+      <h3 class="section-title">Admin Notifications</h3>
+      <div class="notification-list" id="notificationsBox">
+        <p style="color:#777;font-size:.85rem;">Loading notifications...</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <div>🏠</div>
+      Home
+    </a>
+
+    <a href="#" class="nav-item">
+      <div>☰🔍</div>
+      Categories
+    </a>
+
+    <a href="you.html" class="nav-item active">
+      <div>👤</div>
+      You
+    </a>
+
+  <a href="cart.html" class="nav-item">
+  <span class="badge" id="cartCountBadge">0</span>
+  <div>🛒</div>
+  Cart
+</a>
+
+    <a href="#" class="nav-item">
+      <div>☰</div>
+      Menu
+    </a>
+  </nav>
+
+  <script>
+    const API_BASE = `http://${window.location.hostname}:5000`;
+
+    const userName = document.getElementById("userName");
+    const notificationsBox = document.getElementById("notificationsBox");
+
+    async function checkLogin() {
+      try {
+        const res = await fetch(`${API_BASE}/api/check-user-login`, {
+          credentials: "include"
+        });
+
+        const data = await res.json();
+
+        if (!data.loggedIn) {
+          window.location.href = "userlogin.html";
+          return;
+        }
+
+        const user = data.user;
+        userName.textContent = user.firstname 
+          ? `Hello, ${user.firstname}` 
+          : "Hello, User";
+
+      } catch (error) {
+        window.location.href = "userlogin.html";
+      }
+    }
+
+    async function loadNotifications() {
+      try {
+        const res = await fetch(`${API_BASE}/api/user/notifications`, {
+          credentials: "include"
+        });
+
+        const data = await res.json();
+
+        if (!data.success || data.notifications.length === 0) {
+          notificationsBox.innerHTML = `
+            <div class="notification">
+              <h4>No notifications yet</h4>
+              <p>Admin notifications will appear here when available.</p>
+            </div>
+          `;
+          return;
+        }
+
+        notificationsBox.innerHTML = data.notifications.map(item => `
+          <div class="notification">
+            <h4>${item.title}</h4>
+            <p>${item.message}</p>
+            <small>${new Date(item.created_at).toLocaleString()}</small>
+          </div>
+        `).join("");
+
+      } catch (error) {
+        notificationsBox.innerHTML = `
+          <div class="notification">
+            <h4>Failed to load</h4>
+            <p>Please check your connection and try again.</p>
+          </div>
+        `;
+      }
+    }
+
+    checkLogin();
+    loadNotifications();
+  </script>
+
+  <script>
+async function loadCartCount() {
+  try {
+    const badge = document.getElementById("cartCountBadge");
+    if (!badge) return;
+
+    const res = await fetch("/api/cart/count", {
+      method: "GET",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      badge.textContent = data.count || 0;
+      badge.style.display = Number(data.count) > 0 ? "inline-flex" : "none";
+    }
+  } catch (error) {
+    console.error("Cart count error:", error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadCartCount);
+</script>
+
+<script>
+async function loadPurchasedProductsCount() {
+  try {
+    const badge = document.getElementById("purchasedProductsCount");
+    if (!badge) return;
+
+    const res = await fetch("/api/seller/purchased-products-count", {
+      method: "GET",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      badge.textContent = data.count || 0;
+      badge.style.display = Number(data.count) > 0 ? "inline-flex" : "none";
+    }
+  } catch (error) {
+    console.error("Purchased products count error:", error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadPurchasedProductsCount);
+</script>
+
+<script>
+async function loadMyCartCount() {
+  try {
+    const badge = document.getElementById("myCartCount");
+    if (!badge) return;
+
+    const res = await fetch("/api/cart/count", {
+      method: "GET",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      badge.textContent = data.count || 0;
+      badge.style.display = Number(data.count) > 0 ? "inline-flex" : "none";
+    }
+  } catch (error) {
+    console.error("My cart count error:", error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadMyCartCount);
+</script>
+
+<script>
+async function loadProductMessagesCount() {
+  try {
+    const badge = document.getElementById("productMessagesCount");
+    if (!badge) return;
+
+    const res = await fetch("/api/product-messages/unread-count", {
+      method: "GET",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      badge.textContent = data.count || 0;
+      badge.style.display = Number(data.count) > 0 ? "inline-flex" : "none";
+    }
+  } catch (error) {
+    console.error("Product messages count error:", error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadProductMessagesCount);
+</script>
+
+
+<script>
+async function loadReportMessagesCount() {
+  try {
+    const badge = document.getElementById("reportMessagesCount");
+    if (!badge) return;
+
+    const res = await fetch("/api/report-messages/unread-count", {
+      method: "GET",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      badge.textContent = data.count || 0;
+      badge.style.display = Number(data.count) > 0 ? "inline-flex" : "none";
+    }
+  } catch (error) {
+    console.error("Report messages count error:", error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadReportMessagesCount);
+</script>
+
+<script>
+async function loadMyProductsCount() {
+  try {
+    const badge = document.getElementById("myProductsCount");
+    if (!badge) return;
+
+    const res = await fetch("/api/my-products/count", {
+      method: "GET",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      badge.textContent = data.count || 0;
+      badge.style.display = Number(data.count) > 0 ? "inline-flex" : "none";
+    }
+  } catch (error) {
+    console.error("My products count error:", error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadMyProductsCount);
+</script>
+
+</body>
+</html>

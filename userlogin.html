@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA Login</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --primary: #ff6600;
+      --secondary: #0a2d73;
+      --text: #102033;
+      --muted: #6b7280;
+      --glass: rgba(255, 255, 255, 0.22);
+      --border: rgba(255, 255, 255, 0.45);
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(255,102,0,0.35), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(10,45,115,0.32), transparent 35%),
+        linear-gradient(135deg, #eef3ff, #fff7ef);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 18px;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    .login-page {
+      width: 100%;
+      max-width: 1100px;
+      min-height: 680px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      animation: fadeUp 0.8s ease;
+    }
+
+    .glass-card {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      box-shadow: 0 25px 70px rgba(10,45,115,0.18);
+      border-radius: 34px;
+    }
+
+    .brand-side {
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .logo {
+      width: 170px;
+      height: auto;
+      margin-bottom: 30px;
+    }
+
+    .brand-side h1 {
+      font-size: clamp(2.2rem, 4vw, 4rem);
+      line-height: 1;
+      color: var(--secondary);
+      margin-bottom: 18px;
+      letter-spacing: -1px;
+    }
+
+    .brand-side p {
+      max-width: 460px;
+      color: #40516c;
+      font-size: 1.05rem;
+      line-height: 1.8;
+    }
+
+    .features {
+      display: grid;
+      gap: 14px;
+      margin-top: 30px;
+    }
+
+    .feature {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: rgba(255,255,255,0.24);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px;
+      padding: 14px;
+    }
+
+    .feature-icon {
+      width: 45px;
+      height: 45px;
+      border-radius: 15px;
+      background: rgba(255,255,255,0.35);
+      display: grid;
+      place-items: center;
+      font-size: 1.4rem;
+    }
+
+    .feature strong {
+      color: var(--secondary);
+    }
+
+    .feature small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+    }
+
+    .login-card {
+      padding: 42px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .mobile-logo {
+      display: none;
+      width: 150px;
+      margin: 0 auto 18px;
+    }
+
+    .login-card h2 {
+      color: var(--secondary);
+      font-size: 2.2rem;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .login-card .subtitle {
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 800;
+      color: #24324a;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .input-box {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.45);
+      border: 1px solid rgba(255,255,255,0.65);
+      border-radius: 18px;
+      padding: 0 16px;
+      transition: 0.25s ease;
+    }
+
+    .input-box:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(255,102,0,0.14);
+      transform: translateY(-2px);
+    }
+
+    .input-box span {
+      font-size: 1.2rem;
+    }
+
+    .input-box input {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 1rem;
+      color: #172033;
+    }
+
+    .input-box input::placeholder {
+      color: #8b95a7;
+    }
+
+    .row-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 0 24px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .remember {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      color: #4b5563;
+    }
+
+    .forgot-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 0.92rem;
+    }
+
+    .login-btn {
+      width: 100%;
+      height: 56px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--primary), #ff4500);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 15px 35px rgba(255,102,0,0.35);
+      transition: 0.25s ease;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 45px rgba(255,102,0,0.42);
+    }
+
+    .signup-text {
+      text-align: center;
+      margin-top: 24px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .signup-text a {
+      color: var(--secondary);
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    .secure-note {
+      margin-top: 22px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.30);
+      border: 1px solid rgba(255,255,255,0.45);
+      color: #42526b;
+      font-size: 0.92rem;
+      text-align: center;
+    }
+
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.28);
+      animation: float 5s ease-in-out infinite;
+    }
+
+    .circle.one {
+      width: 130px;
+      height: 130px;
+      right: -35px;
+      top: 90px;
+    }
+
+    .circle.two {
+      width: 90px;
+      height: 90px;
+      left: 30px;
+      bottom: 70px;
+      animation-delay: 1s;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-18px);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .login-page {
+        grid-template-columns: 1fr;
+        max-width: 560px;
+        min-height: auto;
+      }
+
+      .brand-side {
+        display: none;
+      }
+
+      .mobile-logo {
+        display: block;
+      }
+
+      .login-card {
+        padding: 32px 24px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+
+      .login-card {
+        border-radius: 28px;
+        padding: 28px 18px;
+      }
+
+      .login-card h2 {
+        font-size: 1.8rem;
+      }
+
+      .input-box {
+        height: 54px;
+      }
+    }
+
+
+    .success-popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.success-card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255,255,255,0.96);
+  border-radius: 30px;
+  padding: 35px 25px;
+  text-align: center;
+  animation: fadeUp 0.4s ease;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+}
+
+.success-icon {
+  font-size: 4rem;
+  margin-bottom: 14px;
+}
+
+.success-card h2 {
+  color: var(--secondary);
+  margin-bottom: 12px;
+}
+
+.success-card p {
+  color: #5b6472;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+.success-card button {
+  width: 100%;
+  height: 54px;
+  border: none;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--primary), #ff4500);
+  color: white;
+  font-weight: 900;
+  cursor: pointer;
+}
+  </style>
+</head>
+
+<body>
+
+  <main class="login-page">
+
+    <section class="brand-side glass-card">
+      <div>
+        <img src="DIDWAPA.png" alt="DIDWAPA Logo" class="logo" />
+
+        <h1>Welcome Back to DIDWAPA</h1>
+
+        <p>
+          Login to buy, sell, track orders, manage your account and enjoy safer
+          transactions with escrow protection.
+        </p>
+
+        <div class="features">
+          <div class="feature">
+            <div class="feature-icon">🛡️</div>
+            <div>
+              <strong>Safe Payments</strong>
+              <small>Your money is protected until delivery is confirmed.</small>
+            </div>
+          </div>
+
+          <div class="feature">
+            <div class="feature-icon">📦</div>
+            <div>
+              <strong>Track Your Orders</strong>
+              <small>Monitor your purchases and sales from one dashboard.</small>
+            </div>
+          </div>
+
+          <div class="feature">
+            <div class="feature-icon">⚡</div>
+            <div>
+              <strong>Fast Marketplace</strong>
+              <small>Find products and complete deals quickly.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="secure-note">
+        🔒 Secure login powered by DIDWAPA protection system.
+      </div>
+
+      <span class="circle one"></span>
+      <span class="circle two"></span>
+    </section>
+
+    <section class="login-card glass-card">
+      <img src="DIDWAPA.png" alt="DIDWAPA Logo" class="mobile-logo" />
+
+      <h2>Login Account</h2>
+      <p class="subtitle">Enter your details to continue to your account.</p>
+
+    <form id="loginForm">
+
+  <div class="form-group">
+    <label>Email or Phone Number</label>
+
+    <div class="input-box">
+      <span>👤</span>
+
+      <input 
+        type="text" 
+        id="login" 
+        name="login"
+        placeholder="Enter email or phone number" 
+        required 
+      />
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Password</label>
+
+    <div class="input-box">
+      <span>🔒</span>
+
+      <input 
+        type="password" 
+        id="password" 
+        name="password"
+        placeholder="Enter password" 
+        required 
+      />
+    </div>
+  </div>
+
+  <div class="row-options">
+    <label class="remember">
+      <input type="checkbox" />
+      Remember me
+    </label>
+
+    <a href="#" class="forgot-link">Forgot Password?</a>
+  </div>
+
+  <button type="submit" class="login-btn">
+    Login Now
+  </button>
+
+</form>
+          <!-- <a href="#" class="forgot-link">Forgot Password?</a>
+        </div>
+
+        <button type="submit" class="login-btn">
+          Login Now
+        </button> -->
+      </form>
+
+      <p class="signup-text">
+        Don’t have an account?
+        <a href="useraccount.html">Create Account</a>
+      </p>
+    </section>
+
+  </main>
+
+
+  <div class="success-popup" id="successPopup">
+  <div class="success-card">
+
+    <div class="success-icon">🎉</div>
+
+    <h2>Login Successful</h2>
+
+    <p>
+      Welcome back to DIDWAPA.
+      Redirecting you to your dashboard...
+    </p>
+
+    <button id="continueBtn">
+      Continue
+    </button>
+
+  </div>
+</div>
+<script>
+  const API_BASE =
+    window.location.hostname === "localhost"
+      ? "http://localhost:5000"
+      : "http://172.20.10.4:5000";
+
+  const loginForm = document.getElementById("loginForm");
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const login = document.getElementById("login").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    try {
+      const response = await fetch(`${API_BASE}/api/user/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          login,
+          password
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        document.getElementById("successPopup").style.display = "flex";
+
+        document.getElementById("continueBtn").onclick = () => {
+          window.location.href = `index.html?id=${result.userId}`;
+        };
+
+        setTimeout(() => {
+          window.location.href = `index.html?id=${result.userId}`;
+        }, 2500);
+
+      } else {
+        alert(result.message);
+      }
+
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Something went wrong. Please try again.");
+    }
+  });
+</script>
+
+
+
+</body>
+</html>

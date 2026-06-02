@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIDWAPA - Release Money</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,Helvetica,sans-serif
+}
+
+:root{
+  --dark:#06152f;
+  --green:#20c463;
+  --orange:#ff6600;
+  --bg:#f4f7fb;
+  --muted:#6b7280;
+}
+
+body{
+  background:var(--bg);
+  color:var(--dark);
+}
+
+.page{
+  width:min(760px,95%);
+  margin:auto;
+  padding:20px 0;
+}
+
+.top{
+  background:white;
+  padding:16px;
+  border-radius:24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-shadow:0 15px 35px rgba(0,0,0,.07);
+  margin-bottom:18px;
+}
+
+.back{
+  background:var(--dark);
+  color:white;
+  text-decoration:none;
+  padding:10px 14px;
+  border-radius:14px;
+  font-weight:900;
+}
+
+.header{
+  background:linear-gradient(135deg,var(--dark),#0b244d);
+  color:white;
+  padding:28px;
+  border-radius:28px;
+  margin-bottom:18px;
+  animation:up .5s ease;
+}
+
+.header h1{
+  font-size:2rem;
+  margin-bottom:8px;
+}
+
+.header p{
+  color:#cbd5e1;
+}
+
+.card{
+  background:white;
+  border-radius:26px;
+  padding:18px;
+  box-shadow:0 18px 38px rgba(0,0,0,.08);
+  animation:up .6s ease;
+}
+
+.image{
+  width:100%;
+  height:260px;
+  border-radius:20px;
+  overflow:hidden;
+  background:#f3f4f6;
+  margin-bottom:18px;
+}
+
+.image img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.info{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:15px;
+}
+
+.box{
+  background:#f8fafc;
+  padding:14px;
+  border-radius:18px;
+}
+
+.box small{
+  display:block;
+  color:var(--muted);
+  margin-bottom:5px;
+  font-weight:900;
+}
+
+.box strong{
+  font-size:.9rem;
+}
+
+.amount{
+  margin-top:18px;
+  background:#fff7ed;
+  border:2px dashed #fdba74;
+  border-radius:22px;
+  padding:18px;
+  text-align:center;
+}
+
+.amount h2{
+  color:var(--orange);
+  font-size:2rem;
+  margin-top:8px;
+}
+
+.releaseBtn{
+  width:100%;
+  height:56px;
+  border:none;
+  border-radius:20px;
+  margin-top:20px;
+  background:linear-gradient(135deg,#20c463,#119b4f);
+  color:white;
+  font-size:1rem;
+  font-weight:900;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.releaseBtn:hover{
+  transform:translateY(-3px);
+}
+
+.released{
+  background:#94a3b8 !important;
+  cursor:not-allowed;
+}
+
+.status{
+  display:inline-block;
+  margin-top:10px;
+  padding:8px 14px;
+  border-radius:999px;
+  font-size:.8rem;
+  font-weight:900;
+}
+
+.pending{
+  background:#fef3c7;
+  color:#b45309;
+}
+
+.done{
+  background:#d1fae5;
+  color:#047857;
+}
+
+@keyframes up{
+  from{
+    opacity:0;
+    transform:translateY(20px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+@media(max-width:700px){
+
+  .info{
+    grid-template-columns:1fr;
+  }
+
+  .image{
+    height:210px;
+  }
+
+  .header h1{
+    font-size:1.5rem;
+  }
+}
+
+.reverseBtn{
+  width:100%;
+  height:56px;
+  border:none;
+  border-radius:20px;
+  margin-top:12px;
+  background:linear-gradient(135deg,#ef4444,#b91c1c);
+  color:white;
+  font-size:1rem;
+  font-weight:900;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.reverseBtn:hover{
+  transform:translateY(-3px);
+}
+</style>
+</head>
+
+<body>
+
+<div class="page">
+
+  <div class="top">
+    <h2>Release Seller Money</h2>
+    <a href="AdminOrdesrCheck.html" class="back">← Back</a>
+  </div>
+
+  <div class="header">
+    <h1>Escrow Release Center</h1>
+    <p>Release held payment to the seller wallet after verification.</p>
+  </div>
+
+  <div class="card" id="box">
+    Loading...
+  </div>
+
+</div>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+const id = new URLSearchParams(window.location.search).get("id");
+
+function getFirstImage(images){
+  try{
+    let parsed = images;
+
+    if(typeof images === "string"){
+      parsed = JSON.parse(images);
+    }
+
+    if(!Array.isArray(parsed) || parsed.length === 0){
+      return "https://via.placeholder.com/400";
+    }
+
+    let img = parsed[0] || "";
+
+    img = img.replace(/\\/g, "/");
+
+    if(img.startsWith("http")){
+      return img;
+    }
+
+    if(img.startsWith("/")){
+      return API_BASE + img;
+    }
+
+    return API_BASE + "/" + img;
+
+  }catch(error){
+    console.error("Image parse error:", error, images);
+    return "https://via.placeholder.com/400";
+  }
+}
+
+
+async function checkAdminSession() {
+  try {
+
+    const res = await fetch(`${API_BASE}/api/admin/check-session`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (
+      !data.success ||
+      !data.user ||
+      !["admin", "vendor"].includes(data.user.role)
+    ) {
+
+      localStorage.removeItem("didwapaAdmin");
+      localStorage.removeItem("didwapaVendor");
+
+      window.location.href = "login.html";
+      return;
+    }
+
+  } catch (err) {
+
+    localStorage.removeItem("didwapaAdmin");
+    localStorage.removeItem("didwapaVendor");
+
+    window.location.href = "login.html";
+  }
+}
+
+async function loadRecord(){
+
+  const res = await fetch(`${API_BASE}/api/admin/sales-records`,{
+    credentials:"include"
+  });
+
+  const data = await res.json();
+
+  if(!data.success){
+    document.getElementById("box").innerHTML = data.message;
+    return;
+  }
+
+  const record = data.records.find(r => Number(r.purchase_id) === Number(id));
+
+  if(!record){
+    document.getElementById("box").innerHTML = "Record not found.";
+    return;
+  }
+
+  const image = getFirstImage(record.images);
+
+  document.getElementById("box").innerHTML = `
+  
+    <div class="image">
+      <img src="${image || 'https://via.placeholder.com/400'}">
+    </div>
+
+    <h2>${record.product_name}</h2>
+
+    <span class="status ${record.release_status === 'released' ? 'done' : 'pending'}">
+      ${record.release_status}
+    </span>
+
+    <div class="info">
+
+      <div class="box">
+        <small>Seller ID</small>
+        <strong>${record.seller_id}</strong>
+      </div>
+
+      <div class="box">
+        <small>Quantity</small>
+        <strong>${record.quantity}</strong>
+      </div>
+
+      <div class="box">
+        <small>Unit Price</small>
+        <strong>GH₵${Number(record.unit_price).toFixed(2)}</strong>
+      </div>
+
+      <div class="box">
+        <small>Payment Status</small>
+        <strong>${record.payment_status}</strong>
+      </div>
+
+    </div>
+
+    <div class="amount">
+      <small>Total Amount To Release</small>
+      <h2>GH₵${Number(record.balance_amount > 0 ? record.balance_amount : record.total_amount).toFixed(2)}</h2>
+    </div>
+
+    <button
+      class="releaseBtn ${record.release_status === 'released' ? 'released' : ''}"
+      ${record.release_status === 'released' ? 'disabled' : ''}
+      onclick="releaseMoney(${record.id})"
+    >
+      ${record.release_status === 'released'
+        ? 'Money Already Released'
+        : 'Release Money To Seller'}
+    </button>
+
+    <button
+  class="reverseBtn ${record.release_status === 'released' || record.release_status === 'reversed' ? 'released' : ''}"
+  ${record.release_status === 'released' || record.release_status === 'reversed' ? 'disabled' : ''}
+  onclick="reverseMoney(${record.id})"
+>
+  ${record.release_status === 'reversed'
+    ? 'Money Already Reversed'
+    : 'Reverse Money To Buyer'}
+</button>
+
+  `;
+}
+
+async function releaseMoney(recordId){
+
+  if(!confirm("Release this money to seller wallet?")) return;
+
+  const res = await fetch(`${API_BASE}/api/admin/release-money/${recordId}`,{
+    method:"POST",
+    credentials:"include"
+  });
+
+  const data = await res.json();
+
+  alert(data.message);
+
+  if(data.success){
+    loadRecord();
+  }
+}
+
+
+async function reverseMoney(recordId){
+
+  if(!confirm("Reverse this money back to the buyer?")) return;
+
+  const res = await fetch(`${API_BASE}/api/admin/reverse-money/${recordId}`,{
+    method:"POST",
+    credentials:"include"
+  });
+
+  const data = await res.json();
+
+  alert(data.message);
+
+  if(data.success){
+    loadRecord();
+  }
+}
+
+checkAdminSession();
+loadRecord();
+</script>
+
+</body>
+</html>

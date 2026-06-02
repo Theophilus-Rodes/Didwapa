@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>My Products - DIDWAPA</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+:root{
+  --primary:#ff6600;
+  --secondary:#071b52;
+  --bg:#f4f7fb;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:100px;
+}
+
+.app{
+  max-width:700px;
+  margin:auto;
+  min-height:100vh;
+}
+
+.header{
+  background:
+  linear-gradient(
+    135deg,
+    var(--secondary),
+    #0b327f
+  );
+
+  color:white;
+  padding:22px 16px 40px;
+  border-bottom-left-radius:28px;
+  border-bottom-right-radius:28px;
+  position:relative;
+  overflow:hidden;
+  animation:slideDown .6s ease;
+}
+
+.header::before{
+  content:"";
+  position:absolute;
+  width:180px;
+  height:180px;
+  border-radius:50%;
+  background:rgba(255,255,255,.07);
+  right:-60px;
+  top:-60px;
+}
+
+.top-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.back-btn{
+  border:none;
+  background:rgba(255,255,255,.16);
+  color:white;
+  padding:10px 14px;
+  border-radius:999px;
+  cursor:pointer;
+  font-weight:900;
+}
+
+.header h1{
+  margin-top:18px;
+  font-size:1.6rem;
+}
+
+.header p{
+  margin-top:8px;
+  opacity:.92;
+  line-height:1.5;
+  font-size:.9rem;
+}
+
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  padding:16px;
+  margin-top:-25px;
+}
+
+.stat-card{
+  background:white;
+  border-radius:18px;
+  padding:14px;
+  box-shadow:0 12px 25px rgba(0,0,0,.07);
+  animation:fadeUp .6s ease both;
+}
+
+.stat-card h3{
+  font-size:1.3rem;
+  margin-top:8px;
+  color:var(--secondary);
+}
+
+.stat-card p{
+  color:#666;
+  font-size:.8rem;
+}
+
+.products{
+  padding:0 16px 16px;
+  display:grid;
+  gap:16px;
+}
+
+.product-card{
+  background:white;
+  border-radius:22px;
+  padding:14px;
+  display:flex;
+  gap:14px;
+  align-items:center;
+  box-shadow:0 14px 30px rgba(0,0,0,.06);
+  cursor:pointer;
+  transition:.3s ease;
+  animation:fadeUp .6s ease both;
+}
+
+.product-card:hover{
+  transform:translateY(-5px);
+}
+
+.product-image{
+  width:92px;
+  height:92px;
+  border-radius:18px;
+  overflow:hidden;
+  flex-shrink:0;
+}
+
+.product-image img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.product-info{
+  flex:1;
+}
+
+.product-name{
+  font-size:1.05rem;
+  font-weight:900;
+  margin-bottom:6px;
+}
+
+.product-price{
+  color:var(--primary);
+  font-weight:900;
+  margin-bottom:6px;
+}
+
+.product-desc{
+  font-size:.78rem;
+  color:#666;
+  line-height:1.5;
+}
+
+.product-right{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:10px;
+}
+
+.status{
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:.72rem;
+  font-weight:900;
+}
+
+.approved{
+  background:#d1fae5;
+  color:#047857;
+}
+
+.pending{
+  background:#fef3c7;
+  color:#b45309;
+}
+
+.denied{
+  background:#fee2e2;
+  color:#b91c1c;
+}
+
+.view-btn{
+  color:var(--secondary);
+  font-weight:900;
+  font-size:.82rem;
+}
+
+.empty-box{
+  background:white;
+  padding:25px;
+  border-radius:20px;
+  text-align:center;
+  color:#666;
+  line-height:1.7;
+}
+
+.loading{
+  text-align:center;
+  padding:30px;
+  color:#666;
+}
+
+@keyframes slideDown{
+  from{
+    transform:translateY(-30px);
+    opacity:0;
+  }
+  to{
+    transform:translateY(0);
+    opacity:1;
+  }
+}
+
+@keyframes fadeUp{
+  from{
+    transform:translateY(25px);
+    opacity:0;
+  }
+  to{
+    transform:translateY(0);
+    opacity:1;
+  }
+}
+
+@media(max-width:600px){
+
+  .stats-grid{
+    grid-template-columns:1fr;
+  }
+
+  .product-card{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .product-image{
+    width:100%;
+    height:220px;
+  }
+
+  .product-right{
+    width:100%;
+    flex-direction:row;
+    justify-content:space-between;
+    align-items:center;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<main class="app">
+
+<section class="header">
+
+<div class="top-row">
+
+<button
+class="back-btn"
+onclick="goBackPage()">
+← Back
+</button>
+
+</div>
+
+<h1>My Products</h1>
+
+<p>
+Manage products you have posted,
+track approvals and edit listings.
+</p>
+
+</section>
+
+<section class="stats-grid">
+
+<div class="stat-card">
+<p>Total Products</p>
+<h3 id="totalProducts">0</h3>
+</div>
+
+<div class="stat-card">
+<p>Approved</p>
+<h3 id="approvedProducts">0</h3>
+</div>
+
+<div class="stat-card">
+<p>Pending</p>
+<h3 id="pendingProducts">0</h3>
+</div>
+
+</section>
+
+<section
+class="products"
+id="productsContainer">
+
+<div class="loading">
+Loading products...
+</div>
+
+</section>
+
+</main>
+
+<script>
+
+const API_BASE = `http://${window.location.hostname}:5000`;
+
+const productsContainer =
+document.getElementById(
+"productsContainer"
+);
+
+async function loadProducts(){
+
+  try{
+
+    const res = await fetch(
+      `${API_BASE}/api/user/my-products`,
+      {
+        credentials:"include"
+      }
+    );
+
+    const data = await res.json();
+
+    if(!data.success){
+
+      productsContainer.innerHTML = `
+      <div class="empty-box">
+      Failed to load products
+      </div>
+      `;
+      return;
+    }
+
+    const products = data.products;
+
+    document.getElementById(
+    "totalProducts"
+    ).textContent =
+    products.length;
+
+    document.getElementById(
+    "approvedProducts"
+    ).textContent =
+    products.filter(
+    p=>p.status==="approved"
+    ).length;
+
+    document.getElementById(
+    "pendingProducts"
+    ).textContent =
+    products.filter(
+    p=>p.status==="pending"
+    ).length;
+
+    if(products.length===0){
+
+      productsContainer.innerHTML=`
+      <div class="empty-box">
+      You have not posted any products yet.
+      </div>
+      `;
+      return;
+    }
+
+    productsContainer.innerHTML =
+    products.map(product=>{
+
+      let images=[];
+
+      try{
+        images=JSON.parse(product.images);
+      }catch(e){}
+
+      const firstImage =
+      images.length
+      ? `${API_BASE}/${images[0]}`
+      : "https://via.placeholder.com/300";
+
+      return `
+
+      <div
+      class="product-card"
+
+      onclick="
+      window.location.href=
+      'my-product-details.html?id=${product.id}'
+      ">
+
+      <div class="product-image">
+      <img src="${firstImage}">
+      </div>
+
+      <div class="product-info">
+
+      <div class="product-name">
+      ${product.product_name}
+      </div>
+
+      <div class="product-price">
+      GH₵${product.price}
+      </div>
+
+      <div class="product-desc">
+      ${product.description || ""}
+      </div>
+
+      </div>
+
+      <div class="product-right">
+
+      <div class="status ${product.status}">
+      ${product.status}
+      </div>
+
+      <div class="view-btn">
+      View Details →
+      </div>
+
+      </div>
+
+      </div>
+
+      `;
+
+    }).join("");
+
+  }catch(error){
+
+    productsContainer.innerHTML = `
+    <div class="empty-box">
+    Error loading products
+    </div>
+    `;
+
+  }
+
+}
+
+loadProducts();
+
+</script>
+
+
+<script>
+
+
+async function goBackPage() {
+  try {
+    const res = await fetch(`${API_BASE}/api/user/me`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    const role = data.user.role;
+
+    if (role === "admin" || role === "vendor") {
+      window.location.href = "AdminPostItem.html";
+    } else {
+      window.location.href = "you.html";
+    }
+
+  } catch (error) {
+    console.error(error);
+    window.location.href = "you.html";
+  }
+}
+</script>
+
+</body>
+</html>

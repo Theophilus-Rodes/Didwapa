@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Product Details</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+:root{
+--primary:#ff6600;
+--secondary:#071b52;
+--bg:#f4f7fb;
+}
+
+body{
+background:var(--bg);
+padding-bottom:120px;
+}
+
+.app{
+max-width:700px;
+margin:auto;
+}
+
+.slider{
+position:relative;
+height:380px;
+overflow:hidden;
+background:#000;
+}
+
+.slider img{
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+.back-btn{
+position:absolute;
+top:16px;
+left:16px;
+z-index:5;
+border:none;
+background:rgba(255,255,255,.18);
+backdrop-filter:blur(10px);
+color:white;
+padding:10px 15px;
+border-radius:999px;
+font-weight:900;
+cursor:pointer;
+}
+
+.content{
+background:white;
+margin-top:-25px;
+border-top-left-radius:28px;
+border-top-right-radius:28px;
+padding:22px 16px;
+position:relative;
+animation:fadeUp .5s ease;
+}
+
+.top-row{
+display:flex;
+justify-content:space-between;
+gap:10px;
+align-items:flex-start;
+}
+
+.product-name{
+font-size:1.5rem;
+font-weight:900;
+color:var(--secondary);
+}
+
+.price{
+color:var(--primary);
+font-size:1.3rem;
+font-weight:900;
+margin-top:8px;
+}
+
+.status{
+padding:8px 14px;
+border-radius:999px;
+font-size:.75rem;
+font-weight:900;
+}
+
+.approved{
+background:#d1fae5;
+color:#047857;
+}
+
+.pending{
+background:#fef3c7;
+color:#b45309;
+}
+
+.denied{
+background:#fee2e2;
+color:#b91c1c;
+}
+
+.section{
+margin-top:24px;
+}
+
+.section h3{
+margin-bottom:10px;
+font-size:1rem;
+color:#111827;
+}
+
+.section p{
+line-height:1.8;
+font-size:.9rem;
+color:#555;
+}
+
+.info-grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:12px;
+margin-top:12px;
+}
+
+.info-card{
+background:#f8fafc;
+padding:14px;
+border-radius:18px;
+}
+
+.info-card span{
+display:block;
+font-size:.75rem;
+color:#777;
+margin-bottom:6px;
+}
+
+.info-card strong{
+font-size:.9rem;
+}
+
+.action-buttons{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+margin-top:30px;
+}
+
+.btn{
+height:52px;
+border:none;
+border-radius:18px;
+font-weight:900;
+cursor:pointer;
+transition:.3s ease;
+}
+
+.edit-btn{
+background:var(--secondary);
+color:white;
+}
+
+.delete-btn{
+background:#ef4444;
+color:white;
+}
+
+.btn:hover{
+transform:translateY(-4px);
+}
+
+@keyframes fadeUp{
+from{
+transform:translateY(30px);
+opacity:0;
+}
+to{
+transform:translateY(0);
+opacity:1;
+}
+}
+
+@media(max-width:600px){
+
+.slider{
+height:280px;
+}
+
+.info-grid{
+grid-template-columns:1fr;
+}
+
+.action-buttons{
+grid-template-columns:1fr;
+}
+
+.product-name{
+font-size:1.2rem;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="slider">
+
+<button
+class="back-btn"
+onclick="history.back()">
+← Back
+</button>
+
+<img
+id="mainImage"
+src="">
+
+</div>
+
+<div class="content">
+
+<div class="top-row">
+
+<div>
+
+<div
+class="product-name"
+id="productName">
+</div>
+
+<div
+class="price"
+id="productPrice">
+</div>
+
+</div>
+
+<div
+class="status"
+id="productStatus">
+</div>
+
+</div>
+
+<div class="section">
+
+<h3>Description</h3>
+
+<p id="productDescription"></p>
+
+</div>
+
+<div class="section">
+
+<h3>Instructions</h3>
+
+<p id="productInstructions"></p>
+
+</div>
+
+<div class="info-grid">
+
+<div class="info-card">
+<span>Category</span>
+<strong id="category"></strong>
+</div>
+
+<div class="info-card">
+<span>Product Type</span>
+<strong id="productType"></strong>
+</div>
+
+<div class="info-card">
+<span>Color</span>
+<strong id="productColor"></strong>
+</div>
+
+<div class="info-card">
+<span>Quantity</span>
+<strong id="quantity"></strong>
+</div>
+
+<div class="info-card">
+<span>Condition</span>
+<strong id="condition"></strong>
+</div>
+
+<div class="info-card">
+<span>Phone Number</span>
+<strong id="phone"></strong>
+</div>
+
+</div>
+
+<div class="action-buttons">
+
+<button
+class="btn edit-btn"
+id="editBtn">
+Edit Product
+</button>
+
+<button
+class="btn delete-btn"
+id="deleteBtn">
+Delete Product
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const API_BASE = `http://${window.location.hostname}:5000`;
+
+const params =
+new URLSearchParams(
+window.location.search
+);
+
+const productId =
+params.get("id");
+
+let currentProduct = null;
+
+async function loadProduct(){
+
+try{
+
+const res = await fetch(
+`${API_BASE}/api/user/product/${productId}`,
+{
+credentials:"include"
+}
+);
+
+const data = await res.json();
+
+if(!data.success){
+
+alert("Product not found");
+return;
+}
+
+const p = data.product;
+
+currentProduct = p;
+
+let images=[];
+
+try{
+images = JSON.parse(p.images);
+}catch(e){}
+
+document.getElementById(
+"mainImage"
+).src =
+images.length
+? `${API_BASE}/${images[0]}`
+: "";
+
+document.getElementById(
+"productName"
+).textContent =
+p.product_name;
+
+document.getElementById(
+"productPrice"
+).textContent =
+`GH₵${p.price}`;
+
+document.getElementById(
+"productDescription"
+).textContent =
+p.description || "No description";
+
+document.getElementById(
+"productInstructions"
+).textContent =
+p.instructions || "No instructions";
+
+document.getElementById(
+"category"
+).textContent =
+p.category;
+
+document.getElementById(
+"productType"
+).textContent =
+p.product_type;
+
+document.getElementById(
+"productColor"
+).textContent =
+p.product_color;
+
+document.getElementById(
+"quantity"
+).textContent =
+p.quantity_in_stock;
+
+document.getElementById(
+"condition"
+).textContent =
+p.item_condition;
+
+document.getElementById(
+"phone"
+).textContent =
+p.phone_number;
+
+const status =
+document.getElementById(
+"productStatus"
+);
+
+status.textContent = p.status;
+status.classList.add(p.status);
+
+}catch(error){
+
+alert("Failed to load");
+
+}
+
+}
+
+document.getElementById(
+"deleteBtn"
+).addEventListener(
+"click",
+async()=>{
+
+if(!confirm(
+"Delete this product?"
+)) return;
+
+try{
+
+const res = await fetch(
+`${API_BASE}/api/user/delete-product/${productId}`,
+{
+method:"DELETE",
+credentials:"include"
+}
+);
+
+const data = await res.json();
+
+if(data.success){
+
+alert("Deleted");
+
+window.location.href =
+"my-products.html";
+
+}else{
+
+alert(data.message);
+
+}
+
+}catch(error){
+
+alert("Delete failed");
+
+}
+
+});
+
+document.getElementById(
+"editBtn"
+).addEventListener(
+"click",
+()=>{
+
+window.location.href =
+`edit-product.html?id=${productId}`;
+
+});
+
+loadProduct();
+
+</script>
+
+</body>
+</html>

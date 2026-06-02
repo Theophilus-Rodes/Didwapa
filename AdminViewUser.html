@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIDWAPA View User</title>
+
+<style>
+  * {
+    box-sizing: border-box;
+    font-family: "Segoe UI", sans-serif;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top left, rgba(32, 224, 112, 0.14), transparent 35%),
+      linear-gradient(135deg, #f7fafc, #eef4f8);
+    color: #07152c;
+  }
+
+  .container {
+    width: min(1050px, 94%);
+    margin: auto;
+    padding: 22px 0 40px;
+  }
+
+  .back-btn {
+    display: inline-block;
+    margin-bottom: 18px;
+    background: #07152c;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 14px;
+    text-decoration: none;
+    font-weight: 900;
+    transition: .3s ease;
+    animation: slideDown .5s ease;
+  }
+
+  .back-btn:hover {
+    background: #20c463;
+    transform: translateY(-2px);
+  }
+
+  .top {
+    background: linear-gradient(135deg, #07152c, #0b244d);
+    color: white;
+    padding: 28px 32px;
+    border-radius: 28px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 22px 48px rgba(6, 21, 47, 0.20);
+    animation: fadeUp .7s ease;
+  }
+
+  .top::after {
+    content: "";
+    position: absolute;
+    width: 210px;
+    height: 210px;
+    border-radius: 50%;
+    background: rgba(32, 224, 112, 0.15);
+    right: -65px;
+    top: -75px;
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .top h1 {
+    margin: 0;
+    font-size: clamp(26px, 4vw, 40px);
+    position: relative;
+    z-index: 2;
+  }
+
+  .top p {
+    color: #cbd5e1;
+    position: relative;
+    z-index: 2;
+  }
+
+  .details {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(18px);
+    padding: 22px;
+    border-radius: 26px;
+    box-shadow: 0 18px 40px rgba(6, 21, 47, 0.08);
+    animation: fadeUp .85s ease;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .item {
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+    word-break: break-word;
+    animation: popIn .45s ease both;
+    transition: .3s ease;
+  }
+
+  .item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(6, 21, 47, 0.08);
+  }
+
+  .item strong {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    margin-bottom: 7px;
+    text-transform: uppercase;
+  }
+
+  .item span {
+    font-weight: 900;
+    color: #0f172a;
+    font-size: 15px;
+  }
+
+  .image-grid {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+  }
+
+  .image-box {
+    background: white;
+    border-radius: 20px;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 12px 28px rgba(6, 21, 47, 0.08);
+    animation: imagePop .45s ease both;
+    transition: .3s ease;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .image-box:hover {
+    transform: translateY(-5px);
+  }
+
+  .image-box h3 {
+    margin-top: 0;
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+
+  .image-box img {
+    width: 100%;
+    height: 170px;
+    border-radius: 14px;
+    object-fit: cover;
+    background: #e5e7eb;
+    transition: .35s ease;
+  }
+
+  .image-box:hover img {
+    transform: scale(1.05);
+  }
+
+  .image-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 18px;
+    animation: fadeIn .25s ease;
+  }
+
+  .image-modal img {
+    max-width: 95%;
+    max-height: 90vh;
+    border-radius: 18px;
+    background: white;
+    box-shadow: 0 25px 70px rgba(0,0,0,.5);
+    animation: zoomIn .25s ease;
+  }
+
+  .close-modal {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes imagePop {
+    from { opacity: 0; transform: translateY(16px) scale(.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(14px); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes zoomIn {
+    from { transform: scale(.88); opacity: .5; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  @media(max-width: 700px) {
+
+    .container {
+      width: 100%;
+      padding: 12px;
+    }
+
+    .back-btn {
+      padding: 10px 14px;
+      font-size: 13px;
+      border-radius: 12px;
+    }
+
+    .top {
+      padding: 22px 18px;
+      border-radius: 22px;
+    }
+
+    .top h1 {
+      font-size: 25px;
+    }
+
+    .top p {
+      font-size: 13px;
+    }
+
+    .details {
+      padding: 14px;
+      border-radius: 22px;
+    }
+
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .item {
+      padding: 12px;
+      border-radius: 15px;
+    }
+
+    .item strong {
+      font-size: 11px;
+    }
+
+    .item span {
+      font-size: 13px;
+    }
+
+    .image-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .image-box {
+      padding: 10px;
+      border-radius: 16px;
+    }
+
+    .image-box h3 {
+      font-size: 13px;
+    }
+
+    .image-box img {
+      height: 120px;
+      border-radius: 12px;
+    }
+  }
+
+  @media(max-width: 420px) {
+
+    .grid {
+      grid-template-columns: 1fr;
+    }
+
+    .top h1 {
+      font-size: 22px;
+    }
+
+    .image-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .image-box img {
+      height: 100px;
+    }
+
+    .item span {
+      font-size: 12px;
+    }
+  }
+
+  .image-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 18px;
+}
+
+.image-modal img {
+  max-width: 95%;
+  max-height: 90vh;
+  border-radius: 18px;
+  background: white;
+}
+
+.close-modal {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  color: white;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <a href="AdminUsers.html" class="back-btn">← Back to Users</a>
+
+  <div class="top">
+    <h1>User Full Details</h1>
+    <p>All saved information about this user.</p>
+  </div>
+
+  <div class="details">
+    <div id="userDetails">Loading user details...</div>
+  </div>
+
+</div>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+const userDetails = document.getElementById("userDetails");
+
+const params = new URLSearchParams(window.location.search);
+const userId = params.get("id");
+
+async function checkAdminSession() {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/check-session`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (
+      !data.success ||
+      !data.user ||
+      !["admin", "vendor"].includes(data.user.role)
+    ) {
+      localStorage.removeItem("didwapaAdmin");
+      localStorage.removeItem("didwapaVendor");
+      window.location.href = "login.html";
+      return;
+    }
+
+  } catch (err) {
+    localStorage.removeItem("didwapaAdmin");
+    localStorage.removeItem("didwapaVendor");
+    window.location.href = "login.html";
+  }
+}
+
+
+function openImage(src) {
+  document.getElementById("modalImage").src = src;
+  document.getElementById("imageModal").style.display = "flex";
+}
+
+function closeImageModal() {
+  document.getElementById("imageModal").style.display = "none";
+}
+function imageBlock(title, filename) {
+  if (!filename) {
+    return `
+      <div class="image-box">
+        <h3>${title}</h3>
+        <p>No image uploaded</p>
+      </div>
+    `;
+  }
+
+
+  function openImage(src) {
+  const modal = document.getElementById("imageModal");
+  const modalImage = document.getElementById("modalImage");
+
+  modalImage.src = src;
+  modal.style.display = "flex";
+}
+
+function closeImageModal() {
+  const modal = document.getElementById("imageModal");
+  const modalImage = document.getElementById("modalImage");
+
+  modal.style.display = "none";
+  modalImage.src = "";
+}
+
+  const imageUrl = `${API_BASE}/uploads/${filename}`;
+
+  return `
+    <div class="image-box" onclick="openImage('${imageUrl}')">
+      <h3>${title}</h3>
+      <img src="${imageUrl}" alt="${title}">
+    </div>
+  `;
+}
+
+async function loadUser() {
+  if (!userId) {
+    userDetails.innerHTML = "No user ID found.";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      userDetails.innerHTML = data.message;
+      return;
+    }
+
+    const user = data.user;
+
+    userDetails.innerHTML = `
+      <div class="grid">
+        <div class="item"><strong>ID</strong><span>${user.id || ""}</span></div>
+        <div class="item"><strong>Firstname</strong><span>${user.firstname || ""}</span></div>
+        <div class="item"><strong>Lastname</strong><span>${user.lastname || ""}</span></div>
+        <div class="item"><strong>Email</strong><span>${user.email || ""}</span></div>
+        <div class="item"><strong>Gender</strong><span>${user.gender || ""}</span></div>
+        <div class="item"><strong>Telephone</strong><span>${user.telephone || ""}</span></div>
+        <div class="item"><strong>Other Telephone</strong><span>${user.other_telephone || ""}</span></div>
+        <div class="item"><strong>Role</strong><span>${user.role || ""}</span></div>
+        <div class="item"><strong>Status</strong><span>${user.status || ""}</span></div>
+        <div class="item"><strong>Created At</strong><span>${user.created_at || ""}</span></div>
+        <div class="item"><strong>Verification Other Tel</strong><span>${user.verification_other_tel || ""}</span></div>
+        <div class="item"><strong>Digital Address</strong><span>${user.digital_address || ""}</span></div>
+        <div class="item"><strong>Address</strong><span>${user.address || ""}</span></div>
+        <div class="item"><strong>Alternative Number</strong><span>${user.alt_number || ""}</span></div>
+        <div class="item"><strong>Alternative Number Name</strong><span>${user.alt_number_name || ""}</span></div>
+        <div class="item"><strong>Verification Status</strong><span>${user.verification_status || ""}</span></div>
+      </div>
+
+      <div class="image-grid">
+        ${imageBlock("Selfie Image", user.selfie_image)}
+        ${imageBlock("Ghana Card Front", user.gh_card_front)}
+        ${imageBlock("Ghana Card Back", user.gh_card_back)}
+      </div>
+    `;
+
+  } catch (err) {
+    console.error(err);
+    userDetails.innerHTML = "Failed to load user.";
+  }
+}
+
+checkAdminSession();
+loadUser();
+</script>
+
+<div class="image-modal" id="imageModal" onclick="closeImageModal()">
+  <span class="close-modal">×</span>
+  <img id="modalImage" src="" onclick="event.stopPropagation()">
+</div>
+
+
+</body>
+</html>

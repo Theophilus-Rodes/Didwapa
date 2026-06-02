@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIDWAPA Admin Users</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(32, 224, 112, 0.14), transparent 35%),
+        linear-gradient(135deg, #f7fafc, #eef4f8);
+      color: #07152c;
+      padding: 22px;
+    }
+
+    .container {
+      max-width: 1150px;
+      margin: auto;
+    }
+
+    .top {
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(18px);
+      padding: 22px;
+      border-radius: 24px;
+      box-shadow: 0 18px 38px rgba(6, 21, 47, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 22px;
+      animation: slideDown .6s ease;
+    }
+
+    .top h1 {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    .top p {
+      color: #64748b;
+      margin: 6px 0 0;
+      font-weight: 600;
+    }
+
+    .back-btn {
+      background: #07152c;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 900;
+      white-space: nowrap;
+      transition: .3s ease;
+    }
+
+    .back-btn:hover {
+      background: #20c463;
+      transform: translateY(-2px);
+    }
+
+    .card {
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(18px);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(6, 21, 47, 0.08);
+      overflow: hidden;
+      animation: fadeUp .7s ease;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    th {
+      background: #07152c;
+      color: white;
+      font-size: 14px;
+    }
+
+    td {
+      font-weight: 700;
+      color: #334155;
+    }
+
+    tbody tr {
+      animation: fadeRow .45s ease both;
+      transition: .25s ease;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+      transform: scale(1.005);
+    }
+
+    .badge {
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      display: inline-block;
+      text-transform: capitalize;
+    }
+
+    .approved {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .pending {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .not_submitted,
+    .not-submitted {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      padding: 9px 12px;
+      border-radius: 12px;
+      color: white;
+      font-weight: 900;
+      cursor: pointer;
+      transition: .25s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    .view { background: #2563eb; }
+    .approve { background: #16a34a; }
+    .pending-btn { background: #f59e0b; }
+    .delete { background: #dc2626; }
+
+    #message {
+      margin: 15px 0;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .loader {
+      width: 36px;
+      height: 36px;
+      border: 4px solid #e5e7eb;
+      border-top-color: #20c463;
+      border-radius: 50%;
+      margin: 10px auto;
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeRow {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media(max-width: 700px) {
+      body {
+        padding: 12px;
+      }
+
+      .top {
+        padding: 18px;
+        border-radius: 22px;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .top h1 {
+        font-size: 25px;
+      }
+
+      .top p {
+        font-size: 14px;
+      }
+
+      .back-btn {
+        width: 100%;
+        text-align: center;
+      }
+
+      .card {
+        background: transparent;
+        box-shadow: none;
+        border-radius: 0;
+        overflow: visible;
+      }
+
+      table,
+      thead,
+      tbody,
+      tr,
+      th,
+      td {
+        display: block;
+        width: 100%;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tbody tr {
+        background: white;
+        margin-bottom: 14px;
+        border-radius: 20px;
+        padding: 14px;
+        box-shadow: 0 14px 30px rgba(6, 21, 47, 0.08);
+      }
+
+      td {
+        border-bottom: none;
+        padding: 8px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+      }
+
+      td::before {
+        content: attr(data-label);
+        font-weight: 900;
+        color: #64748b;
+        font-size: 12px;
+      }
+
+      .actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      td:last-child {
+        display: block;
+      }
+
+      td:last-child::before {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      button {
+        width: 100%;
+        padding: 10px;
+        font-size: 12px;
+      }
+    }
+
+    .search-wrap {
+  margin-bottom: 18px;
+  animation: fadeUp .6s ease;
+}
+
+.search-wrap input {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 14px 30px rgba(6, 21, 47, 0.08);
+  font-size: 15px;
+  font-weight: 700;
+  color: #07152c;
+  transition: .3s ease;
+}
+
+.search-wrap input:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 35px rgba(6, 21, 47, 0.12);
+}
+
+.search-wrap input::placeholder {
+  color: #94a3b8;
+}
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="top">
+    <div>
+      <h1>Users Management</h1>
+      <p>View, approve, set pending, or delete users.</p>
+    </div>
+
+    <a href="admin.html" class="back-btn">← Back to Dashboard</a>
+  </div>
+
+  <div id="message"></div>
+  <div class="search-wrap">
+  <input 
+    type="text" 
+    id="searchInput" 
+    placeholder="Search by firstname or lastname..."
+  >
+</div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Firstname</th>
+          <th>Lastname</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Verification</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody id="usersTable">
+        <tr>
+          <td colspan="7">
+            <div class="loader"></div>
+            Loading users...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+const usersTable = document.getElementById("usersTable");
+const message = document.getElementById("message");
+const searchInput = document.getElementById("searchInput");
+
+async function checkAdminSession() {
+  try {
+
+    const res = await fetch(`${API_BASE}/api/admin/check-session`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (
+      !data.success ||
+      !data.user ||
+      !["admin", "vendor"].includes(data.user.role)
+    ) {
+
+      localStorage.removeItem("didwapaAdmin");
+      localStorage.removeItem("didwapaVendor");
+
+      window.location.href = "login.html";
+      return;
+    }
+
+  } catch (err) {
+
+    localStorage.removeItem("didwapaAdmin");
+    localStorage.removeItem("didwapaVendor");
+
+    window.location.href = "login.html";
+  }
+}
+
+function showMessage(text, color = "#16a34a") {
+  message.textContent = text;
+  message.style.color = color;
+
+  setTimeout(() => {
+    message.textContent = "";
+  }, 3000);
+}
+
+function badgeClass(value) {
+  if (!value) return "not_submitted";
+  return String(value).toLowerCase().replaceAll(" ", "_");
+}
+
+async function loadUsers() {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/users`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      usersTable.innerHTML = `<tr><td colspan="7">${data.message}</td></tr>`;
+      return;
+    }
+
+    if (data.users.length === 0) {
+      usersTable.innerHTML = `<tr><td colspan="7">No users found.</td></tr>`;
+      return;
+    }
+
+   usersData = data.users;
+renderUsers(usersData);
+
+  } catch (err) {
+    console.error(err);
+    usersTable.innerHTML = `<tr><td colspan="7">Failed to load users.</td></tr>`;
+  }
+}
+
+function viewUser(id) {
+  window.location.href = `AdminViewUser.html?id=${id}`;
+}
+
+async function approveUser(id) {
+  if (!confirm("Approve this user?")) return;
+
+  const res = await fetch(`${API_BASE}/api/admin/users/${id}/approve`, {
+    method: "PUT",
+    credentials: "include"
+  });
+
+  const data = await res.json();
+  showMessage(data.message, data.success ? "#16a34a" : "#dc2626");
+  loadUsers();
+}
+
+async function pendingUser(id) {
+  if (!confirm("Set this user to pending?")) return;
+
+  const res = await fetch(`${API_BASE}/api/admin/users/${id}/pending`, {
+    method: "PUT",
+    credentials: "include"
+  });
+
+  const data = await res.json();
+  showMessage(data.message, data.success ? "#16a34a" : "#dc2626");
+  loadUsers();
+}
+
+async function deleteUser(id) {
+  if (!confirm("Delete this user permanently?")) return;
+
+  const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
+    method: "DELETE",
+    credentials: "include"
+  });
+
+  const data = await res.json();
+  showMessage(data.message, data.success ? "#16a34a" : "#dc2626");
+  loadUsers();
+}
+
+function filterUsers() {
+  const keyword = searchInput.value.toLowerCase().trim();
+
+  const filtered = usersData.filter(user => {
+    const firstname = (user.firstname || "").toLowerCase();
+    const lastname = (user.lastname || "").toLowerCase();
+
+    return firstname.includes(keyword) || lastname.includes(keyword);
+  });
+
+  renderUsers(filtered);
+}
+searchInput.addEventListener("input", filterUsers);
+
+checkAdminSession();
+loadUsers();
+
+
+function renderUsers(users) {
+
+  usersTable.innerHTML = users.map((user, index) => `
+    <tr style="animation-delay:${index * 0.05}s">
+      <td data-label="ID">${user.id}</td>
+      <td data-label="Firstname">${user.firstname || ""}</td>
+      <td data-label="Lastname">${user.lastname || ""}</td>
+      <td data-label="Role">${user.role || ""}</td>
+
+      <td data-label="Status">
+        <span class="badge ${badgeClass(user.status)}">
+          ${user.status || "N/A"}
+        </span>
+      </td>
+
+      <td data-label="Verification">
+        <span class="badge ${badgeClass(user.verification_status)}">
+          ${user.verification_status || "N/A"}
+        </span>
+      </td>
+
+      <td data-label="Actions">
+        <div class="actions">
+          <button class="view" onclick="viewUser(${user.id})">View</button>
+
+          <button class="approve" onclick="approveUser(${user.id})">
+            Approve
+          </button>
+
+          <button class="pending-btn" onclick="pendingUser(${user.id})">
+            Pending
+          </button>
+
+          <button class="delete" onclick="deleteUser(${user.id})">
+            Delete
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+
+  if (users.length === 0) {
+    usersTable.innerHTML = `
+      <tr>
+        <td colspan="7">No users found.</td>
+      </tr>
+    `;
+  }
+}
+
+
+
+function allowAdminVendor(req, res, next) {
+  if (
+    !req.session.user ||
+    !["admin", "vendor"].includes(req.session.user.role)
+  ) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized."
+    });
+  }
+
+  next();
+}
+</script>
+
+
+
+
+</body>
+</html>

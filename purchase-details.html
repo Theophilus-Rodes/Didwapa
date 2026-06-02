@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>DIDWAPA - Purchase Details</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --primary: #ff6600;
+      --secondary: #0a2d73;
+      --bg: #f6f7fb;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 80px;
+    }
+
+    .app {
+      max-width: 720px;
+      margin: auto;
+      background: #fff;
+      min-height: 100vh;
+    }
+
+    .top {
+      background: white;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #eee;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .back-btn {
+      border: none;
+      background: #111827;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .hero {
+      height: 300px;
+      background: #eef2ff;
+      overflow: hidden;
+      animation: fadeUp .5s ease;
+    }
+
+    .hero img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .content {
+      padding: 16px;
+      animation: fadeUp .6s ease;
+    }
+
+    .name {
+      font-size: 1.4rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .amount {
+      color: var(--primary);
+      font-size: 1.45rem;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .item {
+      background: #fff7f0;
+      border-radius: 16px;
+      padding: 13px;
+    }
+
+    .item small {
+      display: block;
+      color: var(--muted);
+      font-weight: 900;
+      margin-bottom: 6px;
+      font-size: .75rem;
+    }
+
+    .item strong {
+      font-size: .9rem;
+      word-break: break-word;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 900;
+      text-transform: capitalize;
+    }
+
+    .pending { background:#fef3c7; color:#b45309; }
+    .delivering { background:#dbeafe; color:#1d4ed8; }
+    .delivered { background:#d1fae5; color:#047857; }
+    .not-available { background:#fee2e2; color:#b91c1c; }
+
+    .buttons {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .btn {
+      border: none;
+      min-height: 48px;
+      border-radius: 15px;
+      color: white;
+      font-weight: 900;
+      cursor: pointer;
+      transition: .3s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+    }
+
+    .deliver {
+      background: #2563eb;
+    }
+
+    .done {
+      background: #16a34a;
+    }
+
+    .no {
+      background: #dc2626;
+    }
+
+    .alert {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 14px 18px;
+      border-radius: 16px;
+      box-shadow: 0 15px 40px rgba(0,0,0,.18);
+      display: none;
+      z-index: 9999;
+      font-weight: 900;
+      color: var(--secondary);
+    }
+
+    @keyframes fadeUp {
+      from { transform: translateY(25px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @media(max-width: 520px) {
+      .hero {
+        height: 240px;
+      }
+
+      .content {
+        padding: 12px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .name {
+        font-size: 1.15rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="alert" id="alertBox"></div>
+
+<main class="app">
+
+  <div class="top">
+    <button class="back-btn" onclick="history.back()">‹</button>
+    <h3>Purchase Details</h3>
+  </div>
+
+  <div id="detailsBox">
+    <p style="padding:20px;">Loading purchase...</p>
+  </div>
+
+</main>
+
+<script>
+  const API_BASE = `http://${window.location.hostname}:5000`;
+  const purchaseId = new URLSearchParams(window.location.search).get("id");
+  const detailsBox = document.getElementById("detailsBox");
+  const alertBox = document.getElementById("alertBox");
+
+  function showAlert(message) {
+    alertBox.textContent = message;
+    alertBox.style.display = "block";
+
+    setTimeout(() => {
+      alertBox.style.display = "none";
+    }, 2200);
+  }
+
+  function statusClass(status) {
+    return String(status || "pending").toLowerCase().replaceAll(" ", "-");
+  }
+
+  function getFirstImage(images) {
+    try {
+      const parsed = JSON.parse(images);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        let img = parsed[0].replace(/\\/g, "/");
+
+        if (img.startsWith("http")) return img;
+        if (img.startsWith("/")) return `${API_BASE}${img}`;
+
+        return `${API_BASE}/${img}`;
+      }
+
+      return "";
+    } catch {
+      return "";
+    }
+  }
+
+  async function loadDetails() {
+    try {
+      const res = await fetch(`${API_BASE}/api/user/purchased-products/${purchaseId}`, {
+        credentials: "include"
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        detailsBox.innerHTML = `<p style="padding:20px;color:red;">${data.message}</p>`;
+        return;
+      }
+
+      const p = data.purchase;
+      const image = getFirstImage(p.images);
+
+      detailsBox.innerHTML = `
+        <div class="hero">
+          ${
+            image
+            ? `<img src="${image}" alt="${p.product_name}">`
+            : `<img src="https://via.placeholder.com/600x400?text=No+Image">`
+          }
+        </div>
+
+        <section class="content">
+          <div class="name">${p.product_name}</div>
+          <div class="amount">GH₵${Number(p.total_amount).toFixed(2)}</div>
+
+          <div class="grid">
+            <div class="item">
+              <small>Buyer Name</small>
+              <strong>${p.buyer_name || "N/A"}</strong>
+            </div>
+
+            <div class="item">
+              <small>Buyer Phone</small>
+              <strong>${p.buyer_phone || "N/A"}</strong>
+            </div>
+
+            <div class="item">
+              <small>Quantity</small>
+              <strong>${p.quantity}</strong>
+            </div>
+
+            <div class="item">
+              <small>Unit Price</small>
+              <strong>GH₵${Number(p.unit_price).toFixed(2)}</strong>
+            </div>
+
+            <div class="item">
+              <small>Total Amount</small>
+              <strong>GH₵${Number(p.total_amount).toFixed(2)}</strong>
+            </div>
+
+            <div class="item">
+              <small>Payment Status</small>
+              <strong>${p.payment_status}</strong>
+            </div>
+
+            <div class="item">
+              <small>Order Status</small>
+              <span class="status ${statusClass(p.order_status)}">
+                ${p.order_status}
+              </span>
+            </div>
+
+            <div class="item">
+              <small>Date Purchased</small>
+              <strong>${new Date(p.created_at).toLocaleString()}</strong>
+            </div>
+
+            <div class="item full">
+              <small>Description</small>
+              <strong>${p.description || "No description"}</strong>
+            </div>
+
+            <div class="item full">
+              <small>Instructions</small>
+              <strong>${p.instructions || "No instructions"}</strong>
+            </div>
+          </div>
+
+          <div class="buttons">
+            <button class="btn deliver" onclick="updateStatus('delivering')">Delivering</button>
+            <button class="btn done" onclick="updateStatus('delivered')">Delivered</button>
+            <button class="btn no" onclick="updateStatus('not available')">Not Available</button>
+          </div>
+        </section>
+      `;
+    } catch (error) {
+      console.error(error);
+      detailsBox.innerHTML = `<p style="padding:20px;color:red;">Failed to load purchase.</p>`;
+    }
+  }
+
+  async function updateStatus(status) {
+    try {
+      const res = await fetch(`${API_BASE}/api/user/purchased-products/${purchaseId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          order_status: status
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        showAlert(data.message);
+        loadDetails();
+      } else {
+        showAlert(data.message);
+      }
+
+    } catch (error) {
+      showAlert("Failed to update status.");
+    }
+  }
+
+  loadDetails();
+</script>
+
+</body>
+</html>   

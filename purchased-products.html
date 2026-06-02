@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA - Purchased Products</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --primary: #ff6600;
+      --secondary: #0a2d73;
+      --bg: #f6f7fb;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 80px;
+    }
+
+    .app {
+      max-width: 720px;
+      margin: auto;
+      background: #fff;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      color: white;
+      padding: 22px 16px 42px;
+      border-bottom-left-radius: 28px;
+      border-bottom-right-radius: 28px;
+      animation: slideDown .6s ease;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .back-btn {
+      border: none;
+      background: rgba(255,255,255,.22);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .header h1 {
+      margin-top: 18px;
+      font-size: 1.45rem;
+    }
+
+    .header p {
+      margin-top: 8px;
+      font-size: .88rem;
+      opacity: .9;
+      line-height: 1.5;
+    }
+
+    .content {
+      padding: 16px;
+      margin-top: -25px;
+    }
+
+    .summary {
+      background: white;
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.08);
+      margin-bottom: 14px;
+      animation: fadeUp .6s ease;
+    }
+
+    .summary strong {
+      color: var(--primary);
+      font-size: 1.2rem;
+    }
+
+    .list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .product-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 12px;
+      display: flex;
+      gap: 12px;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(0,0,0,.07);
+      transition: .3s ease;
+      animation: fadeUp .6s ease both;
+    }
+
+    .product-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .img-box {
+      width: 105px;
+      height: 105px;
+      border-radius: 17px;
+      overflow: hidden;
+      background: #f3f4f6;
+      flex-shrink: 0;
+    }
+
+    .img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .info {
+      flex: 1;
+    }
+
+    .info h3 {
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+
+    .info p {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .price {
+      font-weight: 900;
+      color: var(--primary);
+      margin-top: 6px;
+    }
+
+    .status {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 900;
+      text-transform: capitalize;
+    }
+
+    .pending { background:#fef3c7; color:#b45309; }
+    .delivering { background:#dbeafe; color:#1d4ed8; }
+    .delivered { background:#d1fae5; color:#047857; }
+    .not-available { background:#fee2e2; color:#b91c1c; }
+
+    .empty {
+      background: white;
+      padding: 28px;
+      text-align: center;
+      border-radius: 20px;
+      color: var(--muted);
+      line-height: 1.7;
+      box-shadow: 0 12px 25px rgba(0,0,0,.06);
+      animation: fadeUp .6s ease;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeUp {
+      from { transform: translateY(25px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @media(max-width: 520px) {
+      .content {
+        padding: 12px;
+      }
+
+      .product-card {
+        padding: 10px;
+        border-radius: 18px;
+      }
+
+      .img-box {
+        width: 88px;
+        height: 88px;
+      }
+
+      .info h3 {
+        font-size: .9rem;
+      }
+
+      .info p {
+        font-size: .7rem;
+      }
+    }
+
+    @media(max-width: 360px) {
+      .product-card {
+        flex-direction: column;
+      }
+
+      .img-box {
+        width: 100%;
+        height: 180px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<main class="app">
+
+  <section class="header">
+    <div class="top-row">
+      <h3>Purchased Products</h3>
+      <button class="back-btn" onclick="goBackPage()">← Back</button>
+    </div>
+
+    <h1>My Purchases</h1>
+    <p>View all products you have bought and check their current status.</p>
+  </section>
+
+  <section class="content">
+    <div class="summary">
+      Total Purchased: <strong id="totalItems">0</strong>
+    </div>
+
+    <div class="list" id="purchaseList">
+      <div class="empty">Loading purchased products...</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+ const API_BASE = `http://${window.location.hostname}:5000`;
+  const purchaseList = document.getElementById("purchaseList");
+
+  function statusClass(status) {
+    return String(status || "pending").toLowerCase().replaceAll(" ", "-");
+  }
+
+  function getFirstImage(images) {
+    try {
+      const parsed = JSON.parse(images);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        let img = parsed[0].replace(/\\/g, "/");
+
+        if (img.startsWith("http")) return img;
+        if (img.startsWith("/")) return `${API_BASE}${img}`;
+
+        return `${API_BASE}/${img}`;
+      }
+
+      return "";
+    } catch {
+      return "";
+    }
+  }
+
+  async function loadPurchasedProducts() {
+    try {
+      const res = await fetch(`${API_BASE}/api/user/purchased-products`, {
+        credentials: "include"
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        window.location.href = "userlogin.html";
+        return;
+      }
+
+      const items = data.products;
+
+      document.getElementById("totalItems").textContent = items.length;
+
+      if (items.length === 0) {
+        purchaseList.innerHTML = `
+          <div class="empty">
+            You have not purchased any product yet.
+          </div>
+        `;
+        return;
+      }
+
+      purchaseList.innerHTML = items.map(item => {
+        const image = getFirstImage(item.images);
+
+        return `
+          <div class="product-card" onclick="window.location.href='purchase-details.html?id=${item.id}'">
+            <div class="img-box">
+              ${
+                image 
+                ? `<img src="${image}" alt="${item.product_name}">`
+                : `<img src="https://via.placeholder.com/300x300?text=No+Image">`
+              }
+            </div>
+
+            <div class="info">
+              <h3>${item.product_name}</h3>
+              <p>Quantity: ${item.quantity}</p>
+              <p>Payment: ${item.payment_status}</p>
+              <div class="price">GH₵${Number(item.total_amount).toFixed(2)}</div>
+              <span class="status ${statusClass(item.order_status)}">
+                ${item.order_status}
+              </span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+    } catch (error) {
+      console.error(error);
+      purchaseList.innerHTML = `
+        <div class="empty">
+          Failed to load purchased products.
+        </div>
+      `;
+    }
+  }
+
+  loadPurchasedProducts();
+</script>
+
+<script>
+
+
+async function goBackPage() {
+  try {
+    const res = await fetch(`${API_BASE}/api/user/me`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    const role = data.user.role;
+
+    // ADMIN OR VENDOR
+    if (role === "admin" || role === "vendor") {
+      window.location.href = "AdminPostItem.html";
+    } 
+    
+    // NORMAL USER
+    else {
+      window.location.href = "you.html";
+    }
+
+  } catch (error) {
+    console.error(error);
+    window.location.href = "you.html";
+  }
+}
+</script>
+
+</body>
+</html>

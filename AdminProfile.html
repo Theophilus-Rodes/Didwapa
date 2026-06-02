@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA Admin Profile</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f7fb;
+      color: #07152c;
+    }
+
+    .page {
+      padding: 40px;
+    }
+
+    .top {
+      margin-bottom: 25px;
+    }
+
+    .top h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+
+    .top p {
+      color: #657084;
+    }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 22px;
+      padding: 28px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-weight: 700;
+      color: #1f2a44;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #d8dee9;
+      border-radius: 12px;
+      outline: none;
+      font-size: 15px;
+    }
+
+    input:focus, select:focus {
+      border-color: #18b65c;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 14px;
+      background: #111d31;
+      color: white;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #18b65c;
+    }
+
+    .alert {
+      position: fixed;
+      top: 25px;
+      right: 25px;
+      padding: 16px 22px;
+      border-radius: 14px;
+      color: white;
+      font-weight: 700;
+      display: none;
+      z-index: 9999;
+    }
+
+    .success {
+      background: #18b65c;
+    }
+
+    .error {
+      background: #e63946;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 20px;
+      background: #111d31;
+      color: white;
+      text-decoration: none;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+
+    @media(max-width: 850px) {
+      .page {
+        padding: 20px;
+      }
+
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .top h1 {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="alertBox" class="alert"></div>
+
+  <div class="page">
+    <a href="admin.html" class="back-btn">← Back to Dashboard</a>
+
+    <div class="top">
+      <h1>Admin Profile</h1>
+      <p>View and update your admin account information.</p>
+    </div>
+
+    <div class="profile-grid">
+
+      <div class="card">
+        <h2>Personal Information</h2>
+
+        <form id="profileForm">
+          <div class="form-group">
+            <label>Firstname</label>
+            <input type="text" id="firstname" required>
+          </div>
+
+          <div class="form-group">
+            <label>Lastname</label>
+            <input type="text" id="lastname" required>
+          </div>
+
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email" required>
+          </div>
+
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="gender">
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Telephone</label>
+            <input type="text" id="telephone" required>
+          </div>
+
+          <div class="form-group">
+            <label>Other Telephone</label>
+            <input type="text" id="other_telephone">
+          </div>
+
+          <div class="form-group">
+            <label>Role</label>
+            <input type="text" id="role" readonly>
+          </div>
+
+          <div class="form-group">
+            <label>Status</label>
+            <input type="text" id="status" readonly>
+          </div>
+
+          <button type="submit">Update Profile</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Change Password</h2>
+
+        <form id="passwordForm">
+          <div class="form-group">
+            <label>Current Password</label>
+            <input type="password" id="current_password" required>
+          </div>
+
+          <div class="form-group">
+            <label>New Password</label>
+            <input type="password" id="new_password" required>
+          </div>
+
+          <div class="form-group">
+            <label>Confirm New Password</label>
+            <input type="password" id="confirm_password" required>
+          </div>
+
+          <button type="submit">Change Password</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+
+  function showAlert(message, type = "success") {
+    const box = document.getElementById("alertBox");
+    box.textContent = message;
+    box.className = "alert " + type;
+    box.style.display = "block";
+
+    setTimeout(() => {
+      box.style.display = "none";
+    }, 3000);
+  }
+
+  async function loadProfile() {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/profile`, {
+        credentials: "include"
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const user = data.user;
+
+      document.getElementById("firstname").value = user.firstname || "";
+      document.getElementById("lastname").value = user.lastname || "";
+      document.getElementById("email").value = user.email || "";
+      document.getElementById("gender").value = user.gender || "";
+      document.getElementById("telephone").value = user.telephone || "";
+      document.getElementById("other_telephone").value = user.other_telephone || "";
+      document.getElementById("role").value = user.role || "";
+      document.getElementById("status").value = user.status || "";
+
+    } catch (error) {
+      showAlert("Failed to load profile", "error");
+    }
+  }
+
+  document.getElementById("profileForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const payload = {
+      firstname: document.getElementById("firstname").value,
+      lastname: document.getElementById("lastname").value,
+      email: document.getElementById("email").value,
+      gender: document.getElementById("gender").value,
+      telephone: document.getElementById("telephone").value,
+      other_telephone: document.getElementById("other_telephone").value
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/profile/update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        showAlert(data.message, "success");
+      } else {
+        showAlert(data.message, "error");
+      }
+
+    } catch (error) {
+      showAlert("Failed to update profile", "error");
+    }
+  });
+
+  document.getElementById("passwordForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const payload = {
+      current_password: document.getElementById("current_password").value,
+      new_password: document.getElementById("new_password").value,
+      confirm_password: document.getElementById("confirm_password").value
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/profile/change-password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        showAlert(data.message, "success");
+        document.getElementById("passwordForm").reset();
+      } else {
+        showAlert(data.message, "error");
+      }
+
+    } catch (error) {
+      showAlert("Failed to change password", "error");
+    }
+  });
+
+  loadProfile();
+</script>
+
+</body>
+</html>

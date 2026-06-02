@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA Vendor Verification</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #061326, #0b1c36);
+      padding: 24px;
+      color: #0f172a;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: auto;
+      background: #f8fafc;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+    }
+
+    .header {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      padding: 34px;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: 30px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      opacity: 0.95;
+      line-height: 1.6;
+    }
+
+    .form-area {
+      padding: 32px;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 22px;
+      text-decoration: none;
+      color: #061326;
+      font-weight: 800;
+    }
+
+    .steps {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .step-pill {
+      flex: 1;
+      padding: 14px;
+      border-radius: 16px;
+      background: #e2e8f0;
+      text-align: center;
+      font-weight: 900;
+      color: #475569;
+    }
+
+    .step-pill.active {
+      background: #16a34a;
+      color: white;
+    }
+
+    .step-box {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .step-box.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 22px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #0f172a;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 15px;
+      border: 1.5px solid #dbe3ee;
+      border-radius: 15px;
+      outline: none;
+      font-size: 15px;
+      background: white;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.13);
+    }
+
+    .file-box {
+      background: white;
+      border: 2px dashed #cbd5e1;
+      border-radius: 20px;
+      padding: 20px;
+    }
+
+    .file-box small {
+      display: block;
+      color: #64748b;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .submit-btn,
+    .secondary-btn {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      border-radius: 18px;
+      color: white;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .submit-btn {
+      background: #061326;
+    }
+
+    .submit-btn:hover {
+      background: #16a34a;
+      transform: translateY(-2px);
+    }
+
+    .secondary-btn {
+      background: #64748b;
+    }
+
+    .secondary-btn:hover {
+      background: #334155;
+    }
+
+    #message {
+      margin-top: 18px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .alert-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 9999;
+    }
+
+    .alert-box {
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border-radius: 26px;
+      padding: 32px;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      animation: pop 0.3s ease;
+    }
+
+    @keyframes pop {
+      from {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .alert-icon {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #dcfce7;
+      color: #16a34a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 18px;
+      font-size: 38px;
+      font-weight: 900;
+    }
+
+    .alert-box h2 {
+      margin-bottom: 10px;
+      color: #061326;
+    }
+
+    .alert-box p {
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .alert-box button {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 16px;
+      background: #16a34a;
+      color: white;
+      font-weight: 900;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    @media(max-width: 760px) {
+      body {
+        padding: 12px;
+      }
+
+      .header {
+        padding: 24px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .form-area {
+        padding: 20px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .steps {
+        flex-direction: column;
+      }
+
+      .btn-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>Vendor Account Verification</h1>
+      <p>Complete your verification in two simple steps.</p>
+    </div>
+
+    <div class="form-area">
+      <a href="vendordashboard.html" class="back-btn">← Back to Dashboard</a>
+
+      <div class="steps">
+        <div class="step-pill active" id="stepOnePill">Step 1: Personal Details</div>
+        <div class="step-pill" id="stepTwoPill">Step 2: Images</div>
+      </div>
+
+      <form id="stepOneForm" class="step-box active">
+        <div class="grid">
+          <div class="form-group">
+            <label>Other Telephone Number</label>
+            <input type="text" name="verification_other_tel" required>
+          </div>
+
+          <div class="form-group">
+            <label>Digital Address</label>
+            <input type="text" name="digital_address" placeholder="Example: AK-039-5028" required>
+          </div>
+
+          <div class="form-group">
+            <label>Alternative Number</label>
+            <input type="text" name="alt_number" required>
+          </div>
+
+          <div class="form-group">
+            <label>Name of Alternative Number Owner</label>
+            <input type="text" name="alt_number_name" required>
+          </div>
+
+          <div class="form-group full">
+            <label>Residential / Business Address</label>
+            <textarea name="address" required></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn">Save & Continue</button>
+      </form>
+
+      <form id="stepTwoForm" class="step-box" enctype="multipart/form-data">
+        <div class="grid">
+          <div class="form-group file-box">
+            <label>Take Selfie Only</label>
+            <input type="file" name="selfie_image" accept="image/*" capture="user" required>
+            <small>Please take a live selfie using your front camera.</small>
+          </div>
+
+          <div class="form-group file-box">
+            <label>Ghana Card Front Picture</label>
+            <input type="file" name="gh_card_front" accept="image/*" capture="environment" required>
+            <small>Take or upload a clear front image of the Ghana Card.</small>
+          </div>
+
+          <div class="form-group file-box full">
+            <label>Ghana Card Back Picture</label>
+            <input type="file" name="gh_card_back" accept="image/*" capture="environment" required>
+            <small>Take or upload a clear back image of the Ghana Card.</small>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="secondary-btn" onclick="showStepOne()">Back</button>
+          <button type="button" class="submit-btn" onclick="submitVerificationImages()">Submit Verification</button>
+        </div>
+      </form>
+
+      <div id="message"></div>
+    </div>
+  </div>
+
+  <div class="alert-overlay" id="successAlert">
+    <div class="alert-box">
+      <div class="alert-icon">✓</div>
+      <h2>Verification Submitted</h2>
+      <p id="successText">Your verification has been submitted successfully. Please wait for admin approval.</p>
+      <button onclick="closeSuccessAlert()">Okay</button>
+    </div>
+  </div>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+
+const stepOneForm = document.getElementById("stepOneForm");
+const stepTwoForm = document.getElementById("stepTwoForm");
+const stepOnePill = document.getElementById("stepOnePill");
+const stepTwoPill = document.getElementById("stepTwoPill");
+const message = document.getElementById("message");
+const successAlert = document.getElementById("successAlert");
+const successText = document.getElementById("successText");
+
+function showMessage(text, color = "#0f172a") {
+  message.textContent = text;
+  message.style.color = color;
+}
+
+function showStepOne() {
+  stepOneForm.classList.add("active");
+  stepTwoForm.classList.remove("active");
+  stepOnePill.classList.add("active");
+  stepTwoPill.classList.remove("active");
+  showMessage("");
+}
+
+function showStepTwo() {
+  stepOneForm.classList.remove("active");
+  stepTwoForm.classList.add("active");
+  stepOnePill.classList.remove("active");
+  stepTwoPill.classList.add("active");
+  showMessage("");
+}
+
+function closeSuccessAlert() {
+  window.location.href = "vendordashboard.html";
+}
+
+async function loadSavedDetails() {
+  try {
+    const res = await fetch(`${API_BASE}/api/vendor/verification-details`, {
+      method: "GET",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (data.success && data.data) {
+      stepOneForm.verification_other_tel.value = data.data.verification_other_tel || "";
+      stepOneForm.digital_address.value = data.data.digital_address || "";
+      stepOneForm.alt_number.value = data.data.alt_number || "";
+      stepOneForm.alt_number_name.value = data.data.alt_number_name || "";
+      stepOneForm.address.value = data.data.address || "";
+    }
+  } catch (error) {
+    console.error(error);
+    showMessage("Could not load saved details.", "#dc2626");
+  }
+}
+
+stepOneForm.addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const formData = {
+    verification_other_tel: stepOneForm.verification_other_tel.value,
+    digital_address: stepOneForm.digital_address.value,
+    alt_number: stepOneForm.alt_number.value,
+    alt_number_name: stepOneForm.alt_number_name.value,
+    address: stepOneForm.address.value
+  };
+
+  const submitBtn = stepOneForm.querySelector(".submit-btn");
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Saving...";
+  showMessage("Saving your details...");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/vendor/verify-step-one`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(formData)
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      showMessage("Details saved successfully.", "#16a34a");
+      showStepTwo();
+    } else {
+      showMessage(data.message || "Failed to save details.", "#dc2626");
+    }
+  } catch (error) {
+    console.error(error);
+    showMessage("Network error. Make sure backend is running.", "#dc2626");
+  }
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = "Save & Continue";
+});
+
+async function submitVerificationImages() {
+  const formData = new FormData(stepTwoForm);
+  const submitBtn = stepTwoForm.querySelector(".submit-btn");
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Submitting...";
+  showMessage("Submitting verification...");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/vendor/verify-account`, {
+      method: "POST",
+      credentials: "include",
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      successText.textContent = data.message || "Your verification has been submitted successfully.";
+      successAlert.style.display = "flex";
+      showMessage("");
+
+      setTimeout(() => {
+        window.location.href = "vendordashboard.html";
+      }, 2500);
+
+      return;
+    }
+
+    showMessage(data.message || "Submission failed.", "#dc2626");
+
+  } catch (error) {
+    console.error(error);
+    showMessage("Network error. Make sure backend is running.", "#dc2626");
+  }
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = "Submit Verification";
+}
+
+loadSavedDetails();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIDWAPA - My Bought Products</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+:root{--primary:#ff6600;--secondary:#0a2d73;--bg:#f6f7fb;--muted:#6b7280;--border:#e5e7eb}
+body{background:var(--bg);color:#111827;padding-bottom:80px}
+.app{max-width:760px;margin:auto;background:#fff;min-height:100vh}
+.header{background:linear-gradient(135deg,var(--secondary),var(--primary));color:white;padding:22px 16px 42px;border-bottom-left-radius:28px;border-bottom-right-radius:28px;animation:down .6s ease}
+.top{display:flex;justify-content:space-between;align-items:center}
+.back{border:none;background:rgba(255,255,255,.22);color:white;padding:10px 14px;border-radius:999px;font-weight:900;cursor:pointer}
+.header h1{margin-top:18px;font-size:1.45rem}
+.header p{margin-top:8px;font-size:.88rem;opacity:.9;line-height:1.5}
+.content{padding:16px;margin-top:-25px}
+.summary{background:white;border-radius:20px;padding:16px;box-shadow:0 14px 30px rgba(0,0,0,.08);margin-bottom:14px;animation:up .6s ease}
+.summary strong{color:var(--primary)}
+.list{display:grid;gap:14px}
+.card{background:white;border:1px solid var(--border);border-radius:22px;padding:12px;display:flex;gap:12px;box-shadow:0 12px 28px rgba(0,0,0,.07);animation:up .6s ease both}
+.img{width:105px;height:105px;border-radius:17px;overflow:hidden;background:#f3f4f6;flex-shrink:0}
+.img img{width:100%;height:100%;object-fit:cover}
+.info{flex:1}
+.info h3{font-size:1rem;margin-bottom:6px}
+.info p{font-size:.78rem;color:var(--muted);margin-bottom:5px}
+.price{font-weight:900;color:var(--primary);margin-top:6px}
+.status{display:inline-block;margin-top:7px;padding:6px 10px;border-radius:999px;font-size:.72rem;font-weight:900;text-transform:capitalize}
+.waiting{background:#fef3c7;color:#b45309}
+.received{background:#d1fae5;color:#047857}
+.delayed{background:#dbeafe;color:#1d4ed8}
+.not-received{background:#fee2e2;color:#b91c1c}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.btn{border:none;border-radius:13px;padding:10px;font-weight:900;font-size:.75rem;cursor:pointer;color:white;transition:.25s}
+.btn:hover{transform:translateY(-3px)}
+.green{background:#16a34a}.blue{background:#2563eb}.orange{background:#f97316}.red{background:#dc2626}
+.empty{background:white;padding:28px;text-align:center;border-radius:20px;color:var(--muted);box-shadow:0 12px 25px rgba(0,0,0,.06)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:9999;padding:18px}
+.modal-card{width:100%;max-width:420px;background:white;border-radius:26px;padding:22px;box-shadow:0 25px 60px rgba(0,0,0,.25);animation:pop .3s ease}
+.modal-card h2{color:var(--secondary);margin-bottom:8px}
+.modal-card p{color:var(--muted);line-height:1.5;margin-bottom:12px}
+textarea{width:100%;height:110px;border:1px solid var(--border);border-radius:16px;padding:12px;resize:none;outline:none}
+.modal-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.cancel{background:#f3f4f6;color:#111827}
+@keyframes down{from{transform:translateY(-30px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes up{from{transform:translateY(25px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+@media(max-width:520px){.content{padding:12px}.card{padding:10px;border-radius:18px}.img{width:88px;height:88px}.info h3{font-size:.9rem}.info p{font-size:.7rem}.actions{grid-template-columns:1fr}.btn{font-size:.7rem}}
+@media(max-width:360px){.card{flex-direction:column}.img{width:100%;height:180px}}
+</style>
+</head>
+
+<body>
+
+<div class="modal" id="noteModal">
+  <div class="modal-card">
+    <h2 id="modalTitle">Add Note</h2>
+    <p id="modalText">You can add a short note about this purchase.</p>
+    <textarea id="buyerNote" placeholder="Type note here..."></textarea>
+    <div class="modal-buttons">
+      <button class="btn green" onclick="submitStatus()">Submit</button>
+      <button class="btn cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<main class="app">
+  <section class="header">
+    <div class="top">
+      <h3>My Bought Products</h3>
+      <button class="back" onclick="window.location.href='you.html'">← Back</button>
+    </div>
+    <h1>Purchase Confirmation</h1>
+    <p>Track what you bought and confirm if the product has been received or not.</p>
+  </section>
+
+  <section class="content">
+    <div class="summary">
+      Total Bought: <strong id="totalItems">0</strong>
+    </div>
+
+    <div class="list" id="purchaseList">
+      <div class="empty">Loading bought products...</div>
+    </div>
+  </section>
+</main>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+const purchaseList = document.getElementById("purchaseList");
+
+let selectedPurchaseId = null;
+let selectedStatus = null;
+
+function statusClass(status){
+  return String(status || "waiting").toLowerCase().replaceAll(" ","-");
+}
+
+function getFirstImage(images){
+  try{
+    const parsed = JSON.parse(images);
+    if(Array.isArray(parsed) && parsed.length > 0){
+      let img = parsed[0].replace(/\\/g,"/");
+      if(img.startsWith("http")) return img;
+      if(img.startsWith("/")) return `${API_BASE}${img}`;
+      return `${API_BASE}/${img}`;
+    }
+    return "";
+  }catch{
+    return "";
+  }
+}
+
+async function loadPurchases(){
+  try{
+    const res = await fetch(`${API_BASE}/api/buyer/purchases`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      window.location.href = "userlogin.html";
+      return;
+    }
+
+    const items = data.purchases;
+    document.getElementById("totalItems").textContent = items.length;
+
+    if(items.length === 0){
+      purchaseList.innerHTML = `
+        <div class="empty">
+          You have not bought any product yet.
+        </div>
+      `;
+      return;
+    }
+
+    purchaseList.innerHTML = items.map(item => {
+      const image = getFirstImage(item.images);
+
+      return `
+        <div class="card">
+          <div class="img">
+            ${
+              image
+              ? `<img src="${image}" alt="${item.product_name}">`
+              : `<img src="https://via.placeholder.com/300x300?text=No+Image">`
+            }
+          </div>
+
+          <div class="info">
+            <h3>${item.product_name}</h3>
+            <p>Quantity: ${item.quantity}</p>
+            <p>Seller ID: ${item.seller_id}</p>
+            <p>Payment: ${item.payment_status}</p>
+            <p>Delivery: ${item.order_status}</p>
+            <div class="price">GH₵${Number(item.total_amount).toFixed(2)}</div>
+
+            <span class="status ${statusClass(item.buyer_confirm_status)}">
+              ${item.buyer_confirm_status || "waiting"}
+            </span>
+
+            <div class="actions">
+              <button class="btn green" onclick="openModal(${item.id}, 'received')">Product Received</button>
+              <button class="btn blue" onclick="openModal(${item.id}, 'waiting')">Still Waiting</button>
+              <button class="btn orange" onclick="openModal(${item.id}, 'delayed')">Taking Too Long</button>
+              <button class="btn red" onclick="openModal(${item.id}, 'not received')">Didn’t Receive</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  }catch(error){
+    console.error(error);
+    purchaseList.innerHTML = `<div class="empty">Failed to load bought products.</div>`;
+  }
+}
+
+function openModal(id, status){
+  selectedPurchaseId = id;
+  selectedStatus = status;
+
+  document.getElementById("buyerNote").value = "";
+
+  const titles = {
+    "received": "Confirm Product Received",
+    "waiting": "Still Waiting",
+    "delayed": "Delivery Taking Too Long",
+    "not received": "Product Not Received"
+  };
+
+  document.getElementById("modalTitle").textContent = titles[status] || "Update Status";
+  document.getElementById("modalText").textContent = "Add a note if needed, then submit.";
+  document.getElementById("noteModal").style.display = "flex";
+}
+
+function closeModal(){
+  document.getElementById("noteModal").style.display = "none";
+}
+
+async function submitStatus(){
+  const buyerNote = document.getElementById("buyerNote").value.trim();
+
+  try{
+    const res = await fetch(`${API_BASE}/api/buyer/purchases/${selectedPurchaseId}/confirm-status`, {
+      method:"PUT",
+      headers:{ "Content-Type":"application/json" },
+      credentials:"include",
+      body:JSON.stringify({
+        buyer_confirm_status:selectedStatus,
+        buyer_note:buyerNote
+      })
+    });
+
+    const data = await res.json();
+
+    if(data.success){
+      closeModal();
+      loadPurchases();
+    }else{
+      alert(data.message);
+    }
+
+  }catch(error){
+    alert("Failed to update status.");
+  }
+}
+
+loadPurchases();
+</script>
+
+</body>
+</html>

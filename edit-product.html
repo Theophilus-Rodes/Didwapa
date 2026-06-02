@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Product</title>
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+    }
+
+    :root{
+      --primary:#ff6600;
+      --secondary:#0a2d73;
+      --bg:#f4f7fb;
+      --border:#e5e7eb;
+      --text:#111827;
+    }
+
+    body{
+      background:var(--bg);
+      color:var(--text);
+      padding-bottom:80px;
+    }
+
+    .app{
+      max-width:750px;
+      margin:auto;
+      min-height:100vh;
+      background:white;
+    }
+
+    .header{
+      background:linear-gradient(135deg,var(--secondary),var(--primary));
+      color:white;
+      padding:22px 16px 45px;
+      border-bottom-left-radius:28px;
+      border-bottom-right-radius:28px;
+    }
+
+    .top-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    .back-btn{
+      border:none;
+      background:rgba(255,255,255,.2);
+      color:white;
+      padding:10px 14px;
+      border-radius:999px;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .header h1{
+      margin-top:18px;
+      font-size:1.5rem;
+    }
+
+    .header p{
+      margin-top:8px;
+      font-size:.9rem;
+      opacity:.9;
+    }
+
+    .content{
+      padding:16px;
+      margin-top:-28px;
+    }
+
+    .card{
+      background:white;
+      border-radius:24px;
+      padding:18px;
+      box-shadow:0 18px 40px rgba(0,0,0,.1);
+      border:1px solid var(--border);
+    }
+
+    .form-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+
+    .form-group{
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+    }
+
+    .full{
+      grid-column:1 / -1;
+    }
+
+    label{
+      font-size:.82rem;
+      font-weight:900;
+      color:#374151;
+    }
+
+    input,
+    textarea,
+    select{
+      width:100%;
+      border:1px solid var(--border);
+      background:#f9fafb;
+      border-radius:15px;
+      padding:13px;
+      outline:none;
+      font-size:.9rem;
+    }
+
+    textarea{
+      min-height:115px;
+      resize:none;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus{
+      border-color:var(--primary);
+      background:white;
+      box-shadow:0 0 0 4px rgba(255,102,0,.12);
+    }
+
+    .upload-box{
+      border:2px dashed #ffb27a;
+      background:#fff7f1;
+      padding:20px;
+      border-radius:18px;
+      text-align:center;
+      cursor:pointer;
+    }
+
+    .upload-icon{
+      font-size:2rem;
+      margin-bottom:8px;
+    }
+
+    .preview-grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+    }
+
+    .preview-item{
+      aspect-ratio:1/1;
+      border-radius:16px;
+      overflow:hidden;
+      position:relative;
+      box-shadow:0 10px 20px rgba(0,0,0,.1);
+    }
+
+    .preview-item img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+
+    .remove-btn{
+      position:absolute;
+      top:6px;
+      right:6px;
+      width:28px;
+      height:28px;
+      border:none;
+      border-radius:50%;
+      background:#ef4444;
+      color:white;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .add-more-btn{
+      width:100%;
+      height:48px;
+      border:none;
+      border-radius:16px;
+      margin-top:12px;
+      background:linear-gradient(135deg,var(--secondary),#1746a2);
+      color:white;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .save-btn{
+      width:100%;
+      height:54px;
+      border:none;
+      border-radius:18px;
+      margin-top:20px;
+      background:linear-gradient(135deg,var(--primary),#ff4500);
+      color:white;
+      font-weight:900;
+      font-size:1rem;
+      cursor:pointer;
+    }
+
+    .alert{
+      position:fixed;
+      top:20px;
+      left:50%;
+      transform:translateX(-50%);
+      padding:14px 20px;
+      background:white;
+      border-radius:14px;
+      box-shadow:0 15px 40px rgba(0,0,0,.2);
+      display:none;
+      font-weight:900;
+      z-index:9999;
+    }
+
+    .success{ color:green; }
+    .error{ color:red; }
+
+    @media(max-width:600px){
+      .form-grid{
+        grid-template-columns:1fr;
+      }
+
+      .preview-grid{
+        grid-template-columns:repeat(2,1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="alert" id="alertBox"></div>
+
+<main class="app">
+
+  <section class="header">
+    <div class="top-row">
+      <h3>Edit Product</h3>
+
+      <button class="back-btn" onclick="history.back()">
+        ← Back
+      </button>
+    </div>
+
+    <h1>Update Your Product</h1>
+    <p>Edit product details and save your changes.</p>
+  </section>
+
+  <section class="content">
+
+    <form class="card" id="editForm">
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label>Category</label>
+          <select id="category" required>
+            <option value="">Select category</option>
+            <option>Electronics</option>
+            <option>Phones and Accessories</option>
+            <option>Fashion</option>
+            <option>Beauty</option>
+            <option>Sports</option>
+            <option>Home Appliances</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Product Type</label>
+          <input type="text" id="product_type" required />
+        </div>
+
+        <div class="form-group full">
+          <label>Product Name</label>
+          <input type="text" id="product_name" required />
+        </div>
+
+        <div class="form-group">
+          <label>Price GH₵</label>
+          <input type="number" id="price" required />
+        </div>
+
+        <div class="form-group">
+          <label>Quantity in Stock</label>
+          <input type="number" id="quantity_in_stock" required />
+        </div>
+
+        <div class="form-group">
+          <label>Product Color</label>
+          <input type="text" id="product_color" required />
+        </div>
+
+        <div class="form-group">
+          <label>Item Condition</label>
+          <select id="item_condition" required>
+            <option>Brand New</option>
+            <option>Used</option>
+            <option>Refurbished</option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <label>Phone Number</label>
+          <input type="text" id="phone_number" required />
+        </div>
+
+        <div class="form-group full">
+          <label>Description</label>
+          <textarea id="description" required></textarea>
+        </div>
+
+        <div class="form-group full">
+          <label>Instructions</label>
+          <textarea id="instructions"></textarea>
+        </div>
+
+        <div class="form-group full">
+          <label>Product Images</label>
+
+          <div class="upload-box" id="uploadBox">
+            <input type="file" id="images" accept="image/*" multiple hidden />
+
+            <div class="upload-icon">🖼️</div>
+            <strong>Tap to add more pictures</strong>
+            <p style="font-size:.85rem;margin-top:6px;color:#555;">
+              You can remove old images or add new ones.
+            </p>
+          </div>
+
+          <button type="button" class="add-more-btn" id="addMoreBtn">
+            + Add More Pictures
+          </button>
+
+          <div class="preview-grid" id="previewGrid"></div>
+        </div>
+
+      </div>
+
+      <button type="submit" class="save-btn">
+        Save Changes
+      </button>
+
+    </form>
+
+  </section>
+
+</main>
+
+<script>
+ const API_BASE =
+    window.location.hostname === "localhost"
+      ? "http://localhost:5000"
+      : "http://172.20.10.4:5000";
+
+const params = new URLSearchParams(window.location.search);
+const productId = params.get("id");
+
+const alertBox = document.getElementById("alertBox");
+const imageInput = document.getElementById("images");
+const previewGrid = document.getElementById("previewGrid");
+const uploadBox = document.getElementById("uploadBox");
+const addMoreBtn = document.getElementById("addMoreBtn");
+
+let oldImages = [];
+let newFiles = [];
+
+function showAlert(message, type = "success"){
+  alertBox.textContent = message;
+  alertBox.className = `alert ${type}`;
+  alertBox.style.display = "block";
+
+  setTimeout(() => {
+    alertBox.style.display = "none";
+  }, 2500);
+}
+
+if(!productId){
+  showAlert("Product ID not found.", "error");
+}
+
+uploadBox.addEventListener("click", () => {
+  imageInput.click();
+});
+
+addMoreBtn.addEventListener("click", () => {
+  imageInput.click();
+});
+
+imageInput.addEventListener("change", () => {
+  const files = [...imageInput.files];
+
+  files.forEach(file => {
+    if(file.type.startsWith("image/")){
+      newFiles.push(file);
+    }
+  });
+
+  imageInput.value = "";
+  renderImages();
+});
+
+function renderImages(){
+  previewGrid.innerHTML = "";
+
+  oldImages.forEach((img, index) => {
+    const div = document.createElement("div");
+    div.className = "preview-item";
+
+    div.innerHTML = `
+      <img src="${API_BASE}${img}">
+      <button type="button" class="remove-btn" onclick="removeOldImage(${index})">×</button>
+    `;
+
+    previewGrid.appendChild(div);
+  });
+
+  newFiles.forEach((file, index) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const div = document.createElement("div");
+      div.className = "preview-item";
+
+      div.innerHTML = `
+        <img src="${e.target.result}">
+        <button type="button" class="remove-btn" onclick="removeNewImage(${index})">×</button>
+      `;
+
+      previewGrid.appendChild(div);
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeOldImage(index){
+  oldImages.splice(index, 1);
+  renderImages();
+}
+
+function removeNewImage(index){
+  newFiles.splice(index, 1);
+  renderImages();
+}
+
+async function loadProduct(){
+  try{
+    const res = await fetch(`${API_BASE}/api/product-details/${productId}`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      showAlert(data.message || "Failed to load product.", "error");
+      return;
+    }
+
+    const p = data.product;
+
+    document.getElementById("category").value = p.category || "";
+    document.getElementById("product_name").value = p.product_name || "";
+    document.getElementById("product_type").value = p.product_type || "";
+    document.getElementById("price").value = p.price || "";
+    document.getElementById("product_color").value = p.product_color || "";
+    document.getElementById("quantity_in_stock").value = p.quantity_in_stock || "";
+    document.getElementById("phone_number").value = p.phone_number || "";
+    document.getElementById("instructions").value = p.instructions || "";
+    document.getElementById("description").value = p.description || "";
+    document.getElementById("item_condition").value = p.item_condition || "";
+
+    oldImages = Array.isArray(p.images) ? p.images : [];
+
+    renderImages();
+
+  }catch(error){
+    console.error(error);
+    showAlert("Failed to load product.", "error");
+  }
+}
+
+document.getElementById("editForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  if(oldImages.length + newFiles.length < 1){
+    showAlert("Please keep or add at least one image.", "error");
+    return;
+  }
+
+  const formData = new FormData();
+
+  formData.append("category", document.getElementById("category").value);
+  formData.append("product_name", document.getElementById("product_name").value);
+  formData.append("product_type", document.getElementById("product_type").value);
+  formData.append("price", document.getElementById("price").value);
+  formData.append("product_color", document.getElementById("product_color").value);
+  formData.append("quantity_in_stock", document.getElementById("quantity_in_stock").value);
+  formData.append("phone_number", document.getElementById("phone_number").value);
+  formData.append("instructions", document.getElementById("instructions").value);
+  formData.append("description", document.getElementById("description").value);
+  formData.append("item_condition", document.getElementById("item_condition").value);
+  formData.append("old_images", JSON.stringify(oldImages));
+
+  newFiles.forEach(file => {
+    formData.append("images", file);
+  });
+
+  try{
+    const res = await fetch(`${API_BASE}/api/products/update/${productId}`, {
+      method: "PUT",
+      credentials: "include",
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if(data.success){
+      showAlert(data.message || "Product updated successfully.");
+
+      setTimeout(() => {
+        window.location.href = `my-product-details.html?id=${productId}`;
+      }, 1200);
+    }else{
+      showAlert(data.message || "Update failed.", "error");
+    }
+
+  }catch(error){
+    console.error(error);
+    showAlert("Update failed. Try again.", "error");
+  }
+});
+
+loadProduct();
+</script>
+
+</body>
+</html>

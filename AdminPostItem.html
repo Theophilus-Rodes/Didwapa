@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA Admin - Post Item</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: #f4f7fb;
+      color: #07142f;
+    }
+
+    .admin-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: #07142f;
+      color: white;
+      padding: 25px 18px;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      font-size: 24px;
+      margin-bottom: 35px;
+      color: #22c55e;
+      font-weight: 900;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 15px 18px;
+      margin-bottom: 10px;
+      color: white;
+      text-decoration: none;
+      border-radius: 14px;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background: #0d3b3e;
+      color: #22c55e;
+    }
+
+    .main-content {
+      margin-left: 260px;
+      width: calc(100% - 260px);
+      padding: 35px;
+    }
+
+    .top-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 35px;
+      gap: 20px;
+    }
+
+    .top-section h1 {
+      font-size: 32px;
+      color: #07142f;
+    }
+
+    .top-section p {
+      color: #667085;
+      margin-top: 6px;
+    }
+
+    .profile-card {
+      background: white;
+      padding: 18px 25px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    }
+
+    .profile-icon {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      background: #22c55e;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 800;
+      font-size: 22px;
+    }
+
+    .form-card {
+      background: white;
+      padding: 35px;
+      border-radius: 24px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.06);
+      max-width: 1150px;
+    }
+
+    .form-title {
+      margin-bottom: 25px;
+    }
+
+    .form-title h2 {
+      font-size: 27px;
+      margin-bottom: 8px;
+    }
+
+    .form-title p {
+      color: #667085;
+      font-size: 16px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 22px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #07142f;
+    }
+
+    input,
+    select,
+    textarea {
+      padding: 15px;
+      border: 1px solid #d0d5dd;
+      border-radius: 14px;
+      outline: none;
+      font-size: 15px;
+      transition: 0.3s;
+      background: #f9fafb;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #22c55e;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.12);
+    }
+
+    textarea {
+      resize: none;
+      height: 130px;
+    }
+
+    .image-box {
+      border: 2px dashed #22c55e;
+      border-radius: 18px;
+      padding: 28px;
+      background: #f0fdf4;
+      text-align: center;
+    }
+
+    .image-box p {
+      color: #667085;
+      margin-bottom: 15px;
+    }
+
+    .image-actions {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .image-actions button,
+    .submit-btn {
+      border: none;
+      padding: 14px 22px;
+      border-radius: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .upload-btn {
+      background: #07142f;
+      color: white;
+    }
+
+    .camera-btn {
+      background: #22c55e;
+      color: white;
+    }
+
+    .image-actions button:hover,
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      opacity: 0.9;
+    }
+
+    .preview-grid {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 15px;
+    }
+
+    .preview-item {
+      position: relative;
+    }
+
+    .preview-grid img {
+      width: 100%;
+      height: 130px;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 2px solid #e5e7eb;
+    }
+
+    .remove-img {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      border: none;
+      background: #ef4444;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .image-counter {
+      margin-top: 14px;
+      font-weight: 800;
+      color: #07142f;
+    }
+
+    .submit-area {
+      margin-top: 30px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .submit-btn {
+      background: #22c55e;
+      color: white;
+      font-size: 16px;
+      min-width: 210px;
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .alert-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .alert-box {
+      background: white;
+      width: 100%;
+      max-width: 430px;
+      border-radius: 24px;
+      padding: 35px;
+      text-align: center;
+      animation: pop 0.3s ease;
+    }
+
+    .alert-icon {
+      width: 70px;
+      height: 70px;
+      background: #22c55e;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 18px;
+      font-size: 35px;
+      font-weight: bold;
+    }
+
+    .alert-icon.error {
+      background: #ef4444;
+    }
+
+    .alert-box h3 {
+      margin-bottom: 10px;
+      color: #07142f;
+    }
+
+    .alert-box p {
+      color: #667085;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .alert-box button {
+      border: none;
+      background: #07142f;
+      color: white;
+      padding: 13px 25px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    @keyframes pop {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+      }
+
+      .admin-layout {
+        flex-direction: column;
+      }
+
+      .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 25px;
+      }
+
+      .top-section {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .main-content {
+        padding: 18px;
+      }
+
+      .form-card {
+        padding: 22px;
+      }
+
+      .top-section h1 {
+        font-size: 25px;
+      }
+
+      .submit-area {
+        justify-content: center;
+      }
+
+      .submit-btn {
+        width: 100%;
+      }
+
+      .profile-card {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="admin-layout">
+
+    <aside class="sidebar">
+      <h2>DIDWAPA</h2>
+      <a href="admin.html">Dashboard</a>
+      <a href="my-products.html">View Products</a>
+      <a href="purchased-products.html">Purchases</a>
+      <a href="AdminPostItem.html" class="active">Post Item</a>
+      <a href="product-messages.html">Messages</a>
+    </aside>
+
+    <main class="main-content">
+
+      <div class="top-section">
+        <div>
+          <h1>Post New Product</h1>
+          <p>Add new products or services to the DIDWAPA marketplace.</p>
+        </div>
+
+        <div class="profile-card">
+          <div class="profile-icon">AD</div>
+          <div>
+            <h3>Admin</h3>
+            <p>DIDWAPA Marketplace</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-title">
+          <h2>Product Information</h2>
+          <p>Fill the details below to publish an item.</p>
+        </div>
+
+        <form id="productForm" enctype="multipart/form-data">
+
+          <div class="form-grid">
+
+            <div class="form-group">
+              <label>Product Category *</label>
+              <select name="category" required>
+                <option value="">Select Category</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Fashion">Fashion</option>
+                <option value="Phones and Accessories">Phones and Accessories</option>
+                <option value="Services">Services</option>
+                <option value="Vehicles">Vehicles</option>
+                <option value="Real Estate">Real Estate</option>
+                <option value="Beauty">Beauty</option>
+                <option value="Home Appliances">Home Appliances</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Product Name *</label>
+              <input type="text" name="product_name" placeholder="Example: iPhone 16 Pro Max" required>
+            </div>
+
+            <div class="form-group">
+              <label>Product Type *</label>
+              <input type="text" name="product_type" placeholder="Example: Mobile Phone, Laptop, Land, Service" required>
+            </div>
+
+            <div class="form-group">
+              <label>Product Price *</label>
+              <input type="number" name="price" placeholder="Example: 2500" min="1" required>
+            </div>
+
+            <div class="form-group">
+              <label>Product Color</label>
+              <input type="text" name="product_color" placeholder="Example: Black, Red, Blue">
+            </div>
+
+            <div class="form-group">
+              <label>Quantity In Stock *</label>
+              <input type="number" name="quantity_in_stock" placeholder="Example: 10" min="0" required>
+            </div>
+
+            <div class="form-group">
+              <label>Item Condition</label>
+              <select name="item_condition">
+                <option value="">Select Condition</option>
+                <option value="Brand New">Brand New</option>
+                <option value="Used">Used</option>
+                <option value="Slightly Used">Slightly Used</option>
+                <option value="Refurbished">Refurbished</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Posting User</label>
+              <input type="text" value="Automatically detected from logged-in account" disabled>
+            </div>
+
+            <div class="form-group full">
+              <label>Instructions On Product</label>
+              <textarea name="instructions" placeholder="Add extra instructions or description about the product..."></textarea>
+            </div>
+
+            <div class="form-group full">
+              <label>Product Pictures *</label>
+
+              <div class="image-box">
+                <p>Upload or take at least 5 pictures of the product.</p>
+
+                <div class="image-actions">
+                  <button type="button" class="upload-btn" onclick="document.getElementById('productImages').click()">
+                    Upload Pictures
+                  </button>
+
+                  <button type="button" class="camera-btn" onclick="document.getElementById('cameraInput').click()">
+                    Take Picture
+                  </button>
+                </div>
+
+                <input 
+                  type="file" 
+                  id="productImages" 
+                  accept="image/*" 
+                  multiple 
+                  hidden
+                >
+
+                <input 
+                  type="file" 
+                  id="cameraInput" 
+                  accept="image/*" 
+                  capture="environment" 
+                  hidden
+                >
+
+                <div class="image-counter" id="imageCounter">0 picture selected</div>
+
+                <div class="preview-grid" id="previewGrid"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="submit-area">
+            <button type="submit" class="submit-btn" id="submitBtn">Post Product</button>
+          </div>
+
+        </form>
+      </div>
+
+    </main>
+  </div>
+
+  <div class="alert-overlay" id="alertOverlay">
+    <div class="alert-box">
+      <div class="alert-icon" id="alertIcon">✓</div>
+      <h3 id="alertTitle">Success</h3>
+      <p id="alertMessage">Product posted successfully.</p>
+      <button onclick="closeAlert()">Okay</button>
+    </div>
+  </div>
+
+  <script>
+   const API_BASE = `http://${window.location.hostname}:5000`;
+
+    const form = document.getElementById("productForm");
+    const previewGrid = document.getElementById("previewGrid");
+    const productImages = document.getElementById("productImages");
+    const cameraInput = document.getElementById("cameraInput");
+    const imageCounter = document.getElementById("imageCounter");
+    const submitBtn = document.getElementById("submitBtn");
+
+    let selectedFiles = [];
+
+    function handleFiles(files) {
+      const newFiles = Array.from(files);
+
+      newFiles.forEach(file => {
+        if (!file.type.startsWith("image/")) {
+          showAlert("Error", "Only image files are allowed.");
+          return;
+        }
+
+        selectedFiles.push(file);
+      });
+
+      renderPreviews();
+
+      productImages.value = "";
+      cameraInput.value = "";
+    }
+
+    function renderPreviews() {
+      previewGrid.innerHTML = "";
+
+      selectedFiles.forEach((file, index) => {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          const item = document.createElement("div");
+          item.className = "preview-item";
+
+          item.innerHTML = `
+            <img src="${e.target.result}" alt="Product Image">
+            <button type="button" class="remove-img" onclick="removeImage(${index})">×</button>
+          `;
+
+          previewGrid.appendChild(item);
+        };
+
+        reader.readAsDataURL(file);
+      });
+
+      imageCounter.textContent = `${selectedFiles.length} picture${selectedFiles.length === 1 ? "" : "s"} selected`;
+    }
+
+    function removeImage(index) {
+      selectedFiles.splice(index, 1);
+      renderPreviews();
+    }
+
+    productImages.addEventListener("change", function () {
+      handleFiles(this.files);
+    });
+
+    cameraInput.addEventListener("change", function () {
+      handleFiles(this.files);
+    });
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      if (selectedFiles.length < 5) {
+        showAlert("Error", "Please add at least 5 product pictures.");
+        return;
+      }
+
+      const formData = new FormData(form);
+
+      selectedFiles.forEach(file => {
+        formData.append("product_images", file);
+      });
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Posting...";
+
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/post-product`, {
+          method: "POST",
+          body: formData,
+          credentials: "include"
+        });
+
+        let data;
+
+        try {
+          data = await res.json();
+        } catch (jsonError) {
+          showAlert("Error", "Backend did not return a proper JSON response. Check your Node.js terminal.");
+          return;
+        }
+
+        if (!res.ok || !data.success) {
+          showAlert("Error", data.message || "Failed to post product.");
+          return;
+        }
+
+        showAlert("Success", data.message || "Product posted successfully.");
+
+        form.reset();
+        selectedFiles = [];
+        previewGrid.innerHTML = "";
+        imageCounter.textContent = "0 picture selected";
+
+      } catch (error) {
+        console.error(error);
+        showAlert("Error", "Cannot connect to backend. Make sure Node.js server is running on port 5000.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Post Product";
+      }
+    });
+
+    function showAlert(title, message) {
+      const overlay = document.getElementById("alertOverlay");
+      const alertTitle = document.getElementById("alertTitle");
+      const alertMessage = document.getElementById("alertMessage");
+      const alertIcon = document.getElementById("alertIcon");
+
+      alertTitle.textContent = title;
+      alertMessage.textContent = message;
+
+      if (title.toLowerCase() === "error") {
+        alertIcon.textContent = "!";
+        alertIcon.classList.add("error");
+      } else {
+        alertIcon.textContent = "✓";
+        alertIcon.classList.remove("error");
+      }
+
+      overlay.style.display = "flex";
+    }
+
+    function closeAlert() {
+      document.getElementById("alertOverlay").style.display = "none";
+    }
+  </script>
+
+</body>
+</html>

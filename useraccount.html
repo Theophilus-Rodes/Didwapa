@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA Create Account</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --primary: #ff6600;
+      --secondary: #0a2d73;
+      --text: #102033;
+      --muted: #6b7280;
+      --glass: rgba(255, 255, 255, 0.24);
+      --border: rgba(255, 255, 255, 0.45);
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(255,102,0,0.35), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(10,45,115,0.32), transparent 35%),
+        linear-gradient(135deg, #eef3ff, #fff7ef);
+      padding: 18px;
+      color: var(--text);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 950px;
+      margin: auto;
+      animation: fadeUp 0.7s ease;
+    }
+
+    .card {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      box-shadow: 0 25px 70px rgba(10,45,115,0.18);
+      border-radius: 34px;
+      padding: 34px;
+    }
+
+    .logo {
+      width: 160px;
+      display: block;
+      margin: 0 auto 16px;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--secondary);
+      font-size: 2.3rem;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .step-indicator {
+      padding: 12px;
+      border-radius: 18px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      background: rgba(255,255,255,0.35);
+      color: #52627b;
+      border: 1px solid rgba(255,255,255,0.45);
+    }
+
+    .step-indicator.active {
+      background: linear-gradient(135deg, var(--primary), #ff4500);
+      color: white;
+      box-shadow: 0 12px 28px rgba(255,102,0,0.30);
+    }
+
+    .form-step {
+      display: none;
+      animation: slideIn 0.35s ease;
+    }
+
+    .form-step.active {
+      display: block;
+    }
+
+    .step-title {
+      color: var(--secondary);
+      margin-bottom: 18px;
+      font-size: 1.5rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      font-weight: 800;
+      color: #24324a;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    input,
+    select {
+      width: 100%;
+      height: 56px;
+      border: 1px solid rgba(255,255,255,0.65);
+      outline: none;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.46);
+      padding: 0 16px;
+      font-size: 1rem;
+      color: #172033;
+      transition: 0.25s ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(255,102,0,0.14);
+      transform: translateY(-2px);
+    }
+
+    .upload-box,
+    .camera-box {
+      min-height: 180px;
+      border: 2px dashed rgba(10,45,115,0.35);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.35);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 18px;
+      color: #44546d;
+      cursor: pointer;
+      transition: 0.25s ease;
+    }
+
+    .upload-box:hover,
+    .camera-box:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+    }
+
+    .upload-box span,
+    .camera-box span {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .upload-box input,
+    .camera-box input {
+      display: none;
+    }
+
+    .note {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.35);
+      color: #44546d;
+      line-height: 1.6;
+      font-size: 0.92rem;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    button {
+      height: 54px;
+      border: none;
+      border-radius: 18px;
+      padding: 0 22px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: 0.25s ease;
+      font-size: 1rem;
+    }
+
+    .prev-btn {
+      background: rgba(255,255,255,0.45);
+      color: var(--secondary);
+      border: 1px solid rgba(255,255,255,0.55);
+    }
+
+    .next-btn,
+    .submit-btn {
+      background: linear-gradient(135deg, var(--primary), #ff4500);
+      color: white;
+      box-shadow: 0 15px 35px rgba(255,102,0,0.35);
+      margin-left: auto;
+    }
+
+    button:hover {
+      transform: translateY(-3px);
+    }
+
+    video,
+    canvas {
+      width: 100%;
+      max-height: 260px;
+      border-radius: 20px;
+      margin-top: 14px;
+      background: #000;
+      display: none;
+      object-fit: cover;
+    }
+
+    .camera-actions {
+      display: none;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .small-btn {
+      height: 44px;
+      font-size: 0.9rem;
+    }
+
+    .back-home-area {
+      margin-top: 18px;
+      width: 220px;
+    }
+
+    .back-home-btn {
+      width: 100%;
+      height: 52px;
+      border: 2px solid var(--secondary);
+      border-radius: 16px;
+      background: transparent;
+      color: var(--secondary);
+      font-weight: 900;
+      cursor: pointer;
+      transition: 0.25s ease;
+    }
+
+    .back-home-btn:hover {
+      background: var(--secondary);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .success-popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .success-card {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 30px;
+      padding: 35px 25px;
+      text-align: center;
+      animation: fadeUp 0.4s ease;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+    }
+
+    .success-icon {
+      font-size: 4rem;
+      margin-bottom: 14px;
+    }
+
+    .success-card h2 {
+      color: var(--secondary);
+      margin-bottom: 12px;
+    }
+
+    .success-card p {
+      color: #5b6472;
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    .success-card button {
+      width: 100%;
+      height: 54px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--primary), #ff4500);
+      color: white;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 24px 18px;
+        border-radius: 28px;
+      }
+
+      .steps {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 1.9rem;
+      }
+
+      .buttons {
+        flex-direction: column;
+      }
+
+      .next-btn,
+      .submit-btn,
+      .prev-btn {
+        width: 100%;
+        margin-left: 0;
+      }
+
+      .back-home-area {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+    <section class="card">
+
+      <img src="DIDWAPA.png" alt="DIDWAPA Logo" class="logo" />
+
+      <h1>Create Account</h1>
+      <p class="subtitle">
+        Complete your profile step by step to start buying and selling safely on DIDWAPA.
+      </p>
+
+      <div class="steps">
+        <div class="step-indicator active">1. Personal</div>
+        <div class="step-indicator">2. Address</div>
+        <div class="step-indicator">3. Ghana Card</div>
+        <div class="step-indicator">4. Selfie</div>
+      </div>
+
+      <form id="accountForm" enctype="multipart/form-data">
+
+        <div class="form-step active">
+          <h2 class="step-title">Personal Information</h2>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" name="firstname" required placeholder="Enter first name" />
+            </div>
+
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" name="lastname" required placeholder="Enter last name" />
+            </div>
+
+            <div class="form-group">
+              <label>Gender</label>
+              <select name="gender" required>
+                <option value="">Select gender</option>
+                <option>Male</option>
+                <option>Female</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Date of Birth</label>
+              <input type="date" name="dob" required />
+            </div>
+          </div>
+
+          <div class="back-home-area">
+            <button type="button" class="back-home-btn" onclick="window.location.href='index.html'">
+              ← Back Home
+            </button>
+          </div>
+        </div>
+
+        <div class="form-step">
+          <h2 class="step-title">Contact & Location</h2>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Digital Address</label>
+              <input type="text" name="digital_address" required placeholder="Example: AK-000-0000" />
+            </div>
+
+            <div class="form-group">
+              <label>Area of Stay</label>
+              <input type="text" name="address" required placeholder="Example: Kumasi, Adum" />
+            </div>
+
+            <div class="form-group">
+              <label>Telephone Number</label>
+              <input type="tel" name="telephone" required placeholder="Enter main telephone number" />
+            </div>
+
+            <div class="form-group">
+              <label>Other Telephone Number Optional</label>
+              <input type="tel" name="other_telephone" placeholder="Enter other telephone number" />
+            </div>
+
+            <div class="form-group">
+              <label>Email Address</label>
+              <input type="email" name="email" required placeholder="Enter your email address" />
+            </div>
+
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" name="password" id="password" required minlength="6" placeholder="Create password" />
+            </div>
+
+            <div class="form-group">
+              <label>Confirm Password</label>
+              <input type="password" name="confirm_password" id="confirmPassword" required minlength="6" placeholder="Confirm password" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-step">
+          <h2 class="step-title">Ghana Card Verification</h2>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Upload Front of Ghana Card</label>
+              <label class="upload-box">
+                <input type="file" name="gh_card_front" accept="image/*" required />
+                <div>
+                  <span>🪪</span>
+                  <strong>Click to upload front card</strong>
+                  <p>PNG, JPG or JPEG accepted</p>
+                </div>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>Upload Back of Ghana Card</label>
+              <label class="upload-box">
+                <input type="file" name="gh_card_back" accept="image/*" required />
+                <div>
+                  <span>🪪</span>
+                  <strong>Click to upload back card</strong>
+                  <p>PNG, JPG or JPEG accepted</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="note">
+            Make sure the Ghana Card pictures are clear and all details can be seen properly.
+          </div>
+        </div>
+
+        <div class="form-step">
+          <h2 class="step-title">Take a Selfie</h2>
+
+          <div class="form-group full">
+            <label>Take a clear picture of yourself</label>
+
+          <div class="camera-box" id="startCameraBox">
+  <div>
+    <span>📸</span>
+    <strong>Start Camera</strong>
+    <p>Selfie must be taken directly from the camera.</p>
+  </div>
+</div>
+
+<input 
+  type="file" 
+  id="selfieFileFallback" 
+  accept="image/*" 
+  capture="user" 
+  style="display:none;"
+/>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+<img id="selfiePreview" style="display:none;width:100%;max-height:260px;border-radius:20px;margin-top:14px;object-fit:cover;" />
+
+<div class="camera-actions" id="cameraActions">
+  <button type="button" class="small-btn next-btn" id="captureBtn">Capture Photo</button>
+  <button type="button" class="small-btn prev-btn" id="retakeBtn">Retake</button>
+</div>
+
+<input type="hidden" name="selfie_image" id="selfieImage" required />
+
+          <div class="note">
+            Your selfie helps DIDWAPA verify that the account belongs to a real user.
+          </div>
+
+          </div> <!-- CLOSE form-step HERE -->
+        </div>
+
+        <div class="buttons">
+          <button type="button" class="prev-btn" id="prevBtn" style="display:none;">Previous</button>
+          <button type="button" class="next-btn" id="nextBtn">Next Step</button>
+          <button type="submit" class="submit-btn" id="submitBtn" style="display:none;">Create Account</button>
+        </div>
+
+      </form>
+    </section>
+  </main>
+
+  <div class="success-popup" id="successPopup">
+    <div class="success-card">
+      <div class="success-icon">✅</div>
+
+      <h2>Account Created Successfully</h2>
+
+      <p>
+        Your DIDWAPA account has been created successfully.
+        You can now login and continue.
+      </p>
+
+      <button onclick="window.location.href='userlogin.html'">
+        Continue To Login
+      </button>
+    </div>
+  </div>
+
+<script>
+  const API_BASE =
+    window.location.hostname === "localhost"
+      ? "http://localhost:5000"
+      : "http://172.20.10.4:5000";
+
+  const steps = document.querySelectorAll(".form-step");
+  const indicators = document.querySelectorAll(".step-indicator");
+  const nextBtn = document.getElementById("nextBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const submitBtn = document.getElementById("submitBtn");
+  const form = document.getElementById("accountForm");
+
+  let currentStep = 0;
+
+  function showStep(index) {
+    steps.forEach((step, i) => {
+      step.classList.toggle("active", i === index);
+      indicators[i].classList.toggle("active", i === index);
+    });
+
+    prevBtn.style.display = index === 0 ? "none" : "block";
+    nextBtn.style.display = index === steps.length - 1 ? "none" : "block";
+    submitBtn.style.display = index === steps.length - 1 ? "block" : "none";
+  }
+
+  function validateStep() {
+    const inputs = steps[currentStep].querySelectorAll("input, select");
+
+    for (let input of inputs) {
+      if (!input.checkValidity()) {
+        input.reportValidity();
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  nextBtn.addEventListener("click", () => {
+    if (!validateStep()) return;
+
+    if (currentStep < steps.length - 1) {
+      currentStep++;
+      showStep(currentStep);
+    }
+  });
+
+  prevBtn.addEventListener("click", () => {
+    if (currentStep > 0) {
+      currentStep--;
+      showStep(currentStep);
+    }
+  });
+
+ 
+const startCameraBox = document.getElementById("startCameraBox");
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const captureBtn = document.getElementById("captureBtn");
+const retakeBtn = document.getElementById("retakeBtn");
+const selfieImage = document.getElementById("selfieImage");
+const cameraActions = document.getElementById("cameraActions");
+const selfieFileFallback = document.getElementById("selfieFileFallback");
+const selfiePreview = document.getElementById("selfiePreview");
+
+let stream = null;
+
+startCameraBox.addEventListener("click", async () => {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      selfieFileFallback.click();
+      return;
+    }
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user" },
+      audio: false
+    });
+
+    video.srcObject = stream;
+    video.style.display = "block";
+    canvas.style.display = "none";
+    selfiePreview.style.display = "none";
+    cameraActions.style.display = "flex";
+    startCameraBox.style.display = "none";
+
+  } catch (error) {
+    selfieFileFallback.click();
+  }
+});
+
+selfieFileFallback.addEventListener("change", function () {
+  const file = this.files[0];
+
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+    selfieImage.value = e.target.result;
+    selfiePreview.src = e.target.result;
+
+    selfiePreview.style.display = "block";
+    video.style.display = "none";
+    canvas.style.display = "none";
+    cameraActions.style.display = "flex";
+    startCameraBox.style.display = "none";
+  };
+
+  reader.readAsDataURL(file);
+});
+
+captureBtn.addEventListener("click", () => {
+  if (!video.videoWidth || !video.videoHeight) {
+    selfieFileFallback.click();
+    return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const context = canvas.getContext("2d");
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  selfieImage.value = canvas.toDataURL("image/png");
+
+  video.style.display = "none";
+  canvas.style.display = "block";
+  selfiePreview.style.display = "none";
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+});
+
+retakeBtn.addEventListener("click", () => {
+  selfieImage.value = "";
+  selfieFileFallback.value = "";
+
+  startCameraBox.style.display = "grid";
+  video.style.display = "none";
+  canvas.style.display = "none";
+  selfiePreview.style.display = "none";
+  cameraActions.style.display = "none";
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+});
+
+  retakeBtn.addEventListener("click", () => {
+    selfieImage.value = "";
+    startCameraBox.style.display = "grid";
+    video.style.display = "none";
+    canvas.style.display = "none";
+    cameraActions.style.display = "none";
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (!selfieImage.value) {
+      alert("Please take your selfie before creating the account.");
+      return;
+    }
+
+    const password = document.getElementById("password").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match.");
+      return;
+    }
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/user/create-account`, {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        document.getElementById("successPopup").style.display = "flex";
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error("Create account error:", error);
+      alert("Something went wrong. Please try again.");
+    }
+  });
+</script>
+
+</body>
+</html>

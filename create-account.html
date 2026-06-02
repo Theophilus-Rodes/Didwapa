@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA Create Account</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(34, 197, 94, 0.14), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.12), transparent 26%),
+        linear-gradient(135deg, #061326, #0b1d38 46%, #10284a 100%);
+      padding: 24px;
+      color: #fff;
+      position: relative;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(65px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    body::before {
+      width: 220px;
+      height: 220px;
+      background: rgba(34, 197, 94, 0.14);
+      top: 30px;
+      left: 30px;
+    }
+
+    body::after {
+      width: 280px;
+      height: 280px;
+      background: rgba(59, 130, 246, 0.12);
+      bottom: 30px;
+      right: 30px;
+    }
+
+    .page-wrap {
+      width: 100%;
+      max-width: 1150px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .account-card {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.28);
+      animation: riseIn 0.7s ease;
+    }
+
+    @keyframes riseIn {
+      from {
+        opacity: 0;
+        transform: translateY(28px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .left-panel {
+      background: linear-gradient(180deg, rgba(7, 20, 40, 0.97), rgba(7, 18, 34, 0.92));
+      padding: 42px 34px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .logo-area {
+      text-align: center;
+      margin-bottom: 26px;
+    }
+
+    .logo-area img {
+      width: 95px;
+      max-width: 100%;
+      object-fit: contain;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.25));
+      transition: transform 0.35s ease;
+    }
+
+    .logo-area img:hover {
+      transform: scale(1.05) rotate(-2deg);
+    }
+
+    .logo-area h1 {
+      font-size: 34px;
+      font-weight: 800;
+      color: #22c55e;
+      letter-spacing: 1px;
+    }
+
+    .logo-area p {
+      margin-top: 10px;
+      color: #d1d5db;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .info-box {
+      margin-top: 12px;
+      padding: 26px 22px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .info-box h2 {
+      font-size: 30px;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    .info-box p {
+      color: #d1d5db;
+      line-height: 1.8;
+      font-size: 15px;
+      margin-bottom: 18px;
+    }
+
+    .benefits {
+      display: grid;
+      gap: 12px;
+    }
+
+    .benefit {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px 14px;
+      border-radius: 16px;
+      transition: 0.3s ease;
+    }
+
+    .benefit:hover {
+      transform: translateX(5px);
+      background: rgba(34, 197, 94, 0.10);
+    }
+
+    .benefit-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .benefit span {
+      color: #f3f4f6;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .right-panel {
+      background: #ffffff;
+      padding: 42px 36px;
+      color: #0f172a;
+    }
+
+    .form-header {
+      margin-bottom: 24px;
+    }
+
+    .form-header h3 {
+      font-size: 30px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #0f172a;
+    }
+
+    .form-header p {
+      color: #64748b;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .progress-card {
+      background: #f8fafc;
+      border: 1px solid #e5edf6;
+      border-radius: 20px;
+      padding: 18px 18px 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .progress-top h4 {
+      font-size: 15px;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .progress-top span {
+      font-size: 14px;
+      font-weight: 800;
+      color: #16a34a;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 12px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #16a34a, #22c55e, #4ade80);
+      transition: width 0.35s ease;
+    }
+
+    .progress-note {
+      margin-top: 10px;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    form {
+      width: 100%;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group.full {
+      grid-column: span 2;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #1e293b;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .form-group label .required {
+      color: #ef4444;
+      margin-left: 4px;
+    }
+
+    .field-wrap {
+      position: relative;
+    }
+
+    .field-wrap input,
+    .field-wrap select {
+      width: 100%;
+      height: 56px;
+      border: 1.5px solid #dbe3ee;
+      border-radius: 16px;
+      padding: 0 16px;
+      font-size: 15px;
+      color: #0f172a;
+      background: #f8fafc;
+      outline: none;
+      transition: all 0.32s ease;
+    }
+
+    .field-wrap input:hover,
+    .field-wrap select:hover {
+      border-color: #22c55e;
+      background: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(34, 197, 94, 0.08);
+    }
+
+    .field-wrap input:focus,
+    .field-wrap select:focus {
+      border-color: #16a34a;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12), 0 10px 24px rgba(34, 197, 94, 0.10);
+      transform: translateY(-2px);
+    }
+
+    .helper-text {
+      margin-top: 8px;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .create-btn {
+      width: 100%;
+      height: 58px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.32s ease;
+      box-shadow: 0 18px 32px rgba(34, 197, 94, 0.24);
+      margin-top: 8px;
+      letter-spacing: 0.2px;
+    }
+
+    .create-btn:hover {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: 0 24px 36px rgba(34, 197, 94, 0.30);
+      background: linear-gradient(135deg, #15803d, #22c55e);
+    }
+
+    .create-btn:active {
+      transform: translateY(0) scale(0.995);
+    }
+
+    .bottom-link {
+      text-align: center;
+      margin-top: 18px;
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .bottom-link a {
+      color: #16a34a;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .bottom-link a:hover {
+      color: #0f172a;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        padding: 18px;
+      }
+
+      .account-card {
+        grid-template-columns: 1fr;
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      .left-panel {
+        padding: 34px 24px 24px;
+      }
+
+      .right-panel {
+        padding: 34px 24px;
+      }
+
+      .info-box h2 {
+        font-size: 27px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px;
+      }
+
+      .account-card {
+        border-radius: 22px;
+      }
+
+      .left-panel,
+      .right-panel {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .logo-area img {
+        width: 82px;
+      }
+
+      .logo-area h1 {
+        font-size: 28px;
+      }
+
+      .logo-area p {
+        font-size: 14px;
+      }
+
+      .info-box {
+        padding: 20px 16px;
+        border-radius: 18px;
+      }
+
+      .info-box h2 {
+        font-size: 22px;
+      }
+
+      .info-box p {
+        font-size: 14px;
+        margin-bottom: 14px;
+      }
+
+      .benefit span {
+        font-size: 13px;
+      }
+
+      .form-header h3 {
+        font-size: 24px;
+      }
+
+      .form-header p {
+        font-size: 14px;
+      }
+
+      .progress-card {
+        padding: 16px 14px 14px;
+        border-radius: 18px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      .form-group.full {
+        grid-column: span 1;
+      }
+
+      .field-wrap input,
+      .field-wrap select {
+        height: 52px;
+        font-size: 14px;
+        border-radius: 14px;
+      }
+
+      .create-btn {
+        height: 54px;
+        font-size: 15px;
+        border-radius: 16px;
+      }
+
+      .bottom-link {
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      body {
+        padding: 10px;
+      }
+
+      .left-panel,
+      .right-panel {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .logo-area h1 {
+        font-size: 24px;
+      }
+
+      .info-box h2 {
+        font-size: 20px;
+      }
+
+      .form-header h3 {
+        font-size: 22px;
+      }
+    }
+
+    .success-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.3s ease;
+}
+
+.success-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.success-box {
+  background: #fff;
+  padding: 30px 25px;
+  border-radius: 20px;
+  text-align: center;
+  width: 90%;
+  max-width: 350px;
+  animation: popIn 0.4s ease;
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.checkmark {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #fff;
+  font-size: 32px;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.4);
+}
+
+.success-box h3 {
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+
+.success-box p {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 18px;
+}
+
+.success-box button {
+  width: 100%;
+  height: 45px;
+  border: none;
+  border-radius: 12px;
+  background: #16a34a;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.success-box button:hover {
+  background: #15803d;
+}
+
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  text-align: center;
+  width: 300px;
+  position: relative;
+}
+
+.modal-content h3 {
+  margin-bottom: 20px;
+}
+
+.modal-content button {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 12px;
+  background: #16a34a;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.modal-content button:hover {
+  background: #15803d;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 22px;
+  cursor: pointer;
+}
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="account-card">
+      <div class="left-panel">
+        <div class="logo-area">
+          <img src="didwapa.png" alt="DIDWAPA Logo">
+          <h1>DIDWAPA</h1>
+          <p>Create secure accounts for admins and vendors with a clean and trusted onboarding experience.</p>
+        </div>
+
+        <div class="info-box">
+          <h2>Create your account</h2>
+          <p>
+            Fill in the required details to register on DIDWAPA. The progress bar will update
+            as you complete the important account fields.
+          </p>
+
+          <div class="benefits">
+            <div class="benefit">
+              <div class="benefit-icon">✓</div>
+              <span>Fast and simple account registration</span>
+            </div>
+            <div class="benefit">
+              <div class="benefit-icon">✓</div>
+              <span>Modern and secure marketplace onboarding</span>
+            </div>
+            <div class="benefit">
+              <div class="benefit-icon">✓</div>
+              <span>Works beautifully on desktop and mobile</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-panel">
+        <div class="form-header">
+          <h3>Open a DIDWAPA account</h3>
+          <p>Enter your details below. All required fields will increase the completion progress automatically.</p>
+        </div>
+
+        <div class="progress-card">
+          <div class="progress-top">
+            <h4>Account completion progress</h4>
+            <span id="progressText">0%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-note" id="progressNote">
+            Fill in the required fields to complete your account information.
+          </div>
+        </div>
+
+        <form id="accountForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="firstname">First Name <span class="required">*</span></label>
+              <div class="field-wrap">
+                <input type="text" id="firstname" class="required-field" placeholder="Enter first name" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="lastname">Last Name <span class="required">*</span></label>
+              <div class="field-wrap">
+                <input type="text" id="lastname" class="required-field" placeholder="Enter last name" required>
+              </div>
+            </div>
+
+            <div class="form-group full">
+              <label for="email">Email Address <span class="required">*</span></label>
+              <div class="field-wrap">
+                <input type="email" id="email" class="required-field" placeholder="Enter email address" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="gender">Gender <span class="required">*</span></label>
+              <div class="field-wrap">
+                <select id="gender" class="required-field" required>
+                  <option value="">Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+  <label for="telephone">Telephone Number <span class="required">*</span></label>
+  <div class="field-wrap">
+    <input type="tel" id="telephone" class="required-field" placeholder="Enter telephone number" required>
+  </div>
+  <div class="helper-text">Use your main active phone number.</div>
+</div>
+
+   <div class="form-group full">
+  <label for="otherTelephone">Other Telephone Number</label>
+  <div class="field-wrap">
+    <input type="tel" id="otherTelephone" placeholder="Enter other telephone number (optional)">
+  </div>
+  <div class="helper-text">This field is optional and can be left empty.</div>
+</div>
+
+<div class="form-group full">
+  <label for="role">Account Type <span class="required">*</span></label>
+  <div class="field-wrap">
+    <select id="role" class="required-field" required>
+      <option value="">Select account type</option>
+      <option value="admin">Admin</option>
+      <option value="vendor">Vendor</option>
+      <option value="user">Normal User</option>
+    </select>
+  </div>
+  <div class="helper-text">Select whether this account is for an admin, vendor, or normal user.</div>
+</div>
+
+<div class="form-group">
+
+
+            <div class="form-group">
+              <label for="pin">PIN <span class="required">*</span></label>
+              <div class="field-wrap">
+                <input
+                  type="password"
+                  id="pin"
+                  class="required-field"
+                  placeholder="Enter 6-digit PIN"
+                  maxlength="6"
+                  inputmode="numeric"
+                  required
+                >
+              </div>
+              <div class="helper-text">PIN should be 6 digits.</div>
+            </div>
+
+            <div class="form-group">
+              <label for="confirmPin">Confirm PIN <span class="required">*</span></label>
+              <div class="field-wrap">
+                <input
+                  type="password"
+                  id="confirmPin"
+                  class="required-field"
+                  placeholder="Confirm 6-digit PIN"
+                  maxlength="6"
+                  inputmode="numeric"
+                  required
+                >
+              </div>
+              <div class="helper-text">Re-enter the same 6-digit PIN.</div>
+            </div>
+          </div>
+
+          <button type="submit" class="create-btn">Create Account</button>
+
+          <div class="bottom-link">
+  Already have an account? <a href="#" onclick="openLoginChoice()">Login here</a>
+</div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+ <script>
+const API_BASE =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "http://172.20.10.4:5000";
+
+const requiredFields = document.querySelectorAll(".required-field");
+const progressFill = document.getElementById("progressFill");
+const progressText = document.getElementById("progressText");
+const progressNote = document.getElementById("progressNote");
+const pinField = document.getElementById("pin");
+const confirmPinField = document.getElementById("confirmPin");
+
+function digitsOnly(input) {
+  input.value = input.value.replace(/\D/g, "").slice(0, 6);
+}
+
+function updateProgress() {
+  let completed = 0;
+
+  requiredFields.forEach(field => {
+    if (field.value.trim() !== "") {
+      completed++;
+    }
+  });
+
+  const total = requiredFields.length;
+  const percent = Math.round((completed / total) * 100);
+
+  progressFill.style.width = percent + "%";
+  progressText.textContent = percent + "%";
+
+  if (percent === 0) {
+    progressNote.textContent =
+      "Fill in the required fields to complete your account information.";
+  } else if (percent < 50) {
+    progressNote.textContent =
+      "Good start. Keep filling the required details.";
+  } else if (percent < 100) {
+    progressNote.textContent =
+      "Almost done. Complete the remaining required fields.";
+  } else {
+    progressNote.textContent =
+      "Perfect. All required fields are completed.";
+  }
+}
+
+pinField.addEventListener("input", function () {
+  digitsOnly(this);
+  updateProgress();
+});
+
+confirmPinField.addEventListener("input", function () {
+  digitsOnly(this);
+  updateProgress();
+});
+
+requiredFields.forEach(field => {
+  field.addEventListener("input", updateProgress);
+  field.addEventListener("change", updateProgress);
+});
+
+document
+  .getElementById("accountForm")
+  .addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const firstname = document.getElementById("firstname").value.trim();
+    const lastname = document.getElementById("lastname").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const gender = document.getElementById("gender").value;
+    const telephone = document.getElementById("telephone").value.trim();
+    const otherTelephone = document
+      .getElementById("otherTelephone")
+      .value.trim();
+    const role = document.getElementById("role").value;
+    const pin = document.getElementById("pin").value.trim();
+    const confirmPin = document
+      .getElementById("confirmPin")
+      .value.trim();
+
+    if (pin.length !== 6 || confirmPin.length !== 6) {
+      alert("PIN must be exactly 6 digits.");
+      return;
+    }
+
+    if (pin !== confirmPin) {
+      alert("PIN and Confirm PIN do not match.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/create-account`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstname,
+          lastname,
+          email,
+          gender,
+          telephone,
+          otherTelephone,
+          role,
+          pin,
+          confirmPin,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        document.getElementById("accountForm").reset();
+        updateProgress();
+        showSuccess();
+      } else {
+        alert(data.message || "Failed to create account.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert(
+        "Network error. Make sure your backend is running on port 5000."
+      );
+    }
+  });
+
+function showSuccess() {
+  document.getElementById("successModal").classList.add("show");
+}
+
+function closeSuccess() {
+  document.getElementById("successModal").classList.remove("show");
+
+  window.location.href = "login.html";
+}
+
+updateProgress();
+</script>
+
+<div id="successModal" class="success-modal">
+  <div class="success-box">
+    <div class="checkmark">✔</div>
+    <h3>Account Created</h3>
+    <p>Your account has been created successfully.</p>
+    <button onclick="closeSuccess()">Continue</button>
+  </div>
+</div>
+
+<div id="loginChoiceModal" class="modal">
+  <div class="modal-content">
+    <h3>Select Login Type</h3>
+
+    <button onclick="goToAdmin()">Admin Login</button>
+    <button onclick="goToVendor()">Vendor Login</button>
+
+    <span class="close" onclick="closeLoginChoice()">×</span>
+  </div>
+</div>
+
+
+<script>
+function openLoginChoice() {
+  document.getElementById("loginChoiceModal").style.display = "flex";
+}
+
+function closeLoginChoice() {
+  document.getElementById("loginChoiceModal").style.display = "none";
+}
+
+function goToAdmin() {
+  window.location.href = "login.html";
+}
+
+function goToVendor() {
+  window.location.href = "vendorlogin.html";
+}
+</script>
+</body>
+</html>

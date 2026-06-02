@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA - My Profile</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --primary: #ff6600;
+      --secondary: #0a2d73;
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --success: #078b12;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 30px;
+    }
+
+    .app {
+      max-width: 720px;
+      margin: auto;
+      min-height: 100vh;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--secondary), var(--primary));
+      color: white;
+      padding: 22px 16px 45px;
+      border-bottom-left-radius: 28px;
+      border-bottom-right-radius: 28px;
+      animation: slideDown .6s ease;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .back-btn {
+      border: none;
+      background: rgba(255,255,255,.22);
+      color: white;
+      padding: 9px 14px;
+      border-radius: 999px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .profile-head {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .avatar {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: white;
+      color: var(--primary);
+      display: grid;
+      place-items: center;
+      font-size: 2rem;
+      font-weight: 900;
+      box-shadow: 0 15px 30px rgba(0,0,0,.2);
+    }
+
+    .profile-head h2 {
+      font-size: 1.3rem;
+      margin-bottom: 4px;
+    }
+
+    .profile-head p {
+      opacity: .9;
+      font-size: .85rem;
+    }
+
+    .content {
+      padding: 16px;
+      margin-top: -28px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: 0 16px 35px rgba(0,0,0,.08);
+      margin-bottom: 16px;
+      animation: fadeUp .7s ease both;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 900;
+      margin-bottom: 14px;
+      color: var(--secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: .78rem;
+      font-weight: 900;
+      color: #374151;
+    }
+
+    input, select {
+      width: 100%;
+      height: 45px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0 12px;
+      outline: none;
+      font-size: .9rem;
+      background: #f9fafb;
+      transition: .25s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(255,102,0,.13);
+      background: white;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      min-height: 45px;
+      padding: 0 18px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 900;
+      transition: .25s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px rgba(0,0,0,.14);
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, var(--primary), #ff4500);
+      color: white;
+    }
+
+    .blue-btn {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .light-btn {
+      background: #eef2ff;
+      color: var(--secondary);
+    }
+
+    .status-box {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .status-item {
+      background: #fff7f0;
+      border-radius: 16px;
+      padding: 12px;
+      text-align: center;
+      animation: pop .5s ease both;
+    }
+
+    .status-item strong {
+      display: block;
+      color: var(--secondary);
+      font-size: .8rem;
+      margin-bottom: 5px;
+    }
+
+    .status-item span {
+      font-size: .8rem;
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .alert {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 14px 18px;
+      border-radius: 16px;
+      box-shadow: 0 15px 40px rgba(0,0,0,.18);
+      display: none;
+      z-index: 9999;
+      font-weight: 900;
+      animation: fadeUp .3s ease;
+    }
+
+    .alert.success {
+      color: var(--success);
+    }
+
+    .alert.error {
+      color: red;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeUp {
+      from { transform: translateY(25px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes pop {
+      from { transform: scale(.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @media (max-width: 520px) {
+      .app {
+        max-width: 100%;
+      }
+
+      .header {
+        padding: 18px 13px 42px;
+      }
+
+      .content {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 13px;
+        border-radius: 18px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .status-box {
+        grid-template-columns: 1fr;
+      }
+
+      input, select {
+        height: 42px;
+        font-size: .82rem;
+      }
+
+      .profile-head h2 {
+        font-size: 1.1rem;
+      }
+
+      .avatar {
+        width: 58px;
+        height: 58px;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="alert" id="alertBox"></div>
+
+  <main class="app">
+
+    <section class="header">
+      <div class="top-row">
+        <h3>My Profile</h3>
+        <button class="back-btn" onclick="window.location.href='you.html'">← Back</button>
+      </div>
+
+      <div class="profile-head">
+        <div class="avatar">👤</div>
+        <div>
+          <h2 id="displayName">Loading...</h2>
+          <p id="displayEmail">Please wait...</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="content">
+
+      <div class="card">
+        <div class="card-title">Account Status</div>
+
+        <div class="status-box">
+          <div class="status-item">
+            <strong>Role</strong>
+            <span id="roleText">---</span>
+          </div>
+
+          <div class="status-item">
+            <strong>Status</strong>
+            <span id="statusText">---</span>
+          </div>
+
+          <div class="status-item">
+            <strong>Verification</strong>
+            <span id="verificationText">---</span>
+          </div>
+        </div>
+      </div>
+
+      <form class="card" id="profileForm">
+        <div class="card-title">Personal Information</div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Firstname</label>
+            <input type="text" id="firstname" required />
+          </div>
+
+          <div class="form-group">
+            <label>Lastname</label>
+            <input type="text" id="lastname" required />
+          </div>
+
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email" required />
+          </div>
+
+          <div class="form-group">
+            <label>Telephone</label>
+            <input type="text" id="telephone" required />
+          </div>
+
+          <div class="form-group">
+            <label>Other Telephone</label>
+            <input type="text" id="other_telephone" />
+          </div>
+
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="gender">
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" id="dob" />
+          </div>
+
+          <div class="form-group">
+            <label>Digital Address</label>
+            <input type="text" id="digital_address" />
+          </div>
+
+          <div class="form-group full">
+            <label>Address / Area of Stay</label>
+            <input type="text" id="address" />
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="submit" class="btn primary-btn">Update Profile</button>
+          <button type="button" class="btn light-btn" onclick="loadProfile()">Reset</button>
+        </div>
+      </form>
+
+      <form class="card" id="passwordForm">
+        <div class="card-title">Change Password</div>
+
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Current Password</label>
+            <input type="password" id="current_password" required />
+          </div>
+
+          <div class="form-group">
+            <label>New Password</label>
+            <input type="password" id="new_password" required />
+          </div>
+
+          <div class="form-group">
+            <label>Confirm New Password</label>
+            <input type="password" id="confirm_password" required />
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="submit" class="btn blue-btn">Change Password</button>
+        </div>
+      </form>
+
+    </section>
+
+  </main>
+
+  <script>
+    const API_BASE = `http://${window.location.hostname}:5000`;
+
+    const alertBox = document.getElementById("alertBox");
+
+    function showAlert(message, type = "success") {
+      alertBox.textContent = message;
+      alertBox.className = `alert ${type}`;
+      alertBox.style.display = "block";
+
+      setTimeout(() => {
+        alertBox.style.display = "none";
+      }, 2500);
+    }
+
+    async function loadProfile() {
+      try {
+        const res = await fetch(`${API_BASE}/api/user/profile`, {
+          credentials: "include"
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+          window.location.href = "userlogin.html";
+          return;
+        }
+
+        const user = data.user;
+
+        document.getElementById("displayName").textContent = `${user.firstname || ""} ${user.lastname || ""}`;
+        document.getElementById("displayEmail").textContent = user.email || "";
+
+        document.getElementById("roleText").textContent = user.role || "user";
+        document.getElementById("statusText").textContent = user.status || "pending";
+        document.getElementById("verificationText").textContent = user.verification_status || "not verified";
+
+        document.getElementById("firstname").value = user.firstname || "";
+        document.getElementById("lastname").value = user.lastname || "";
+        document.getElementById("email").value = user.email || "";
+        document.getElementById("telephone").value = user.telephone || "";
+        document.getElementById("other_telephone").value = user.other_telephone || "";
+        document.getElementById("gender").value = user.gender || "";
+        document.getElementById("dob").value = user.dob ? user.dob.split("T")[0] : "";
+        document.getElementById("digital_address").value = user.digital_address || "";
+        document.getElementById("address").value = user.address || "";
+
+      } catch (error) {
+        console.error(error);
+        showAlert("Failed to load profile.", "error");
+      }
+    }
+
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const body = {
+        firstname: document.getElementById("firstname").value.trim(),
+        lastname: document.getElementById("lastname").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        telephone: document.getElementById("telephone").value.trim(),
+        other_telephone: document.getElementById("other_telephone").value.trim(),
+        gender: document.getElementById("gender").value,
+        dob: document.getElementById("dob").value,
+        digital_address: document.getElementById("digital_address").value.trim(),
+        address: document.getElementById("address").value.trim()
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/user/profile/update`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showAlert(data.message);
+          loadProfile();
+        } else {
+          showAlert(data.message, "error");
+        }
+
+      } catch (error) {
+        console.error(error);
+        showAlert("Failed to update profile.", "error");
+      }
+    });
+
+    document.getElementById("passwordForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const body = {
+        current_password: document.getElementById("current_password").value.trim(),
+        new_password: document.getElementById("new_password").value.trim(),
+        confirm_password: document.getElementById("confirm_password").value.trim()
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/user/profile/change-password`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showAlert(data.message);
+          document.getElementById("passwordForm").reset();
+        } else {
+          showAlert(data.message, "error");
+        }
+
+      } catch (error) {
+        console.error(error);
+        showAlert("Failed to change password.", "error");
+      }
+    });
+
+    loadProfile();
+  </script>
+
+</body>
+</html>

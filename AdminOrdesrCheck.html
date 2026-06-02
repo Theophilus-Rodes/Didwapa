@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIDWAPA Admin - Orders</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+:root{--green:#20c463;--dark:#06152f;--bg:#f4f7fb;--muted:#6b7280;--border:#e5e7eb;--orange:#ff6600}
+body{background:var(--bg);color:var(--dark)}
+.page{width:min(1180px,96%);margin:auto;padding:22px 0 35px}
+.top-nav{background:white;border-radius:24px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 18px 38px rgba(6,21,47,.08);animation:down .5s ease;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:1.05rem}
+.badge{width:42px;height:42px;border-radius:15px;background:var(--dark);color:var(--green);display:grid;place-items:center}
+.back{text-decoration:none;background:var(--dark);color:white;padding:11px 15px;border-radius:14px;font-weight:900;font-size:.82rem}
+.header{background:linear-gradient(135deg,var(--dark),#0b244d);color:white;padding:26px 28px;border-radius:28px;margin-bottom:18px;position:relative;overflow:hidden;box-shadow:0 22px 48px rgba(6,21,47,.16);animation:up .6s ease}
+.header:after{content:"";position:absolute;width:210px;height:210px;border-radius:50%;background:rgba(32,196,99,.16);right:-70px;top:-80px;animation:float 4s ease-in-out infinite}
+.header h1{position:relative;z-index:2;font-size:clamp(1.5rem,4vw,2.3rem);margin-bottom:8px}
+.header p{position:relative;z-index:2;color:#cbd5e1;line-height:1.6;font-size:.9rem}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:18px}
+.stat{background:white;border-radius:20px;padding:15px;box-shadow:0 14px 30px rgba(6,21,47,.07);animation:up .65s ease both}
+.stat span{color:var(--muted);font-size:.75rem;font-weight:900}
+.stat h2{font-size:1.25rem;margin-top:8px}
+.controls{background:white;border-radius:22px;padding:14px;display:grid;grid-template-columns:1fr 180px;gap:12px;margin-bottom:16px;box-shadow:0 12px 26px rgba(6,21,47,.06);animation:up .7s ease}
+.controls input,.controls select{height:46px;border:1px solid var(--border);border-radius:15px;padding:0 13px;background:#f8fafc;outline:none}
+.orders{display:grid;gap:14px}
+.order-card{background:white;border:1px solid var(--border);border-radius:24px;padding:14px;display:grid;grid-template-columns:92px 1fr auto;gap:14px;align-items:center;box-shadow:0 14px 30px rgba(6,21,47,.07);animation:up .6s ease both;transition:.25s}
+.order-card:hover{transform:translateY(-4px)}
+.img{width:92px;height:92px;border-radius:18px;overflow:hidden;background:#f3f4f6}
+.img img{width:100%;height:100%;object-fit:cover}
+.info h3{font-size:1rem;margin-bottom:5px}
+.info p{font-size:.75rem;color:var(--muted);margin:3px 0}
+.price{color:var(--orange);font-weight:900;margin-top:6px}
+.right{text-align:right;display:grid;gap:8px;justify-items:end}
+.status{display:inline-block;padding:7px 11px;border-radius:999px;font-size:.7rem;font-weight:900;text-transform:capitalize}
+.pending{background:#fef3c7;color:#b45309}
+.delivering{background:#dbeafe;color:#1d4ed8}
+.delivered{background:#d1fae5;color:#047857}
+.not-available,.not-received{background:#fee2e2;color:#b91c1c}
+.waiting{background:#fef3c7;color:#b45309}
+.received{background:#d1fae5;color:#047857}
+.delayed{background:#dbeafe;color:#1d4ed8}
+.btn{border:none;background:var(--dark);color:white;padding:10px 13px;border-radius:13px;font-weight:900;cursor:pointer;font-size:.75rem}
+.empty{background:white;border-radius:22px;padding:28px;text-align:center;color:var(--muted);box-shadow:0 12px 25px rgba(6,21,47,.06)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:9999;padding:18px}
+.modal-card{width:100%;max-width:520px;background:white;border-radius:26px;padding:20px;box-shadow:0 25px 60px rgba(0,0,0,.25);animation:pop .3s ease}
+.modal-card h2{margin-bottom:10px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.detail{background:#f8fafc;border-radius:15px;padding:12px}
+.detail small{display:block;color:var(--muted);font-weight:900;margin-bottom:5px;font-size:.72rem}
+.detail strong{font-size:.85rem}
+.close{width:100%;margin-top:14px;background:var(--orange)}
+@keyframes down{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(14px)}}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.controls{grid-template-columns:1fr}.order-card{grid-template-columns:80px 1fr}.right{grid-column:1/-1;text-align:left;justify-items:start;display:flex;flex-wrap:wrap}}
+@media(max-width:480px){.page{width:100%;padding:10px}.top-nav,.header,.order-card,.modal-card{border-radius:20px}.header{padding:22px 18px}.stats{grid-template-columns:1fr}.order-card{grid-template-columns:1fr}.img{width:100%;height:190px}.info h3{font-size:.92rem}.info p{font-size:.68rem}.detail-grid{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body>
+
+<div class="modal" id="orderModal">
+  <div class="modal-card" id="modalContent"></div>
+</div>
+
+<div class="page">
+  <div class="top-nav">
+    <div class="brand"><div class="badge">DW</div> Admin Orders</div>
+    <a href="admin.html" class="back">← Dashboard</a>
+  </div>
+
+  <div class="header">
+    <h1>Orders & Escrow</h1>
+    <p>View all bought products, buyer details, payment status, seller delivery status, and buyer confirmation reports.</p>
+  </div>
+
+  <section class="stats">
+    <div class="stat"><span>Total Orders</span><h2 id="totalOrders">0</h2></div>
+    <div class="stat"><span>Pending</span><h2 id="pendingOrders">0</h2></div>
+    <div class="stat"><span>Delivering</span><h2 id="deliveringOrders">0</h2></div>
+    <div class="stat"><span>Delivered</span><h2 id="deliveredOrders">0</h2></div>
+    <div class="stat"><span>Issues</span><h2 id="issueOrders">0</h2></div>
+  </section>
+
+  <section class="controls">
+    <input type="text" id="searchInput" placeholder="Search product, buyer, phone, status..." oninput="filterOrders()">
+    <select id="statusFilter" onchange="filterOrders()">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="delivering">Delivering</option>
+      <option value="delivered">Delivered</option>
+      <option value="not available">Not Available</option>
+      <option value="waiting">Buyer Waiting</option>
+      <option value="received">Buyer Received</option>
+      <option value="delayed">Buyer Delayed</option>
+      <option value="not received">Buyer Not Received</option>
+    </select>
+  </section>
+
+  <section class="orders" id="ordersBox">
+    <div class="empty">Loading orders...</div>
+  </section>
+</div>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+const ordersBox = document.getElementById("ordersBox");
+let allOrders = [];
+
+function getFirstImage(images){
+  try{
+    const parsed = JSON.parse(images);
+    if(Array.isArray(parsed) && parsed.length > 0){
+      let img = parsed[0].replace(/\\/g,"/");
+      if(img.startsWith("http")) return img;
+      if(img.startsWith("/")) return API_BASE + img;
+      return API_BASE + "/" + img;
+    }
+    return "";
+  }catch{return "";}
+}
+
+function statusClass(status){
+  return String(status || "pending").toLowerCase().replaceAll(" ","-");
+}
+
+function updateStats(orders){
+  document.getElementById("totalOrders").textContent = orders.length;
+  document.getElementById("pendingOrders").textContent = orders.filter(o => o.order_status === "pending").length;
+  document.getElementById("deliveringOrders").textContent = orders.filter(o => o.order_status === "delivering").length;
+  document.getElementById("deliveredOrders").textContent = orders.filter(o => o.order_status === "delivered").length;
+  document.getElementById("issueOrders").textContent = orders.filter(o => ["delayed","not received","not available"].includes(o.buyer_confirm_status) || o.order_status === "not available").length;
+}
+
+async function checkAdminSession() {
+  try {
+
+    const res = await fetch(`${API_BASE}/api/admin/check-session`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (
+      !data.success ||
+      !data.user ||
+      !["admin", "vendor"].includes(data.user.role)
+    ) {
+
+      localStorage.removeItem("didwapaAdmin");
+      localStorage.removeItem("didwapaVendor");
+
+      window.location.href = "login.html";
+      return;
+    }
+
+  } catch (err) {
+
+    localStorage.removeItem("didwapaAdmin");
+    localStorage.removeItem("didwapaVendor");
+
+    window.location.href = "login.html";
+  }
+}
+
+
+
+async function loadOrders(){
+  try{
+    const res = await fetch(`${API_BASE}/api/admin/orders`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      ordersBox.innerHTML = `<div class="empty">${data.message}</div>`;
+      return;
+    }
+
+    allOrders = data.orders;
+    updateStats(allOrders);
+    renderOrders(allOrders);
+
+  }catch(error){
+    ordersBox.innerHTML = `<div class="empty">Failed to load orders.</div>`;
+  }
+}
+
+function renderOrders(orders){
+  if(orders.length === 0){
+    ordersBox.innerHTML = `<div class="empty">No orders found.</div>`;
+    return;
+  }
+
+  ordersBox.innerHTML = orders.map((o,index)=>{
+    const image = getFirstImage(o.images);
+    return `
+      <div class="order-card" style="animation-delay:${index * 0.04}s">
+        <div class="img">
+          ${image ? `<img src="${image}">` : `<img src="https://via.placeholder.com/300?text=No+Image">`}
+        </div>
+
+        <div class="info">
+          <h3>${o.product_name}</h3>
+          <p>Buyer: ${o.buyer_name || `${o.buyer_firstname || ""} ${o.buyer_lastname || ""}`}</p>
+          <p>Phone: ${o.buyer_phone || o.buyer_telephone || "N/A"}</p>
+          <p>Quantity: ${o.quantity} | Unit: GH₵${Number(o.unit_price).toFixed(2)}</p>
+          <div class="price">Total: GH₵${Number(o.total_amount).toFixed(2)}</div>
+        </div>
+
+        <div class="right">
+          <span class="status ${statusClass(o.order_status)}">${o.order_status}</span>
+          <span class="status ${statusClass(o.buyer_confirm_status)}">Buyer: ${o.buyer_confirm_status || "waiting"}</span>
+          <button class="btn" onclick="openReleasePage(${o.id})">
+  View Details
+</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function filterOrders(){
+  const key = document.getElementById("searchInput").value.toLowerCase();
+  const status = document.getElementById("statusFilter").value;
+
+  const filtered = allOrders.filter(o=>{
+    const text = `
+      ${o.product_name || ""}
+      ${o.buyer_name || ""}
+      ${o.buyer_phone || ""}
+      ${o.order_status || ""}
+      ${o.buyer_confirm_status || ""}
+      ${o.payment_status || ""}
+    `.toLowerCase();
+
+    const matchText = text.includes(key);
+    const matchStatus = !status || o.order_status === status || o.buyer_confirm_status === status;
+
+    return matchText && matchStatus;
+  });
+
+  renderOrders(filtered);
+}
+
+function openDetails(id){
+  const o = allOrders.find(item => Number(item.id) === Number(id));
+  if(!o) return;
+
+  const image = getFirstImage(o.images);
+
+  document.getElementById("modalContent").innerHTML = `
+    <h2>${o.product_name}</h2>
+
+    ${image ? `<div class="img" style="width:100%;height:220px;margin:10px 0;"><img src="${image}"></div>` : ""}
+
+    <div class="detail-grid">
+      <div class="detail"><small>Buyer Name</small><strong>${o.buyer_name}</strong></div>
+      <div class="detail"><small>Buyer Phone</small><strong>${o.buyer_phone}</strong></div>
+      <div class="detail"><small>Buyer Email</small><strong>${o.buyer_email || "N/A"}</strong></div>
+      <div class="detail"><small>Seller ID</small><strong>${o.seller_id}</strong></div>
+      <div class="detail"><small>Quantity</small><strong>${o.quantity}</strong></div>
+      <div class="detail"><small>Unit Price</small><strong>GH₵${Number(o.unit_price).toFixed(2)}</strong></div>
+      <div class="detail"><small>Total Amount</small><strong>GH₵${Number(o.total_amount).toFixed(2)}</strong></div>
+      <div class="detail"><small>Payment Status</small><strong>${o.payment_status}</strong></div>
+      <div class="detail"><small>Order Status</small><strong>${o.order_status}</strong></div>
+      <div class="detail"><small>Buyer Confirmation</small><strong>${o.buyer_confirm_status || "waiting"}</strong></div>
+      <div class="detail full"><small>Buyer Note</small><strong>${o.buyer_note || "No note"}</strong></div>
+      <div class="detail full"><small>Date</small><strong>${new Date(o.created_at).toLocaleString()}</strong></div>
+    </div>
+
+    <button class="btn close" onclick="closeModal()">Close</button>
+  `;
+
+  document.getElementById("orderModal").style.display = "flex";
+}
+
+function openReleasePage(id){
+  window.location.href = `AdminReleaseMoney.html?id=${id}`;
+}
+
+function closeModal(){
+  document.getElementById("orderModal").style.display = "none";
+}
+
+document.getElementById("orderModal").addEventListener("click", function(e){
+  if(e.target.id === "orderModal") closeModal();
+});
+
+checkAdminSession();
+loadOrders();
+</script>
+
+</body>
+</html>

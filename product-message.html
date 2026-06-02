@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIDWAPA - Product Chat</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+:root{--primary:#ff6600;--secondary:#0a2d73;--bg:#f6f7fb;--muted:#6b7280;--border:#e5e7eb}
+body{background:var(--bg);color:#111827}
+.app{max-width:560px;margin:auto;background:white;min-height:100vh;display:flex;flex-direction:column}
+.header{background:linear-gradient(135deg,var(--secondary),var(--primary));color:white;padding:16px 14px 22px;border-bottom-left-radius:25px;border-bottom-right-radius:25px;animation:down .5s ease}
+.top{display:flex;align-items:center;gap:10px}
+.back{border:none;background:rgba(255,255,255,.22);color:white;padding:9px 13px;border-radius:999px;font-weight:900;cursor:pointer}
+.chat-user{margin-top:16px;display:flex;align-items:center;gap:12px}
+.avatar{width:52px;height:52px;border-radius:18px;background:white;color:var(--primary);display:grid;place-items:center;font-weight:900;font-size:1.2rem}
+.chat-user h2{font-size:1.05rem}
+.chat-user p{font-size:.78rem;opacity:.9;margin-top:3px}
+.product-box{margin-top:14px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);padding:12px;border-radius:18px;font-size:.85rem}
+.chat-area{flex:1;padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,#fff,#f8fafc)}
+.message{max-width:78%;padding:11px 13px;border-radius:18px;font-size:.88rem;line-height:1.45;animation:pop .25s ease;word-wrap:break-word}
+.mine{align-self:flex-end;background:var(--primary);color:white;border-bottom-right-radius:5px}
+.theirs{align-self:flex-start;background:#eef2ff;color:#111827;border-bottom-left-radius:5px}
+.time{display:block;font-size:.65rem;opacity:.72;margin-top:5px}
+.input-area{position:sticky;bottom:0;background:white;padding:10px;display:flex;gap:8px;border-top:1px solid var(--border)}
+textarea{flex:1;height:48px;max-height:100px;resize:none;border:1px solid var(--border);background:#f9fafb;border-radius:18px;padding:13px;outline:none;font-size:.9rem}
+textarea:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,102,0,.1)}
+.send{width:50px;height:48px;border:none;border-radius:16px;background:var(--primary);color:white;font-size:1.2rem;font-weight:900;cursor:pointer}
+.empty{text-align:center;color:var(--muted);padding:25px;line-height:1.6}
+@keyframes down{from{transform:translateY(-25px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+@media(max-width:420px){.app{max-width:100%}.message{max-width:86%;font-size:.82rem}.header{padding:14px 12px 20px}}
+</style>
+</head>
+
+<body>
+
+<main class="app">
+
+  <section class="header">
+    <div class="top">
+      <button class="back" onclick="history.back()">← Back</button>
+      <h3>Product Chat</h3>
+    </div>
+
+    <div class="chat-user">
+      <div class="avatar" id="avatar">?</div>
+      <div>
+        <h2 id="chatName">Loading...</h2>
+        <p id="chatSub">Please wait...</p>
+      </div>
+    </div>
+
+    <div class="product-box" id="productBox">
+      Loading product...
+    </div>
+  </section>
+
+  <section class="chat-area" id="chatArea">
+    <div class="empty">Loading messages...</div>
+  </section>
+
+  <section class="input-area">
+    <textarea id="messageInput"></textarea>
+    <button class="send" onclick="sendMessage()">➤</button>
+  </section>
+
+</main>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+const params = new URLSearchParams(window.location.search);
+const productId = params.get("id");
+const otherId = params.get("other_id");
+
+const chatArea = document.getElementById("chatArea");
+const messageInput = document.getElementById("messageInput");
+
+let receiverId = null;
+let currentUserId = null;
+
+function formatTime(dateText){
+  if(!dateText) return "";
+  return new Date(dateText).toLocaleString();
+}
+
+async function loadConversation(){
+  try{
+    let url = `${API_BASE}/api/product-message/conversation/${productId}`;
+    if(otherId){
+      url += `?other_id=${otherId}`;
+    }
+
+    const res = await fetch(url, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      if(res.status === 401){
+        window.location.href = "userlogin.html";
+        return;
+      }
+
+      chatArea.innerHTML = `<div class="empty">${data.message}</div>`;
+      return;
+    }
+
+    const product = data.product;
+    const otherUser = data.otherUser;
+    const messages = data.messages;
+
+    currentUserId = messages.length > 0 
+      ? Number(messages.find(m => m.sender_id)?.sender_id) 
+      : null;
+
+    if(otherUser){
+      receiverId = otherUser.id;
+
+      document.getElementById("avatar").textContent =
+        otherUser.firstname ? otherUser.firstname.charAt(0).toUpperCase() : "U";
+
+      document.getElementById("chatName").textContent =
+        `${otherUser.firstname || "User"} ${otherUser.lastname || ""}`;
+
+      document.getElementById("chatSub").textContent =
+        `${otherUser.telephone || ""} ${otherUser.email ? " | " + otherUser.email : ""}`;
+    }else{
+      document.getElementById("avatar").textContent = "!";
+      document.getElementById("chatName").textContent = "No conversation yet";
+      document.getElementById("chatSub").textContent = "Send a message to start.";
+    }
+
+    document.getElementById("productBox").innerHTML = `
+      <strong>${product.product_name || "Product"}</strong><br>
+      GH₵${Number(product.price || 0).toFixed(2)}
+    `;
+
+    if(messages.length === 0){
+      chatArea.innerHTML = `
+        <div class="empty">
+          No messages yet.<br>
+          Start the conversation below.
+        </div>
+      `;
+
+      messageInput.value = "Is this product still available or do you still have some in stock?";
+      return;
+    }
+
+    const loggedUser = await getLoggedUser();
+    currentUserId = loggedUser?.id;
+
+    chatArea.innerHTML = messages.map(msg => `
+      <div class="message ${Number(msg.sender_id) === Number(currentUserId) ? "mine" : "theirs"}">
+        ${msg.message}
+        <span class="time">${formatTime(msg.created_at)}</span>
+      </div>
+    `).join("");
+
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    markProductMessagesAsRead();
+
+  }catch(error){
+    console.error(error);
+    chatArea.innerHTML = `<div class="empty">Failed to load conversation.</div>`;
+  }
+}
+
+async function getLoggedUser(){
+  const res = await fetch(`${API_BASE}/api/check-user-login`, {
+    credentials:"include"
+  });
+
+  const data = await res.json();
+
+  if(data.loggedIn){
+    return data.user;
+  }
+
+  return null;
+}
+
+async function sendMessage(){
+  const message = messageInput.value.trim();
+
+  if(!message){
+    return;
+  }
+
+  try{
+    const body = {
+      product_id: productId,
+      message
+    };
+
+    if(receiverId){
+      body.receiver_id = receiverId;
+    }
+
+    const res = await fetch(`${API_BASE}/api/product-message/send`, {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      credentials:"include",
+      body:JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      alert(data.message);
+      if(res.status === 401){
+        window.location.href = "userlogin.html";
+      }
+      return;
+    }
+
+    messageInput.value = "";
+    loadConversation();
+
+  }catch(error){
+    alert("Failed to send message.");
+  }
+}
+
+messageInput.addEventListener("keydown", function(e){
+  if(e.key === "Enter" && !e.shiftKey){
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+
+async function markProductMessagesAsRead() {
+  try {
+    const body = {
+      product_id: productId
+    };
+
+    if (otherId) {
+      body.other_id = otherId;
+    }
+
+    await fetch(`${API_BASE}/api/product-message/mark-read`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include",
+      body: JSON.stringify(body)
+    });
+  } catch (error) {
+    console.error("Mark messages read error:", error);
+  }
+}
+
+loadConversation();
+
+setInterval(loadConversation, 4000);
+</script>
+
+</body>
+</html>

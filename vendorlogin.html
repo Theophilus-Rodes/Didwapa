@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA Vendor Login</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(34,197,94,0.28), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(59,130,246,0.25), transparent 35%),
+        linear-gradient(135deg, #04111f, #071a33 50%, #0f2f57);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 25px;
+      color: #0f172a;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 1180px;
+      min-height: 720px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 34px;
+      overflow: hidden;
+      box-shadow: 0 35px 90px rgba(0,0,0,0.35);
+      backdrop-filter: blur(18px);
+    }
+
+    .left-panel {
+      padding: 55px 48px;
+      background: linear-gradient(180deg, rgba(5,18,36,0.95), rgba(6,26,48,0.92));
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .logo-top {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo-top img {
+      width: 110px;
+      margin-bottom: 15px;
+      filter: drop-shadow(0 12px 22px rgba(0,0,0,0.35));
+    }
+
+    .logo-top h1 {
+      font-size: 38px;
+      letter-spacing: 2px;
+      color: #22c55e;
+      font-weight: 900;
+    }
+
+    .logo-top p {
+      margin-top: 10px;
+      color: #cbd5e1;
+      line-height: 1.7;
+    }
+
+    .vendor-badge {
+      width: fit-content;
+      margin: 0 auto 25px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: rgba(34,197,94,0.16);
+      color: #86efac;
+      font-weight: 800;
+      border: 1px solid rgba(34,197,94,0.35);
+    }
+
+    .welcome-box {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 28px;
+      padding: 32px;
+    }
+
+    .welcome-box h2 {
+      font-size: 34px;
+      margin-bottom: 15px;
+    }
+
+    .welcome-box p {
+      color: #d1d5db;
+      line-height: 1.8;
+      margin-bottom: 24px;
+      font-size: 15px;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      color: #f8fafc;
+      font-weight: 700;
+    }
+
+    .feature-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 10px 20px rgba(34,197,94,0.24);
+    }
+
+    .right-panel {
+      background: #ffffff;
+      padding: 55px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .form-card {
+      width: 100%;
+      max-width: 450px;
+    }
+
+    .form-card h3 {
+      font-size: 34px;
+      color: #07152c;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #64748b;
+      line-height: 1.7;
+      margin-bottom: 30px;
+    }
+
+    .vendor-label {
+      display: inline-block;
+      margin-bottom: 18px;
+      padding: 9px 15px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #16a34a;
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .input-group {
+      margin-bottom: 19px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 800;
+      color: #0f172a;
+      font-size: 14px;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      height: 58px;
+      border: 1.5px solid #dbe3ee;
+      border-radius: 18px;
+      padding: 0 18px;
+      font-size: 15px;
+      outline: none;
+      background: #f8fafc;
+      transition: 0.3s;
+    }
+
+    .input-wrap input:focus {
+      border-color: #22c55e;
+      background: white;
+      box-shadow: 0 0 0 5px rgba(34,197,94,0.14);
+    }
+
+    .row-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 8px 0 25px;
+    }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #475569;
+      font-size: 14px;
+    }
+
+    .remember-me input {
+      accent-color: #16a34a;
+      width: 16px;
+      height: 16px;
+    }
+
+    .forgot-link {
+      color: #16a34a;
+      font-weight: 800;
+      font-size: 14px;
+      text-decoration: none;
+    }
+
+    .login-btn {
+      width: 100%;
+      height: 60px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: white;
+      font-size: 17px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 18px 35px rgba(34,197,94,0.32);
+      transition: 0.3s;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 24px 45px rgba(34,197,94,0.4);
+    }
+
+    #loginMessage {
+      margin-top: 15px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .signup-text {
+      text-align: center;
+      margin-top: 24px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .signup-text a {
+      color: #16a34a;
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    .bottom-note {
+      margin-top: 25px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 950px) {
+      body {
+        display: block;
+        padding: 18px;
+      }
+
+      .login-wrapper {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      .left-panel,
+      .right-panel {
+        padding: 38px 28px;
+      }
+
+      .welcome-box h2 {
+        font-size: 28px;
+      }
+
+      .form-card h3 {
+        font-size: 29px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 12px;
+      }
+
+      .login-wrapper {
+        border-radius: 24px;
+      }
+
+      .left-panel,
+      .right-panel {
+        padding: 28px 18px;
+      }
+
+      .logo-top img {
+        width: 85px;
+      }
+
+      .logo-top h1 {
+        font-size: 28px;
+      }
+
+      .welcome-box {
+        padding: 22px 16px;
+        border-radius: 22px;
+      }
+
+      .welcome-box h2 {
+        font-size: 24px;
+      }
+
+      .feature-item {
+        align-items: flex-start;
+        font-size: 14px;
+      }
+
+      .form-card h3 {
+        font-size: 25px;
+      }
+
+      .input-wrap input {
+        height: 54px;
+        border-radius: 15px;
+      }
+
+      .login-btn {
+        height: 54px;
+        border-radius: 15px;
+      }
+
+      .row-options {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .left-panel,
+      .right-panel {
+        padding: 22px 14px;
+      }
+
+      .logo-top h1 {
+        font-size: 24px;
+      }
+
+      .welcome-box h2 {
+        font-size: 21px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="login-wrapper">
+
+    <div class="left-panel">
+      <div class="logo-top">
+        <img src="didwapa.png" alt="DIDWAPA Logo">
+        <h1>DIDWAPA</h1>
+        <p>Vendor marketplace portal for sellers and business owners.</p>
+      </div>
+
+      <div class="vendor-badge">Vendor Access Portal</div>
+
+      <div class="welcome-box">
+        <h2>Welcome Vendor</h2>
+        <p>
+          Sign in to manage your products, track customer orders, monitor escrow
+          payments, respond to disputes, and grow your DIDWAPA business securely.
+        </p>
+
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="feature-icon">✓</div>
+            <span>Upload and manage your products</span>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon">✓</div>
+            <span>Track orders, payments and escrow</span>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon">✓</div>
+            <span>Build trust and grow your sales</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="form-card">
+
+        <span class="vendor-label">VENDOR LOGIN</span>
+
+        <h3>Login to Vendor Dashboard</h3>
+
+        <p class="subtitle">
+          Enter your vendor email and 6-digit PIN to access your DIDWAPA vendor account.
+        </p>
+
+        <form id="vendorLoginForm">
+          <div class="input-group">
+            <label for="email">Vendor Email Address</label>
+            <div class="input-wrap">
+              <input type="email" id="email" placeholder="Enter your vendor email" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="pin">Vendor PIN</label>
+            <div class="input-wrap">
+              <input type="password" id="pin" placeholder="Enter your 6-digit PIN" maxlength="6" inputmode="numeric" required>
+            </div>
+          </div>
+
+          <div class="row-options">
+            <label class="remember-me">
+              <input type="checkbox">
+              <span>Remember me</span>
+            </label>
+
+            <a href="#" class="forgot-link">Forgot PIN?</a>
+          </div>
+
+          <button type="submit" class="login-btn">Login as Vendor</button>
+
+          <div id="loginMessage"></div>
+        </form>
+
+        <div class="signup-text">
+          Don’t have a vendor account? <a href="create-account.html">Create one</a>
+        </div>
+
+        <div class="bottom-note">
+          DIDWAPA Vendor Portal — sell safely, receive securely.
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+ <script>
+  const API_BASE =
+    window.location.hostname === "localhost"
+      ? "http://localhost:5000"
+      : "http://172.20.10.4:5000";
+
+  const pinInput = document.getElementById("pin");
+  const loginMessage = document.getElementById("loginMessage");
+
+  pinInput.addEventListener("input", function () {
+    this.value = this.value.replace(/\D/g, "").slice(0, 6);
+  });
+
+  function showLoginMessage(message, isSuccess = false) {
+    loginMessage.textContent = message;
+    loginMessage.style.color = isSuccess ? "#16a34a" : "#dc2626";
+  }
+
+  document.getElementById("vendorLoginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const email = document.getElementById("email").value.trim();
+    const pin = document.getElementById("pin").value.trim();
+
+    if (!email || !pin) {
+      showLoginMessage("Please enter your vendor email and PIN.");
+      return;
+    }
+
+    if (pin.length !== 6) {
+      showLoginMessage("PIN must be exactly 6 digits.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          pin
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.ok || data.success) {
+        showLoginMessage(data.message || "Login successful.", true);
+
+        localStorage.setItem("didwapaVendor", JSON.stringify(data.user));
+
+        setTimeout(() => {
+          window.location.href = "admin.html";
+        }, 1000);
+
+      } else {
+        showLoginMessage(data.message || "Login failed.");
+      }
+
+    } catch (error) {
+      console.error(error);
+      showLoginMessage("Network error. Make sure backend is running.");
+    }
+  });
+</script>
+
+</body>
+</html>

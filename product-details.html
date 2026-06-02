@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DIDWAPA - Purchase Product</title>
+
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+    body{background:#f6f7fb;color:#111827}
+    .app{max-width:620px;margin:auto;background:#fff;min-height:100vh}
+    .header{background:linear-gradient(135deg,#0a2d73,#ff6600);color:white;padding:22px 16px 42px;border-bottom-left-radius:28px;border-bottom-right-radius:28px;animation:down .6s ease}
+    .back{border:none;background:rgba(255,255,255,.2);color:white;padding:10px 14px;border-radius:999px;font-weight:900;cursor:pointer}
+    .header h1{margin-top:18px;font-size:1.45rem}
+    .content{padding:16px;margin-top:-25px}
+    .card{background:white;border-radius:22px;padding:16px;box-shadow:0 15px 35px rgba(0,0,0,.08);animation:up .6s ease}
+    .image{height:250px;border-radius:18px;overflow:hidden;background:#f3f4f6;margin-bottom:14px}
+    .image img{width:100%;height:100%;object-fit:cover}
+    h2{font-size:1.25rem;margin-bottom:8px}
+    .price{color:#ff6600;font-size:1.3rem;font-weight:900;margin-bottom:14px}
+    .info{background:#fff7f0;padding:13px;border-radius:15px;margin-bottom:10px}
+    .info strong{display:block;margin-bottom:4px}
+    input{width:100%;height:48px;border:1px solid #e5e7eb;border-radius:15px;padding:0 12px;font-size:1rem;outline:none}
+    input:focus{border-color:#ff6600;box-shadow:0 0 0 4px rgba(255,102,0,.12)}
+    .total{margin-top:14px;background:#f3f6fb;padding:14px;border-radius:15px;font-weight:900}
+    button.pay{width:100%;height:52px;border:none;border-radius:18px;background:linear-gradient(135deg,#ff6600,#ff4500);color:white;font-weight:900;font-size:1rem;margin-top:18px;cursor:pointer}
+
+    .buy-modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      backdrop-filter:blur(8px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      padding:18px;
+    }
+
+    .buy-card{
+      width:100%;
+      max-width:390px;
+      background:white;
+      border-radius:28px;
+      padding:25px;
+      text-align:center;
+      box-shadow:0 25px 60px rgba(0,0,0,.25);
+      animation:modalPop .35s ease;
+    }
+
+    .buy-icon{
+      font-size:3.5rem;
+      margin-bottom:10px;
+    }
+
+    .buy-card h2{
+      color:#0a2d73;
+      margin-bottom:8px;
+    }
+
+    .buy-card p{
+      color:#6b7280;
+      line-height:1.5;
+      margin-bottom:18px;
+    }
+
+    .buy-card button{
+      width:100%;
+      height:48px;
+      border:none;
+      border-radius:16px;
+      font-weight:900;
+      margin-top:10px;
+      cursor:pointer;
+    }
+
+    .modal-message{background:#0a2d73;color:white}
+    .modal-cart{background:#111827;color:white}
+    .modal-pay{background:linear-gradient(135deg,#ff6600,#ff4500);color:white}
+    .modal-cancel{background:#f3f4f6;color:#111827}
+
+    @keyframes down{from{transform:translateY(-25px);opacity:0}to{transform:translateY(0);opacity:1}}
+    @keyframes up{from{transform:translateY(25px);opacity:0}to{transform:translateY(0);opacity:1}}
+    @keyframes modalPop{from{transform:scale(.88) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+
+    @media(max-width:480px){
+      .content{padding:12px}
+      .image{height:210px}
+      .card{padding:13px;border-radius:18px}
+      .buy-card{padding:20px;border-radius:24px}
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="buy-modal" id="buyModal">
+  <div class="buy-card">
+    <div class="buy-icon">🛍️</div>
+    <h2>Choose Action</h2>
+    <p>This product is available. What would you like to do?</p>
+
+    <button class="modal-message" onclick="openMessagePage()">Send Owner Message</button>
+    <button class="modal-cart" onclick="addToCartFromModal()">Add to Cart</button>
+    <button class="modal-pay" onclick="finalizePayment()">Finalize Payment</button>
+    <button class="modal-cancel" onclick="closeBuyModal()">Cancel</button>
+  </div>
+</div>
+
+<main class="app">
+  <section class="header">
+    <button class="back" onclick="history.back()">← Back</button>
+    <h1>Confirm Purchase</h1>
+  </section>
+
+  <section class="content">
+    <div class="card" id="productBox">Loading...</div>
+  </section>
+</main>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+const productId = new URLSearchParams(window.location.search).get("id");
+
+let product = null;
+let selectedQty = 1;
+
+function getFirstImage(images) {
+  try {
+    const parsed = JSON.parse(images);
+    let img = parsed[0] || "";
+    img = img.replace(/\\/g, "/");
+
+    if (img.startsWith("http")) return img;
+    if (img.startsWith("/")) return API_BASE + img;
+
+    return API_BASE + "/" + img;
+  } catch {
+    return "";
+  }
+}
+
+async function loadProduct() {
+  try {
+    const res = await fetch(`${API_BASE}/api/products/${productId}`);
+    const data = await res.json();
+
+    if (!data.success) {
+      document.getElementById("productBox").innerHTML = "Product not found.";
+      return;
+    }
+
+    product = data.product;
+    const image = getFirstImage(product.images);
+
+    document.getElementById("productBox").innerHTML = `
+      <div class="image">
+        <img src="${image || 'https://via.placeholder.com/400'}">
+      </div>
+
+      <h2>${product.product_name}</h2>
+      <div class="price">GH₵${Number(product.price).toFixed(2)}</div>
+
+      <div class="info">
+        <strong>Available Stock</strong>
+        ${product.quantity_in_stock} item(s)
+      </div>
+
+      <div class="info">
+        <strong>Seller Phone</strong>
+        ${product.phone_number || "N/A"}
+      </div>
+
+      <label style="font-weight:900;">Quantity to buy</label>
+      <input 
+        type="number" 
+        id="quantity" 
+        value="1" 
+        min="1" 
+        max="${product.quantity_in_stock}" 
+        oninput="calculateTotal()"
+      >
+
+      <div class="total" id="totalBox">
+        Total: GH₵${Number(product.price).toFixed(2)}
+      </div>
+
+      <button class="pay" onclick="continueToOptions()">Proceed</button>
+    `;
+  } catch (error) {
+    console.error(error);
+    document.getElementById("productBox").innerHTML = "Failed to load product.";
+  }
+}
+
+function calculateTotal() {
+  const qty = Number(document.getElementById("quantity").value || 1);
+  const total = qty * Number(product.price);
+  document.getElementById("totalBox").textContent = `Total: GH₵${total.toFixed(2)}`;
+}
+
+function continueToOptions() {
+  const qty = Number(document.getElementById("quantity").value);
+
+  if (!qty || qty <= 0) {
+    alert("Enter a valid quantity.");
+    return;
+  }
+
+  if (qty > Number(product.quantity_in_stock)) {
+    alert(`Only ${product.quantity_in_stock} item(s) available.`);
+    return;
+  }
+
+  selectedQty = qty;
+  document.getElementById("buyModal").style.display = "flex";
+}
+
+function closeBuyModal() {
+  document.getElementById("buyModal").style.display = "none";
+}
+
+function openMessagePage() {
+  window.location.href = `product-message.html?id=${productId}`;
+}
+
+async function addToCartFromModal() {
+  try {
+    const res = await fetch(`${API_BASE}/api/cart/add`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        product_id: productId
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message);
+
+      if (res.status === 401) {
+        window.location.href = "userlogin.html";
+      }
+
+      return;
+    }
+
+    alert(data.message);
+    closeBuyModal();
+
+  } catch (error) {
+    console.error(error);
+    alert("Failed to add product to cart.");
+  }
+}
+
+
+
+
+
+function finalizePayment() {
+  window.location.href = `choose-payment-method.html?id=${productId}&qty=${selectedQty}`;
+}
+loadProduct();
+</script>
+
+</body>
+</html>

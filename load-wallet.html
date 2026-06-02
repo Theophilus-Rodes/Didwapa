@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIDWAPA - Load Wallet</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+:root{--dark:#06152f;--orange:#ff6600;--bg:#f4f7fb;--border:#e5e7eb;--muted:#6b7280}
+body{background:var(--bg);color:var(--dark)}
+.app{max-width:650px;margin:auto;background:white;min-height:100vh}
+.header{background:linear-gradient(135deg,#12367d,var(--orange));color:white;padding:26px 18px 55px;border-bottom-left-radius:30px;border-bottom-right-radius:30px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.back{border:none;background:rgba(255,255,255,.2);color:white;padding:10px 14px;border-radius:999px;font-weight:900;cursor:pointer}
+.header h1{margin-top:25px;font-size:1.7rem}
+.header p{margin-top:8px;opacity:.9}
+.content{padding:16px;margin-top:-35px}
+.card{background:white;border-radius:26px;padding:20px;box-shadow:0 18px 40px rgba(0,0,0,.1)}
+.form-group{margin-bottom:16px}
+label{display:block;font-weight:900;margin-bottom:8px;color:#374151}
+input{width:100%;height:54px;border:1px solid var(--border);border-radius:17px;background:#f8fafc;padding:0 15px;font-size:1rem;outline:none}
+input:focus{border-color:var(--orange);box-shadow:0 0 0 4px rgba(255,102,0,.13);background:white}
+.note{background:#fff7ed;border:1px dashed #fdba74;color:#92400e;padding:14px;border-radius:18px;font-size:.9rem;line-height:1.6;margin-bottom:16px}
+.btn{width:100%;height:55px;border:none;border-radius:18px;background:linear-gradient(135deg,var(--orange),#ff4500);color:white;font-weight:900;font-size:1rem;cursor:pointer}
+.btn:disabled{opacity:.7;cursor:not-allowed}
+.alert{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:white;padding:15px 20px;border-radius:15px;box-shadow:0 15px 40px rgba(0,0,0,.2);display:none;font-weight:900;z-index:9999}
+.success{color:green}.error{color:red}
+.loader{display:none;text-align:center;margin-top:15px;color:var(--muted);font-weight:900}
+</style>
+</head>
+
+<body>
+
+<div class="alert" id="alertBox"></div>
+
+<main class="app">
+  <section class="header">
+    <div class="top">
+      <h3>Load Wallet</h3>
+      <button class="back" onclick="window.location.href='my-wallet.html'">← Back</button>
+    </div>
+
+    <h1>Add Money To Wallet</h1>
+    <p>Enter the amount and the number money should be deducted from.</p>
+  </section>
+
+  <section class="content">
+    <form class="card" id="loadForm">
+      <div class="note">
+        After clicking Load Wallet, the amount will be added to your wallet account.
+      </div>
+
+      <div class="form-group">
+        <label>Amount GH₵</label>
+        <input type="number" id="amount" placeholder="Enter amount" required>
+      </div>
+
+      <div class="form-group">
+        <label>Number To Deduct From</label>
+        <input type="tel" id="momo_number" placeholder="Example: 0532687733" required>
+      </div>
+
+      <button class="btn" id="loadBtn" type="submit">Load Wallet</button>
+
+      <div class="loader" id="loader">
+        Please wait, loading wallet...
+      </div>
+    </form>
+  </section>
+</main>
+
+<script>
+const API_BASE = `http://${window.location.hostname}:5000`;
+
+const alertBox = document.getElementById("alertBox");
+const loader = document.getElementById("loader");
+const loadBtn = document.getElementById("loadBtn");
+
+function showAlert(message,type="success"){
+  alertBox.textContent = message;
+  alertBox.className = `alert ${type}`;
+  alertBox.style.display = "block";
+
+  setTimeout(()=>{
+    alertBox.style.display = "none";
+  },2500);
+}
+
+document.getElementById("loadForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+
+  const amount = document.getElementById("amount").value;
+  const momo_number = document.getElementById("momo_number").value;
+
+  loadBtn.disabled = true;
+  loadBtn.textContent = "Processing...";
+  loader.style.display = "block";
+
+  try{
+    const res = await fetch(`${API_BASE}/api/wallet/load`,{
+      method:"POST",
+      credentials:"include",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        amount,
+        momo_number
+      })
+    });
+
+    const data = await res.json();
+
+    if(data.success){
+      showAlert(data.message,"success");
+
+      setTimeout(()=>{
+        window.location.href = "my-wallet.html";
+      },1500);
+    }else{
+      showAlert(data.message,"error");
+    }
+
+  }catch(error){
+    console.error(error);
+    showAlert("Failed to load wallet. Try again.","error");
+  }
+
+  loadBtn.disabled = false;
+  loadBtn.textContent = "Load Wallet";
+  loader.style.display = "none";
+});
+</script>
+
+</body>
+</html>
