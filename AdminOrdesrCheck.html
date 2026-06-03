@@ -106,7 +106,11 @@ body{background:var(--bg);color:var(--dark)}
 </div>
 
 <script>
-const API_BASE = `http://${window.location.hostname}:5000`;
+ const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
 const ordersBox = document.getElementById("ordersBox");
 let allOrders = [];
 

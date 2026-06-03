@@ -147,7 +147,7 @@ finishBtn.disabled = true;
 finishBtn.textContent = "Sending prompt...";
 
 try {
-  const res = await fetch(`http://${window.location.hostname}:5000/api/product/momo/initiate`, {
+  const res = await fetch(`api/product/momo/initiate`, {
     method: "POST",
     credentials: "include",
     headers: {

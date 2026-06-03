@@ -812,9 +812,10 @@
 
  <script>
 const API_BASE =
-  window.location.hostname === "localhost"
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000"
-    : "http://172.20.10.4:5000";
+    : "";
 
 const requiredFields = document.querySelectorAll(".required-field");
 const progressFill = document.getElementById("progressFill");

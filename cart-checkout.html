@@ -63,7 +63,11 @@ button{width:100%;height:56px;border:none;border-radius:18px;background:linear-g
 </main>
 
 <script>
-const API_BASE = `http://${window.location.hostname}:5000`;
+ const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
 const msg = document.getElementById("msg");
 const payBtn = document.getElementById("payBtn");
 

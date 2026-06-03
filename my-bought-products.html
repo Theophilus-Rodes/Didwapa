@@ -87,7 +87,11 @@ textarea{width:100%;height:110px;border:1px solid var(--border);border-radius:16
 </main>
 
 <script>
-const API_BASE = `http://${window.location.hostname}:5000`;
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
 const purchaseList = document.getElementById("purchaseList");
 
 let selectedPurchaseId = null;

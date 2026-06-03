@@ -71,7 +71,11 @@ input:focus{border-color:var(--orange);box-shadow:0 0 0 4px rgba(255,102,0,.13);
 </main>
 
 <script>
-const API_BASE = `http://${window.location.hostname}:5000`;
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
 
 const alertBox = document.getElementById("alertBox");
 const loader = document.getElementById("loader");

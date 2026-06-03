@@ -536,11 +536,11 @@
   </div>
 </div>
 <script>
-  const API_BASE =
-    window.location.hostname === "localhost"
-      ? "http://localhost:5000"
-      : "http://172.20.10.4:5000";
-
+ const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
   const loginForm = document.getElementById("loginForm");
 
   loginForm.addEventListener("submit", async (e) => {

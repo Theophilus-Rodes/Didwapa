@@ -69,7 +69,11 @@ textarea:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,102,0,.
 </main>
 
 <script>
-const API_BASE = `http://${window.location.hostname}:5000`;
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
 const params = new URLSearchParams(window.location.search);
 const productId = params.get("id");
 const otherId = params.get("other_id");
