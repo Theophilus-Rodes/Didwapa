@@ -396,6 +396,24 @@
         </div>
 
         <div class="form-group">
+  <label>Region</label>
+  <select name="region" id="region" required>
+    <option value="">Select region</option>
+    <option value="All Ghana">All Ghana</option>
+    <option value="Ashanti">Ashanti</option>
+    <option value="Central Region">Central Region</option>
+    <option value="Greater Accra">Greater Accra</option>
+    <option value="Brong Ahafo">Brong Ahafo</option>
+    <option value="Eastern Region">Eastern Region</option>
+    <option value="Northern Region">Northern Region</option>
+    <option value="Upper East Region">Upper East Region</option>
+    <option value="Upper West Region">Upper West Region</option>
+    <option value="Volta Region">Volta Region</option>
+    <option value="Western Region">Western Region</option>
+  </select>
+</div>
+
+        <div class="form-group">
           <label>Product Type</label>
           <input type="text" id="product_type" placeholder="e.g. Phone, Dress" required>
         </div>
@@ -573,6 +591,7 @@ document.getElementById("productForm").addEventListener("submit", async (e) => {
   const formData = new FormData();
 
   formData.append("category", document.getElementById("category").value);
+  formData.append("region", document.getElementById("region").value);
   formData.append("product_name", document.getElementById("product_name").value);
   formData.append("product_type", document.getElementById("product_type").value);
   formData.append("price", document.getElementById("price").value);

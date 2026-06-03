@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA Home</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --dark: #8c3164;
+      --orange: #ff5a00;
+      --cream: #fff4ea;
+      --green: #0b8f08;
+      --white: #ffffff;
+      --text: #1f2937;
+      --muted: #718096;
+      --bg: #f6f7fb;
+      --border: #e5e7eb;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      padding-bottom: 80px;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: auto;
+      min-height: 100vh;
+      background: var(--white);
+      animation: pageIn 0.5s ease;
+    }
+
+    @keyframes pageIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .top-header {
+      background: var(--dark);
+      padding: 20px 14px 18px;
+      border-bottom-left-radius: 18px;
+      border-bottom-right-radius: 18px;
+      box-shadow: 0 8px 24px rgba(182, 72, 153, 0.25);
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: white;
+      margin-bottom: 15px;
+    }
+
+    .brand-name {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-icons {
+      display: flex;
+      gap: 12px;
+      font-size: 18px;
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 9px;
+    }
+
+    .location-box,
+    .search-box {
+      background: var(--white);
+      height: 46px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 7px 18px rgba(200, 75, 177, 0.13);
+    }
+
+    .location-box {
+      padding: 0 10px;
+      font-size: 14px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .search-box {
+      padding: 0 10px;
+      gap: 8px;
+    }
+
+    .search-box span {
+      font-size: 20px;
+      color: var(--dark);
+    }
+
+    .search-box input {
+      width: 100%;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      color: var(--dark);
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 18px 14px 10px;
+      scrollbar-width: none;
+    }
+
+    .quick-actions::-webkit-scrollbar {
+      display: none;
+    }
+
+    .quick-card {
+      min-width: 132px;
+      height: 98px;
+      background: #f2f6ff;
+      border: 1px solid rgba(255, 90, 0, 0.25);
+      border-radius: 8px;
+      padding: 9px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      animation: slideIn 0.5s ease both;
+      transition: 0.3s;
+    }
+
+    .quick-card:nth-child(2) {
+      animation-delay: 0.08s;
+    }
+
+    .quick-card:nth-child(3) {
+      animation-delay: 0.16s;
+    }
+
+    .quick-card:nth-child(4) {
+      animation-delay: 0.24s;
+    }
+
+    .quick-card:active {
+      transform: scale(0.95);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(25px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .quick-icon {
+      font-size: 39px;
+      line-height: 1;
+    }
+
+    .quick-card p {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .section {
+      padding: 12px 14px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 13px;
+      color: var(--dark);
+    }
+
+    .recommended-scroll {
+      display: flex;
+      gap: 11px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .recommended-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .rec-card {
+      min-width: 105px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .rec-card:nth-child(2) {
+      animation-delay: 0.08s;
+    }
+
+    .rec-card:nth-child(3) {
+      animation-delay: 0.16s;
+    }
+
+    .rec-card:nth-child(4) {
+      animation-delay: 0.24s;
+    }
+
+    .rec-card:nth-child(5) {
+      animation-delay: 0.32s;
+    }
+
+    .rec-img {
+      width: 105px;
+      height: 105px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #dfe7f3, #fff4ea);
+      display: grid;
+      place-items: center;
+      font-size: 46px;
+      overflow: hidden;
+    }
+
+    .rec-card p {
+      font-size: 14px;
+      margin-top: 7px;
+      line-height: 1.25;
+      color: var(--text);
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px 12px;
+      padding-bottom: 25px;
+    }
+
+    .category {
+      text-align: center;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--dark);
+      animation: popIn 0.45s ease both;
+    }
+
+    .category:nth-child(2) { animation-delay: 0.04s; }
+    .category:nth-child(3) { animation-delay: 0.08s; }
+    .category:nth-child(4) { animation-delay: 0.12s; }
+    .category:nth-child(5) { animation-delay: 0.16s; }
+    .category:nth-child(6) { animation-delay: 0.20s; }
+    .category:nth-child(7) { animation-delay: 0.24s; }
+    .category:nth-child(8) { animation-delay: 0.28s; }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: scale(0.85);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .cat-icon {
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 8px;
+      background: #eef5fa;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      font-size: 30px;
+      transition: 0.25s ease;
+    }
+
+    .category:active .cat-icon {
+      background: var(--orange);
+      color: white;
+      transform: scale(0.9);
+    }
+
+    .bottom-nav {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: 68px;
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      z-index: 50;
+      box-shadow: 0 -6px 20px rgba(0,0,0,0.08);
+    }
+
+    .nav-item {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      padding-top: 7px;
+      position: relative;
+    }
+
+    .nav-item span {
+      display: block;
+      font-size: 23px;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+
+    .nav-item.active {
+      color: var(--orange);
+    }
+
+    .sell-icon {
+      width: 25px;
+      height: 25px;
+      border: 2px solid currentColor;
+      border-radius: 4px;
+      display: grid !important;
+      place-items: center;
+      margin: 0 auto 4px;
+      font-size: 18px !important;
+      font-weight: 900;
+    }
+
+    .badge {
+      position: absolute;
+      top: 4px;
+      right: 20px;
+      background: #ef4444;
+      color: white;
+      border-radius: 50%;
+      font-size: 10px;
+      padding: 2px 5px;
+    }
+
+    @media (max-width: 380px) {
+      .search-row {
+        grid-template-columns: 1fr;
+      }
+
+      .top-header {
+        padding-bottom: 16px;
+      }
+
+      .quick-card {
+        min-width: 120px;
+      }
+
+      .rec-card,
+      .rec-img {
+        min-width: 95px;
+        width: 95px;
+      }
+
+      .rec-img {
+        height: 95px;
+      }
+
+      .category-grid {
+        gap: 20px 8px;
+      }
+
+      .cat-icon {
+        width: 52px;
+        height: 52px;
+        font-size: 26px;
+      }
+
+      .category {
+        font-size: 11.5px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+
+    <header class="top-header">
+      <div class="brand-row">
+        <div class="brand-name">DIDWAPA</div>
+        <div class="brand-icons">
+          <span>🔔</span>
+          <span>👤</span>
+        </div>
+      </div>
+
+      <div class="search-row">
+        <select class="location-box" id="regionSelect">
+  <option value="All Ghana">All Ghana</option>
+  <option value="Ashanti">Ashanti</option>
+  <option value="Central Region">Central Region</option>
+  <option value="Greater Accra">Greater Accra</option>
+  <option value="Brong Ahafo">Brong Ahafo</option>
+  <option value="Eastern Region">Eastern Region</option>
+  <option value="Northern Region">Northern Region</option>
+  <option value="Upper East Region">Upper East Region</option>
+  <option value="Upper West Region">Upper West Region</option>
+  <option value="Volta Region">Volta Region</option>
+  <option value="Western Region">Western Region</option>
+</select>
+
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" placeholder="I am looking for..." />
+        </div>
+      </div>
+    </header>
+
+    <section class="quick-actions">
+      <div class="quick-card">
+        <div class="quick-icon">🔎</div>
+        <p>The Intelligence</p>
+      </div>
+
+      <div class="quick-card">
+        <div class="quick-icon">💻</div>
+        <p>Apply for job</p>
+      </div>
+
+      <div class="quick-card">
+        <div class="quick-icon">💸</div>
+        <p>How to sell</p>
+      </div>
+
+      <div class="quick-card">
+        <div class="quick-icon">🛒</div>
+        <p>How to buy</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h3 class="section-title">Recommended for you</h3>
+
+      <div class="recommended-scroll">
+        <div class="rec-card">
+          <div class="rec-img">👟</div>
+          <p>Shoes</p>
+        </div>
+
+        <div class="rec-card">
+          <div class="rec-img">📱</div>
+          <p>Mobile Phones</p>
+        </div>
+
+        <div class="rec-card">
+          <div class="rec-img">🎧</div>
+          <p>Audio & Music Equipment</p>
+        </div>
+
+        <div class="rec-card">
+          <div class="rec-img">🏠</div>
+          <p>Houses & Apartments f...</p>
+        </div>
+
+        <div class="rec-card">
+          <div class="rec-img">💻</div>
+          <p>Laptops</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="category-grid">
+
+        <div class="category">
+          <div class="cat-icon">🔥</div>
+          Trending
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">🚗</div>
+          Vehicles
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">🏠</div>
+          Property
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">📱</div>
+          Phones<br>& Tablets
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">💻</div>
+          Electronics
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">🛋️</div>
+          Home,<br>Furniture &...
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">💄</div>
+          Beauty &<br>Personal C...
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">👗</div>
+          Fashion
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">🏃</div>
+          Leisure &<br>Activities
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">📋</div>
+          Seeking<br>Work CVs
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">🛠️</div>
+          Services
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">💼</div>
+          Jobs
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">🧸</div>
+          Babies<br>& Kids
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">🐶</div>
+          Animals<br>& Pets
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">🥗</div>
+          Food &<br>Agriculture
+        </div>
+
+        <div class="category">
+          <div class="cat-icon">🔌</div>
+          Repairs
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-item active">
+      <span>🏠</span>
+      Home
+    </div>
+
+    <div class="nav-item">
+      <span>🔖</span>
+      Saved
+    </div>
+
+    <div class="nav-item">
+      <span class="sell-icon">+</span>
+      Sell
+    </div>
+
+    <div class="nav-item">
+      <span>💬</span>
+      Messages
+    </div>
+
+    <div class="nav-item">
+      <span>👤</span>
+      Profile
+      <div class="badge">54</div>
+    </div>
+  </nav>
+<script>
+  function openProducts(category) {
+    const region = document.getElementById("regionSelect").value;
+
+    window.location.href =
+      `index.html?region=${encodeURIComponent(region)}&category=${encodeURIComponent(category)}`;
+  }
+
+  document.querySelectorAll(".category").forEach(item => {
+    item.addEventListener("click", () => {
+      const categoryText = item.innerText.replace(/\s+/g, " ").trim();
+
+      openProducts(categoryText);
+    });
+  });
+
+  document.querySelectorAll(".rec-card").forEach(item => {
+    item.addEventListener("click", () => {
+      const categoryText = item.innerText.replace(/\s+/g, " ").trim();
+
+      openProducts(categoryText);
+    });
+  });
+</script>
+
+
+
+</body>
+</html>

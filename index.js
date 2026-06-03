@@ -58,6 +58,15 @@ db.connect((err) => {
   console.log("Connected to DigitalOcean MySQL database: didwapadb");
 });
 
+
+// const db = mysql.createConnection({ 
+//   host: "localhost", user: "root", 
+//   password: "", 
+//   database: "didwapadb" }); 
+//   db.connect((err) => { if (err) 
+//     { console.error("Database connection failed:", err); return; } 
+//     console.log("Connected to MySQL database: didwapadb"); });
+
 app.post("/api/create-account", async (req, res) => {
   try {
     const {
@@ -1461,13 +1470,14 @@ app.put("/api/admin/products/:id/status", (req, res) => {
 ///// Index Display
 ///// Index Display
 app.get("/api/products", (req, res) => {
-  const { category, search } = req.query;
+ const { category, search, region } = req.query;
 
   let sql = `
     SELECT 
       id,
-      category,
+      region,
       product_name,
+      category,
       product_type,
       price,
       product_color,
@@ -1488,6 +1498,11 @@ app.get("/api/products", (req, res) => {
     sql += ` AND category = ?`;
     values.push(category);
   }
+
+  if (region && region !== "All Ghana") {
+  sql += ` AND region = ?`;
+  values.push(region);
+}
 
   if (search && search.trim() !== "") {
     sql += ` AND product_name LIKE ?`;
@@ -1518,6 +1533,7 @@ app.get("/api/products/:id", (req, res) => {
   const sql = `
     SELECT 
       id,
+      region,
       product_name,
       product_type,
       price,
@@ -1854,30 +1870,32 @@ app.post(
 
     const userId = req.session.user.id;
 
-    const {
-      category,
-      product_name,
-      product_type,
-      price,
-      product_color,
-      quantity_in_stock,
-      phone_number,
-      instructions,
-      description,
-      item_condition
-    } = req.body;
+   const {
+  category,
+  region,
+  product_name,
+  product_type,
+  price,
+  product_color,
+  quantity_in_stock,
+  phone_number,
+  instructions,
+  description,
+  item_condition
+} = req.body;
 
-    if (
-      !category ||
-      !product_name ||
-      !product_type ||
-      !price
-    ) {
-      return res.status(400).json({
-        success:false,
-        message:"Please fill all required fields."
-      });
-    }
+if (
+  !category ||
+  !region ||
+  !product_name ||
+  !product_type ||
+  !price
+) {
+  return res.status(400).json({
+    success:false,
+    message:"Please fill all required fields."
+  });
+}
 
     if (!req.files || req.files.length < 5) {
       return res.status(400).json({
@@ -1890,43 +1908,44 @@ const imagePaths = req.files.map(
   file => `/uploads/${file.filename}`
 );
 
-    const sql = `
-      INSERT INTO products (
-        category,
-        product_name,
-        product_type,
-        price,
-        product_color,
-        quantity_in_stock,
-        status,
-        phone_number,
-        instructions,
-        description,
-        item_condition,
-        images,
-        posted_by
-      )
-
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-    `;
+  const sql = `
+  INSERT INTO products (
+    category,
+    region,
+    product_name,
+    product_type,
+    price,
+    product_color,
+    quantity_in_stock,
+    status,
+    phone_number,
+    instructions,
+    description,
+    item_condition,
+    images,
+    posted_by
+  )
+  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+`;
 
     db.query(
       sql,
       [
-        category,
-        product_name,
-        product_type,
-        price,
-        product_color,
-        quantity_in_stock,
-        "pending",
-        phone_number,
-        instructions || null,
-        description || null,
-        item_condition,
-        JSON.stringify(imagePaths),
-        userId
-      ],
+  category,
+  region,
+  product_name,
+  product_type,
+  price,
+  product_color,
+  quantity_in_stock,
+  "pending",
+  phone_number,
+  instructions || null,
+  description || null,
+  item_condition,
+  JSON.stringify(imagePaths),
+  userId
+],
 
       (err)=>{
 

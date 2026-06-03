@@ -659,7 +659,7 @@
       Home
     </a>
 
-    <a href="#" class="nav-item">
+    <a href="loc.html" class="nav-item">
       <div>☰🔍</div>
       Categories
     </a>
@@ -744,6 +744,10 @@
 
  let currentCategory = "All";
 
+ const pageParams = new URLSearchParams(window.location.search);
+const selectedRegion = pageParams.get("region") || "All Ghana";
+const selectedCategory = pageParams.get("category") || "All";
+
 async function loadProducts(category = "All", searchText = "") {
     try {
     let url = `${API_BASE}/api/products`;
@@ -751,6 +755,10 @@ const params = new URLSearchParams();
 
 if (category && category !== "All") {
   params.append("category", category);
+}
+
+if (selectedRegion && selectedRegion !== "All Ghana") {
+  params.append("region", selectedRegion);
 }
 
 if (searchText && searchText.trim() !== "") {
@@ -764,12 +772,27 @@ if (params.toString()) {
 const res = await fetch(url);
       const data = await res.json();
 
-      if (!data.success || data.products.length === 0) {
-        productsContainer.innerHTML = `
-          <p style="padding:15px;">No products available.</p>
-        `;
-        return;
-      }
+     if (!data.success) {
+  productsContainer.innerHTML = `
+    <p style="padding:15px;color:red;">Failed to load products.</p>
+  `;
+  return;
+}
+
+if (data.products.length === 0) {
+
+  const fallbackRes = await fetch(`${API_BASE}/api/products`);
+  const fallbackData = await fallbackRes.json();
+
+  if (fallbackData.success && fallbackData.products.length > 0) {
+    data.products = fallbackData.products;
+  } else {
+    productsContainer.innerHTML = `
+      <p style="padding:15px;">No approved products available.</p>
+    `;
+    return;
+  }
+}
 
       productsContainer.innerHTML = data.products.map(product => {
         const firstImage = getFirstImage(product.images);
@@ -787,8 +810,9 @@ const res = await fetch(url);
             <div class="product-info">
               <div class="product-name">${product.product_name}</div>
               <div class="rating">★★★★★ ${product.item_condition || "Available"}</div>
-              <div class="brand">Type: ${product.product_type || "Product"}</div>
-              <div class="tag">Color: ${product.product_color || "N/A"}</div>
+             <div class="brand">Type: ${product.product_type || "Product"}</div>
+<div class="brand">Region: ${product.region || "N/A"}</div>
+<div class="tag">Color: ${product.product_color || "N/A"}</div>
 
               <div class="price-row">
                 <div>
@@ -848,7 +872,7 @@ document.getElementById("searchInput").addEventListener("keydown", function(e) {
   }
 });
 
-  loadProducts();
+ loadProducts(selectedCategory);
 </script>
 
 <script>
