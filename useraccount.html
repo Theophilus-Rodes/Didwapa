@@ -326,6 +326,53 @@
       cursor: pointer;
     }
 
+    .loading-popup{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(8px);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:99999;
+}
+
+.loading-card{
+  width:100%;
+  max-width:380px;
+  background:white;
+  border-radius:28px;
+  padding:30px;
+  text-align:center;
+  box-shadow:0 25px 60px rgba(0,0,0,.25);
+}
+
+.loader{
+  width:70px;
+  height:70px;
+  border:6px solid #eee;
+  border-top:6px solid #ff6600;
+  border-radius:50%;
+  margin:0 auto 20px;
+  animation:spin 1s linear infinite;
+}
+
+.loading-card h3{
+  color:#0a2d73;
+  margin-bottom:10px;
+}
+
+.loading-card p{
+  color:#666;
+  line-height:1.6;
+}
+
+@keyframes spin{
+  100%{
+    transform:rotate(360deg);
+  }
+}
+
     @keyframes fadeUp {
       from {
         opacity: 0;
@@ -570,6 +617,22 @@
     </section>
   </main>
 
+  <div class="loading-popup" id="loadingPopup">
+  <div class="loading-card">
+
+    <div class="loader"></div>
+
+    <h3>Creating Account...</h3>
+
+    <p>
+      Please wait while DIDWAPA creates your account.<br>
+      Do not close or refresh this page.
+    </p>
+
+  </div>
+</div>
+
+
   <div class="success-popup" id="successPopup">
     <div class="success-card">
       <div class="success-icon">✅</div>
@@ -763,9 +826,11 @@ retakeBtn.addEventListener("click", () => {
       return;
     }
 
-    const formData = new FormData(form);
+   const formData = new FormData(form);
 
-    try {
+document.getElementById("loadingPopup").style.display = "flex";
+
+try {
       const response = await fetch(`${API_BASE}/api/user/create-account`, {
         method: "POST",
         body: formData,
