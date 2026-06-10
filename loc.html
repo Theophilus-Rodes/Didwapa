@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DIDWAPA Home</title>
 
-```css
+
 <style>
 * {
   margin: 0;
@@ -451,6 +451,16 @@ body {
     font-size: 11.5px;
   }
 }
+
+.location-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.district-box {
+  animation: fadeUp .25s ease;
+}
 </style>
 </head>
 
@@ -468,19 +478,25 @@ body {
       </div>
 
       <div class="search-row">
-        <select class="location-box" id="regionSelect">
-  <option value="All Ghana">All Ghana</option>
-  <option value="Ashanti">Ashanti</option>
-  <option value="Central Region">Central Region</option>
-  <option value="Greater Accra">Greater Accra</option>
-  <option value="Brong Ahafo">Brong Ahafo</option>
-  <option value="Eastern Region">Eastern Region</option>
-  <option value="Northern Region">Northern Region</option>
-  <option value="Upper East Region">Upper East Region</option>
-  <option value="Upper West Region">Upper West Region</option>
-  <option value="Volta Region">Volta Region</option>
-  <option value="Western Region">Western Region</option>
-</select>
+     <div class="location-wrap">
+  <select class="location-box" id="regionSelect">
+    <option value="All Ghana">All Ghana</option>
+    <option value="Ashanti">Ashanti</option>
+    <option value="Central Region">Central Region</option>
+    <option value="Greater Accra">Greater Accra</option>
+    <option value="Brong Ahafo">Brong Ahafo</option>
+    <option value="Eastern Region">Eastern Region</option>
+    <option value="Northern Region">Northern Region</option>
+    <option value="Upper East Region">Upper East Region</option>
+    <option value="Upper West Region">Upper West Region</option>
+    <option value="Volta Region">Volta Region</option>
+    <option value="Western Region">Western Region</option>
+  </select>
+
+  <select class="location-box district-box" id="districtSelect" style="display:none;">
+    <option value="">Select area</option>
+  </select>
+</div>
 
         <div class="search-box">
           <span>🔍</span>
@@ -658,30 +674,162 @@ body {
     </div>
   </nav>
 <script>
-  function openProducts(category) {
-    const region = document.getElementById("regionSelect").value;
+const regionAreas = {
+  "Ashanti": [
+    "Atwima Kwanwoma", "Atwima Nwabiagya", "Ejisu-Juaben Municipal",
+    "Kumasi Metropolitan", "Kwabre", "OTHER", "Adansi North",
+    "Adansi South", "Afigya-Kwabre", "Ahafo Ano North", "Ahafo Ano South",
+    "Amansie Central", "Amansie West", "Asante Akim Central Municipal",
+    "Asante Akim North", "Asante Akim South", "Asokore Mampong Municipal",
+    "Atwima Mponua", "Bekwai Municipal", "Bosome Freho", "Bosomtwe",
+    "Ejura/Sekyedumase", "Mampong Municipal", "Obuasi Municipal",
+    "Offinso Municipal", "Offinso North", "Sekyere Afram Plains",
+    "Sekyere Central", "Sekyere East", "Sekyere Kumawu", "Sekyere South"
+  ],
 
-    window.location.href =
-      `index.html?region=${encodeURIComponent(region)}&category=${encodeURIComponent(category)}`;
+  "Central Region": [
+    "Awutu Senya East Municipal", "Cape Coast Metropolitan", "Effutu Municipal",
+    "Gomoa East", "OTHER", "Abura/Asebu/Kwamankese", "Agona East",
+    "Agona West Municipal", "Ajumako/Enyan/Essiam", "Asikuma/Odoben/Brakwa",
+    "Assin North Municipal", "Assin South", "Awutu Senya West", "Ekumfi",
+    "Gomoa West", "Komenda/Edina/Eguafo/Abirem Municipal",
+    "Mfantsiman Municipal", "Potsin", "Twifo-Ati Morkwa",
+    "Twifo/Heman/Lower Denkyira", "Upper Denkyira East", "Upper Denkyira West"
+  ],
+
+  "Greater Accra": [
+    "Accra Metropolitan", "Achimota", "Adabraka", "Adenta",
+    "Tema Metropolitan", "OTHER", "Abelemkpe", "Ablekuma", "Abofu",
+    "Abokobi", "Abossey Okai", "Accra New Town", "Adjiriganor",
+    "Agbogba", "Agbogbloshie", "Airport Residential Area", "Akweteyman",
+    "Alajo", "Amrahia", "Anyaa", "Apenkwa", "Ashaiman Municipal",
+    "Ashaley Botwe", "Ashomang Estate", "Asylum Down", "Avenor Area",
+    "Awoshie", "Banana Inn", "Bubuashie", "BurmaCamp", "Cantonments",
+    "Chorkor", "Circle", "Control", "Danfa", "Dansoman", "Darkuman",
+    "Dodowa", "Dome", "Dworwulu", "Dzorwulu", "East Legon",
+    "GaEast Municipal", "Ga South Municipal", "Ga West Municipal",
+    "Gbawe", "Haatso", "James Town", "Kaneshie", "Kasoa", "Kokomlemle",
+    "Korle Gonno", "Kotobabi", "Kwashieman", "Labadi", "Labone",
+    "Lapaz", "Lartebiokorshie", "Lartebiokoshie", "Ledzokuku-Krowor",
+    "Little Legon", "Madina", "Mamobi", "Mamprobi", "Mataheko",
+    "McCarthy Hill", "Nii Boi Town", "Nima", "Ningo-Prampram",
+    "North Industrial Area", "North Legon", "Nungua", "Odorkor",
+    "Ofankor", "Okaishie", "Okponglo", "Old Ashomang", "Osu",
+    "Oyarifa", "Oyibi", "Pokuase", "Ridge", "Roman Ridge",
+    "SSNIT Flats", "Santa Maria", "Sege", "Sempe New Town",
+    "South La", "Shiashie", "Sowutwuom", "Spintex", "Sukura",
+    "Taifa-Burkina", "Tantra Hills", "Tesano", "Teshie", "Weija",
+    "West Legon", "Zoti Area"
+  ],
+
+  "Brong Ahafo": [
+    "Atebubu-Amantin", "Berekum Municipal", "Sunyani Municipal",
+    "Techiman Municipal", "OTHER", "Asunafo North Municipal",
+    "Asunafo South", "Asutifi North", "Asutifi South", "Banda",
+    "Dormaa East", "Dormaa Municipal", "Dormaa West", "Jaman North",
+    "Jaman South", "Kintampo North Municipal", "Kintampo South",
+    "Nkoranza North", "Nkoranza South", "Pru", "Sene East",
+    "Sene West", "Sunyani West", "Tain", "Tano North", "Tano South",
+    "Techiman South", "Wenchi Municipal"
+  ],
+
+  "Eastern Region": [
+    "Akuapim South", "Asuogyaman", "East Akim Municipal",
+    "New-Juaben Municipal", "OTHER", "Akuapim North", "Akyemansar",
+    "Atiwa", "Ayensuano", "Birim Central Municipal", "Birim North",
+    "Birim South", "Denkyembour", "Fanteakwa", "Kwaebibirem",
+    "Kwahu Afram Plains North", "Kwahu Afram Plains South", "Kwahu East",
+    "Kwahu South", "Kwahu West", "Lower Manya Krobo",
+    "Nsawam Adoagyiri Municipal", "Suhum/Kraboa/Coaltar",
+    "Upper Manya Krobo", "Upper West Akim", "West Akim Municipal",
+    "Yilo Krobo"
+  ],
+
+  "Northern Region": [
+    "Tamale Municipal", "OTHER", "Bole", "Bunkpurugu-Yunyoo",
+    "Central Gonja", "Chereponi", "East Gonja", "East Mamprusi",
+    "Gushegu", "Karaga", "Kpandai", "Nanumba North", "Nanumba South",
+    "Saboba", "Savelugu-Nanton", "Sawla-Tuna-Kalba", "Tolon/Kumbungu",
+    "West Gonja", "West Mamprusi", "Yendi", "Zabzugu/Tatale"
+  ],
+
+  "Upper East Region": [
+    "Bawku Municipal", "Bolgatanga Municipal", "OTHER", "Bawku West",
+    "Bongo District", "Builsa", "Garu-Tempane", "Kassena Nankana East",
+    "Kassena Nankana West", "Talensi-Nabdam"
+  ],
+
+  "Upper West Region": [
+    "Jirapa/Lambussie District", "Lawra District", "Nadowli District",
+    "Sissala East District", "Wa East District", "Wa Municipal District",
+    "Wa West District"
+  ],
+
+  "Volta Region": [
+    "POPULAR", "Ho Municipal", "Hohoe Municipal", "Keta Municipal",
+    "Ketu South Municipal", "Kpando Municipal", "OTHER", "Adaklu",
+    "Afadjato South", "Agotime Ziope", "Akatsi North", "Akatsi South",
+    "Biakoye", "Central Tongu", "Ho West", "Jasikan", "Kadjebi",
+    "Ketu North Municipal", "Krachi East", "Krachi Nchumuru",
+    "Krachi West", "Nkwanta North", "Nkwanta South", "North Dayi",
+    "North Tongu", "South Dayi", "South Tongu"
+  ],
+
+  "Western Region": [
+    "Ahanta West", "Shama Ahanta East Metropolitan", "Wassa West",
+    "OTHER", "Aowin/Suaman", "Bia", "Bibiani/Anhwiaso/Bekwai",
+    "Jomoro", "Juabeso", "Mpohor/Wassa East", "Nzema East",
+    "Prestea-Huni Valley", "Sefwi-Wiawso", "Takoradi",
+    "Tarkwa Nsuaem", "Wasa Amenfi East", "Wasa Amenfi"
+  ]
+};
+
+const regionSelect = document.getElementById("regionSelect");
+const districtSelect = document.getElementById("districtSelect");
+
+regionSelect.addEventListener("change", () => {
+  const region = regionSelect.value;
+  const areas = regionAreas[region] || [];
+
+  districtSelect.innerHTML = `<option value="">Select area</option>`;
+
+  if (areas.length === 0) {
+    districtSelect.style.display = "none";
+    return;
   }
 
-  document.querySelectorAll(".category").forEach(item => {
-    item.addEventListener("click", () => {
-      const categoryText = item.innerText.replace(/\s+/g, " ").trim();
-
-      openProducts(categoryText);
-    });
+  areas.forEach(area => {
+    const option = document.createElement("option");
+    option.value = area;
+    option.textContent = area;
+    districtSelect.appendChild(option);
   });
 
-  document.querySelectorAll(".rec-card").forEach(item => {
-    item.addEventListener("click", () => {
-      const categoryText = item.innerText.replace(/\s+/g, " ").trim();
+  districtSelect.style.display = "flex";
+});
 
-      openProducts(categoryText);
-    });
+function openProducts(category) {
+  const region = regionSelect.value;
+  const district = districtSelect.value;
+
+  window.location.href =
+    `index.html?region=${encodeURIComponent(region)}&district=${encodeURIComponent(district)}&category=${encodeURIComponent(category)}`;
+}
+
+document.querySelectorAll(".category").forEach(item => {
+  item.addEventListener("click", () => {
+    const categoryText = item.innerText.replace(/\s+/g, " ").trim();
+    openProducts(categoryText);
   });
+});
+
+document.querySelectorAll(".rec-card").forEach(item => {
+  item.addEventListener("click", () => {
+    const categoryText = item.innerText.replace(/\s+/g, " ").trim();
+    openProducts(categoryText);
+  });
+});
 </script>
-
 
 
 </body>
