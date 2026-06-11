@@ -89,6 +89,173 @@
       .card{padding:13px;border-radius:18px}
       .buy-card{padding:20px;border-radius:24px}
     }
+
+    .extra-section{
+  margin-top:18px;
+  background:white;
+  border-radius:22px;
+  padding:16px;
+  box-shadow:0 12px 28px rgba(0,0,0,.06);
+}
+
+.extra-title{
+  font-size:1.05rem;
+  font-weight:900;
+  margin-bottom:12px;
+  color:#0a2d73;
+}
+
+.comment-box textarea{
+  width:100%;
+  min-height:90px;
+  border:1px solid #e5e7eb;
+  border-radius:15px;
+  padding:12px;
+  outline:none;
+  resize:none;
+}
+
+.comment-box button{
+  width:100%;
+  height:45px;
+  margin-top:10px;
+  border:none;
+  border-radius:15px;
+  background:#0a2d73;
+  color:white;
+  font-weight:900;
+}
+
+.comment-item{
+  background:#f9fafb;
+  padding:12px;
+  border-radius:15px;
+  margin-top:10px;
+}
+
+.comment-item strong{
+  display:block;
+  margin-bottom:5px;
+}
+
+.comment-item small{
+  color:#6b7280;
+}
+
+.related-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+
+.related-card{
+  background:#f9fafb;
+  border-radius:16px;
+  overflow:hidden;
+  cursor:pointer;
+}
+
+.related-card img{
+  width:100%;
+  height:120px;
+  object-fit:cover;
+}
+
+.related-info{
+  padding:10px;
+}
+
+.related-info strong{
+  display:block;
+  font-size:.9rem;
+}
+
+.related-info span{
+  color:#ff6600;
+  font-weight:900;
+  font-size:.9rem;
+}
+
+.call-btn{
+  width:100%;
+  height:50px;
+  border-radius:16px;
+  background:#16a34a;
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  font-weight:900;
+  margin:12px 0;
+}
+
+.callback-btn{
+  width:100%;
+  height:46px;
+  border:none;
+  border-radius:16px;
+  background:#16a34a;
+  color:white;
+  font-weight:900;
+  margin-top:12px;
+  cursor:pointer;
+}
+
+.callback-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  padding:18px;
+}
+
+.callback-card{
+  width:100%;
+  max-width:380px;
+  background:white;
+  padding:22px;
+  border-radius:22px;
+}
+
+.callback-card h2{
+  margin-bottom:14px;
+  color:#0a2d73;
+}
+
+.callback-card label{
+  font-weight:900;
+  font-size:.85rem;
+  margin-top:10px;
+  display:block;
+}
+
+.callback-card input{
+  width:100%;
+  height:45px;
+  margin-top:6px;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:0 12px;
+}
+
+.callback-card button{
+  width:100%;
+  height:46px;
+  border:none;
+  border-radius:15px;
+  margin-top:14px;
+  background:#ff6600;
+  color:white;
+  font-weight:900;
+}
+
+.cancel-callback{
+  background:#111827 !important;
+}
   </style>
 </head>
 
@@ -107,15 +274,50 @@
   </div>
 </div>
 
+
+<div class="callback-modal" id="callbackModal">
+  <div class="callback-card">
+    <h2>Request Call Back</h2>
+
+    <label>Your Name</label>
+    <input type="text" id="buyerName" readonly>
+
+    <label>Your Telephone</label>
+    <input type="text" id="buyerPhone" readonly>
+
+    <label>Product</label>
+    <input type="text" id="callbackProduct" readonly>
+
+    <button onclick="sendCallbackRequest()">Send Request</button>
+    <button class="cancel-callback" onclick="closeCallbackBox()">Cancel</button>
+  </div>
+</div>
+
 <main class="app">
   <section class="header">
     <button class="back" onclick="history.back()">← Back</button>
     <h1>Confirm Purchase</h1>
   </section>
 
-  <section class="content">
-    <div class="card" id="productBox">Loading...</div>
-  </section>
+<section class="content">
+  <div class="card" id="productBox">Loading...</div>
+
+  <div class="extra-section">
+    <div class="extra-title">Comments</div>
+
+    <div class="comment-box">
+      <textarea id="commentInput" placeholder="Write your comment about this product..."></textarea>
+      <button onclick="submitComment()">Post Comment</button>
+    </div>
+
+    <div id="commentsBox">Loading comments...</div>
+  </div>
+
+  <div class="extra-section">
+    <div class="extra-title">Related Products</div>
+    <div class="related-grid" id="relatedBox">Loading related products...</div>
+  </div>
+</section>
 </main>
 
 <script>
@@ -175,6 +377,28 @@ async function loadProduct() {
         ${product.phone_number || "N/A"}
       </div>
 
+      <div class="info">
+  <strong>Item Condition</strong>
+  ${product.item_condition || "N/A"}
+</div>
+
+<div class="info">
+  <strong>Region</strong>
+  ${product.region || "N/A"}
+</div>
+
+<div class="info">
+  <strong>Area / District</strong>
+  ${product.district || "N/A"}
+</div>
+
+<a 
+  href="tel:${product.phone_number}" 
+  class="call-btn"
+>
+  📞 Call Seller
+</a>
+
       <label style="font-weight:900;">Quantity to buy</label>
       <input 
         type="number" 
@@ -190,12 +414,20 @@ async function loadProduct() {
       </div>
 
       <button class="pay" onclick="continueToOptions()">Proceed</button>
+
+<button class="callback-btn" onclick="openCallbackBox()">
+  📞 Request Seller to Call Back
+</button>
+
+
     `;
   } catch (error) {
     console.error(error);
     document.getElementById("productBox").innerHTML = "Failed to load product.";
   }
 }
+
+
 
 function calculateTotal() {
   const qty = Number(document.getElementById("quantity").value || 1);
@@ -269,7 +501,171 @@ async function addToCartFromModal() {
 function finalizePayment() {
   window.location.href = `choose-payment-method.html?id=${productId}&qty=${selectedQty}`;
 }
+
+
+async function submitComment() {
+  const commentInput = document.getElementById("commentInput");
+  const comment = commentInput.value.trim();
+
+  if (!comment) {
+    alert("Please write a comment first.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/products/${productId}/comments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include",
+      body: JSON.stringify({ comment })
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message);
+      return;
+    }
+
+    commentInput.value = "";
+    loadComments();
+
+  } catch (error) {
+    console.error(error);
+    alert("Failed to post comment.");
+  }
+}
+
+async function loadComments() {
+  try {
+    const res = await fetch(`${API_BASE}/api/products/${productId}/comments`);
+    const data = await res.json();
+
+    const commentsBox = document.getElementById("commentsBox");
+
+    if (!data.success || data.comments.length === 0) {
+      commentsBox.innerHTML = `<div class="comment-item">No comments yet.</div>`;
+      return;
+    }
+
+    commentsBox.innerHTML = data.comments.map(c => `
+      <div class="comment-item">
+        <strong>${c.firstname || "Guest"} ${c.lastname || ""}</strong>
+        <p>${c.comment}</p>
+        <small>${new Date(c.created_at).toLocaleString()}</small>
+      </div>
+    `).join("");
+
+  } catch (error) {
+    console.error(error);
+    document.getElementById("commentsBox").innerHTML = "Failed to load comments.";
+  }
+}
+
+async function loadRelatedProducts() {
+  try {
+    const res = await fetch(`${API_BASE}/api/products/${productId}/related`);
+    const data = await res.json();
+
+    const relatedBox = document.getElementById("relatedBox");
+
+    if (!data.success || data.products.length === 0) {
+      relatedBox.innerHTML = "No related products found.";
+      return;
+    }
+
+    relatedBox.innerHTML = data.products.map(p => {
+      const image = getFirstImage(p.images);
+
+      return `
+        <div class="related-card" onclick="window.location.href='product-details.html?id=${p.id}'">
+          <img src="${image || 'https://via.placeholder.com/300'}">
+          <div class="related-info">
+            <strong>${p.product_name}</strong>
+            <span>GH₵${Number(p.price).toFixed(2)}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  } catch (error) {
+    console.error(error);
+    document.getElementById("relatedBox").innerHTML = "Failed to load related products.";
+  }
+}
+
+
+
+let buyerInfo = null;
+
+async function loadBuyerInfo(){
+  try{
+    const res = await fetch(`${API_BASE}/api/check-user-login`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(data.loggedIn){
+      buyerInfo = data.user;
+      return;
+    }
+
+    buyerInfo = null;
+
+  }catch(error){
+    console.error(error);
+    buyerInfo = null;
+  }
+}
+
+function openCallbackBox(){
+  if(!buyerInfo){
+    alert("Please login first.");
+    window.location.href = "userlogin.html";
+    return;
+  }
+
+  document.getElementById("buyerName").value =
+  `${buyerInfo.firstname || ""} ${buyerInfo.lastname || ""}`.trim() ||
+  buyerInfo.username ||
+  "Buyer";
+
+document.getElementById("buyerPhone").value =
+  buyerInfo.telephone ||
+  buyerInfo.phone ||
+  buyerInfo.phone_number ||
+  "";
+
+  document.getElementById("callbackProduct").value =
+    product.product_name || "";
+
+  document.getElementById("callbackModal").style.display = "flex";
+}
+
+function closeCallbackBox(){
+  document.getElementById("callbackModal").style.display = "none";
+}
+
+function sendCallbackRequest(){
+  const name = document.getElementById("buyerName").value;
+  const phone = document.getElementById("buyerPhone").value;
+  const productName = document.getElementById("callbackProduct").value;
+
+  const message = `Hello, my name is ${name}. My phone number is ${phone}. Please call me back about ${productName}.`;
+
+  window.location.href =
+    `product-message.html?id=${productId}&autoMessage=${encodeURIComponent(message)}`;
+}
+
+loadBuyerInfo();
+
+
 loadProduct();
+loadComments();
+loadRelatedProducts();
 </script>
 
 </body>
