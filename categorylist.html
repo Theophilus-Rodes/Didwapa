@@ -388,6 +388,8 @@ const categoryData = {
     { name: "Software", icon: "💿", ads: "2,880" }
   ],
 
+ 
+
   "Home, Furniture & Appliances": [
     { name: "Furniture", icon: "🛋️", ads: "41,729" },
     { name: "Lighting", icon: "💡", ads: "4,468" },
@@ -405,6 +407,20 @@ const categoryData = {
     { name: "Men's Fashion", icon: "🤵", ads: "40,560" },
     { name: "Baby&Kids’ Fashion", icon: "👕", ads: "4,919" }
   ],
+
+   "Beauty & Personal Care": [
+  { name: "Hair Beauty", icon: "💇", ads: "3,736" },
+  { name: "Face Care", icon: "🧴", ads: "4,400" },
+  { name: "Oral Care", icon: "🪥", ads: "716" },
+  { name: "Body Care", icon: "🧴", ads: "4,338" },
+  { name: "Fragrance", icon: "🌸", ads: "6,883" },
+  { name: "Makeup", icon: "💄", ads: "329" },
+  { name: "Tools & Accessories", icon: "🪒", ads: "4,683" },
+  { name: "Sexual Wellness", icon: "⚕️", ads: "3,127" },
+  { name: "Vitamins & Supplements", icon: "💊", ads: "11,852" },
+  { name: "Massagers", icon: "🧘", ads: "1,215" },
+  { name: "Health & Beauty Services", icon: "💆", ads: "242" }
+],
 
   "Leisure & Activities": [
     { name: "Personal Mobility", icon: "🚲", ads: "1,335" },
@@ -537,10 +553,15 @@ function filterList() {
 }
 
 function openSubcategory(subcategory) {
+  if (category === "Vehicles" && subcategory === "Cars") {
+    window.location.href =
+      `carbrands.html?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}&region=${encodeURIComponent(region)}&district=${encodeURIComponent(district)}`;
+    return;
+  }
+
   window.location.href =
     `index.html?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}&region=${encodeURIComponent(region)}&district=${encodeURIComponent(district)}`;
 }
-
 renderList(currentList);
 </script>
 

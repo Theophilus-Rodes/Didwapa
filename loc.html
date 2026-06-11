@@ -850,7 +850,24 @@ function openProducts(category) {
     `index.html?region=${encodeURIComponent(region)}&district=${encodeURIComponent(district)}&category=${encodeURIComponent(category)}`;
 }
 
-const categoriesWithSub = [
+const categoryRoutes = {
+  "Vehicles": "categorylist.html",
+  "Property": "categorylist.html",
+  "Phones & Tablets": "categorylist.html",
+  "Electronics": "categorylist.html",
+  "Home, Furniture & Appliances": "categorylist.html",
+  "Fashion": "categorylist.html",
+  "Beauty & Personal Care": "categorylist.html",
+  "Services": "categorylist.html",
+  "Repair & Construction": "categorylist.html",
+  "Leisure & Activities": "categorylist.html",
+  "Babies & Kids": "categorylist.html",
+  "Food, Agriculture & Farming": "categorylist.html",
+  "Animals & Pets": "categorylist.html"
+};
+
+const cleanCategoryNames = [
+  "Trending",
   "Vehicles",
   "Property",
   "Phones & Tablets",
@@ -858,38 +875,30 @@ const categoriesWithSub = [
   "Home, Furniture & Appliances",
   "Fashion",
   "Beauty & Personal Care",
-  "Leisure & Activities",
   "Services",
+  "Repair & Construction",
+  "Commercial Equipment & Tools",
+  "Leisure & Activities",
   "Babies & Kids",
-  "Animals & Pets",
   "Food, Agriculture & Farming",
-  "Repair & Construction"
+  "Animals & Pets",
+  "Jobs",
+  "Seeking Work - CVs"
 ];
 
-document.querySelectorAll(".category").forEach(item => {
+document.querySelectorAll(".category").forEach((item, index) => {
   item.addEventListener("click", () => {
-    const clone = item.cloneNode(true);
-
-    const icon = clone.querySelector(".cat-icon");
-    if (icon) icon.remove();
-
-    const categoryText = clone.innerText.replace(/\s+/g, " ").trim();
+    const categoryText = cleanCategoryNames[index];
 
     const region = regionSelect.value;
     const district = districtSelect.value;
 
-    if (categoriesWithSub.includes(categoryText)) {
+    if (categoryRoutes[categoryText]) {
       window.location.href =
         `categorylist.html?category=${encodeURIComponent(categoryText)}&region=${encodeURIComponent(region)}&district=${encodeURIComponent(district)}`;
       return;
     }
 
-    openProducts(categoryText);
-  });
-});
-document.querySelectorAll(".rec-card").forEach(item => {
-  item.addEventListener("click", () => {
-    const categoryText = item.innerText.replace(/\s+/g, " ").trim();
     openProducts(categoryText);
   });
 });
