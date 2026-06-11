@@ -77,6 +77,7 @@ const API_BASE =
 const params = new URLSearchParams(window.location.search);
 const productId = params.get("id");
 const otherId = params.get("other_id");
+const autoMessage = params.get("autoMessage");
 
 const chatArea = document.getElementById("chatArea");
 const messageInput = document.getElementById("messageInput");
@@ -143,16 +144,25 @@ async function loadConversation(){
     `;
 
     if(messages.length === 0){
-      chatArea.innerHTML = `
-        <div class="empty">
-          No messages yet.<br>
-          Start the conversation below.
-        </div>
-      `;
+  chatArea.innerHTML = `
+    <div class="empty">
+      No messages yet.<br>
+      Start the conversation below.
+    </div>
+  `;
 
-      messageInput.value = "Is this product still available or do you still have some in stock?";
-      return;
-    }
+  if(autoMessage){
+    messageInput.value = decodeURIComponent(autoMessage);
+
+    setTimeout(() => {
+      sendMessage();
+    }, 800);
+  } else {
+    messageInput.value = "Is this product still available or do you still have some in stock?";
+  }
+
+  return;
+}
 
     const loggedUser = await getLoggedUser();
     currentUserId = loggedUser?.id;
@@ -264,6 +274,15 @@ async function markProductMessagesAsRead() {
 }
 
 loadConversation();
+
+
+if(autoMessage){
+  setTimeout(() => {
+    if(messageInput.value === decodeURIComponent(autoMessage)){
+      sendMessage();
+    }
+  }, 1500);
+}
 
 setInterval(loadConversation, 4000);
 </script>

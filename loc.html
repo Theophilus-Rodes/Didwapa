@@ -461,6 +461,35 @@ body {
 .district-box {
   animation: fadeUp .25s ease;
 }
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px 10px;
+  padding-bottom: 25px;
+}
+
+.category {
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+  animation: popIn .45s ease both;
+}
+
+.cat-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 8px;
+  background: #f1f5f9;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  transition: .25s ease;
+  border: 1px solid var(--border);
+}
 </style>
 </head>
 
@@ -559,89 +588,94 @@ body {
     </section>
 
     <section class="section">
-      <div class="category-grid">
+     <div class="category-grid">
 
-        <div class="category">
-          <div class="cat-icon">🔥</div>
-          Trending
-        </div>
+  <div class="category">
+    <div class="cat-icon">🔥</div>
+    Trending
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">🚗</div>
-          Vehicles
-        </div>
+  <div class="category">
+    <div class="cat-icon">🚗</div>
+    Vehicles
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">🏠</div>
-          Property
-        </div>
+  <div class="category">
+    <div class="cat-icon">🏠</div>
+    Property
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">📱</div>
-          Phones<br>& Tablets
-        </div>
+  <div class="category">
+    <div class="cat-icon">📱</div>
+    Phones<br>& Tablets
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">💻</div>
-          Electronics
-        </div>
+  <div class="category">
+    <div class="cat-icon">💻</div>
+    Electronics
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">🛋️</div>
-          Home,<br>Furniture &...
-        </div>
+  <div class="category">
+    <div class="cat-icon">🛋️</div>
+    Home,<br>Furniture &<br>Appliances
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">💄</div>
-          Beauty &<br>Personal C...
-        </div>
+  <div class="category">
+    <div class="cat-icon">👗</div>
+    Fashion
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">👗</div>
-          Fashion
-        </div>
+  <div class="category">
+    <div class="cat-icon">💄</div>
+    Beauty &<br>Personal<br>Care
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">🏃</div>
-          Leisure &<br>Activities
-        </div>
+  <div class="category">
+    <div class="cat-icon">🛠️</div>
+    Services
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">📋</div>
-          Seeking<br>Work CVs
-        </div>
+  <div class="category">
+    <div class="cat-icon">👷</div>
+    Repair &<br>Construction
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">🛠️</div>
-          Services
-        </div>
+  <div class="category">
+    <div class="cat-icon">🔧</div>
+    Commercial<br>Equipment &<br>Tools
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">💼</div>
-          Jobs
-        </div>
+  <div class="category">
+    <div class="cat-icon">🏃</div>
+    Leisure &<br>Activities
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">🧸</div>
-          Babies<br>& Kids
-        </div>
+  <div class="category">
+    <div class="cat-icon">🧸</div>
+    Babies & Kids
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">🐶</div>
-          Animals<br>& Pets
-        </div>
+  <div class="category">
+    <div class="cat-icon">🥗</div>
+    Food,<br>Agriculture &<br>Farming
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">🥗</div>
-          Food &<br>Agriculture
-        </div>
+  <div class="category">
+    <div class="cat-icon">🐶</div>
+    Animals &<br>Pets
+  </div>
 
-        <div class="category">
-          <div class="cat-icon">🔌</div>
-          Repairs
-        </div>
+  <div class="category">
+    <div class="cat-icon">💼</div>
+    Jobs
+  </div>
 
-      </div>
+  <div class="category">
+    <div class="cat-icon">📋</div>
+    Seeking<br>Work - CVs
+  </div>
+
+</div>
     </section>
 
   </div>
@@ -816,13 +850,43 @@ function openProducts(category) {
     `index.html?region=${encodeURIComponent(region)}&district=${encodeURIComponent(district)}&category=${encodeURIComponent(category)}`;
 }
 
+const categoriesWithSub = [
+  "Vehicles",
+  "Property",
+  "Phones & Tablets",
+  "Electronics",
+  "Home, Furniture & Appliances",
+  "Fashion",
+  "Beauty & Personal Care",
+  "Leisure & Activities",
+  "Services",
+  "Babies & Kids",
+  "Animals & Pets",
+  "Food, Agriculture & Farming",
+  "Repair & Construction"
+];
+
 document.querySelectorAll(".category").forEach(item => {
   item.addEventListener("click", () => {
-    const categoryText = item.innerText.replace(/\s+/g, " ").trim();
+    const clone = item.cloneNode(true);
+
+    const icon = clone.querySelector(".cat-icon");
+    if (icon) icon.remove();
+
+    const categoryText = clone.innerText.replace(/\s+/g, " ").trim();
+
+    const region = regionSelect.value;
+    const district = districtSelect.value;
+
+    if (categoriesWithSub.includes(categoryText)) {
+      window.location.href =
+        `categorylist.html?category=${encodeURIComponent(categoryText)}&region=${encodeURIComponent(region)}&district=${encodeURIComponent(district)}`;
+      return;
+    }
+
     openProducts(categoryText);
   });
 });
-
 document.querySelectorAll(".rec-card").forEach(item => {
   item.addEventListener("click", () => {
     const categoryText = item.innerText.replace(/\s+/g, " ").trim();

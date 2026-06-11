@@ -385,14 +385,25 @@
         <div class="form-group">
           <label>Category</label>
           <select id="category" required>
-            <option value="">Select category</option>
-            <option>Electronics</option>
-            <option>Phones and Accessories</option>
-            <option>Fashion</option>
-            <option>Beauty</option>
-            <option>Sports</option>
-            <option>Home Appliances</option>
-          </select>
+  <option value="">Select category</option>
+  <option>Trending</option>
+  <option>Vehicles</option>
+  <option>Property</option>
+  <option>Phones & Tablets</option>
+  <option>Electronics</option>
+  <option>Home, Furniture & Appliances</option>
+  <option>Fashion</option>
+  <option>Beauty & Personal Care</option>
+  <option>Services</option>
+  <option>Repair & Construction</option>
+  <option>Commercial Equipment & Tools</option>
+  <option>Leisure & Activities</option>
+  <option>Babies & Kids</option>
+  <option>Food, Agriculture & Farming</option>
+  <option>Animals & Pets</option>
+  <option>Jobs</option>
+  <option>Seeking Work - CVs</option>
+</select>
         </div>
 
         <div class="form-group">
@@ -410,6 +421,13 @@
     <option value="Upper West Region">Upper West Region</option>
     <option value="Volta Region">Volta Region</option>
     <option value="Western Region">Western Region</option>
+  </select>
+</div>
+
+<div class="form-group">
+  <label>Area / District</label>
+  <select name="district" id="district" required>
+    <option value="">Select area</option>
   </select>
 </div>
 
@@ -592,6 +610,7 @@ document.getElementById("productForm").addEventListener("submit", async (e) => {
 
   formData.append("category", document.getElementById("category").value);
   formData.append("region", document.getElementById("region").value);
+  formData.append("district", document.getElementById("district").value);
   formData.append("product_name", document.getElementById("product_name").value);
   formData.append("product_type", document.getElementById("product_type").value);
   formData.append("price", document.getElementById("price").value);
@@ -631,6 +650,84 @@ document.getElementById("productForm").addEventListener("submit", async (e) => {
     console.error(error);
     showAlert("Upload failed. Try again.", "error");
   }
+});
+
+
+const regionSelect = document.getElementById("region");
+const districtSelect = document.getElementById("district");
+
+const regionAreas = {
+  "Ashanti": [
+    "Atwima Kwanwoma", "Atwima Nwabiagya", "Ejisu-Juaben Municipal",
+    "Kumasi Metropolitan", "Kwabre", "OTHER", "Adansi North",
+    "Adansi South", "Afigya-Kwabre", "Ahafo Ano North", "Ahafo Ano South",
+    "Amansie Central", "Amansie West", "Asante Akim Central Municipal",
+    "Asante Akim North", "Asante Akim South", "Asokore Mampong Municipal",
+    "Atwima Mponua", "Bekwai Municipal", "Bosome Freho", "Bosomtwe",
+    "Ejura/Sekyedumase", "Mampong Municipal", "Obuasi Municipal",
+    "Offinso Municipal", "Offinso North", "Sekyere Afram Plains",
+    "Sekyere Central", "Sekyere East", "Sekyere Kumawu", "Sekyere South"
+  ],
+
+  "Central Region": [
+    "Awutu Senya East Municipal", "Cape Coast Metropolitan", "Effutu Municipal",
+    "Gomoa East", "OTHER", "Abura/Asebu/Kwamankese", "Agona East",
+    "Agona West Municipal", "Ajumako/Enyan/Essiam", "Asikuma/Odoben/Brakwa",
+    "Assin North Municipal", "Assin South", "Awutu Senya West", "Ekumfi",
+    "Gomoa West", "Komenda/Edina/Eguafo/Abirem Municipal",
+    "Mfantsiman Municipal", "Potsin", "Twifo-Ati Morkwa",
+    "Twifo/Heman/Lower Denkyira", "Upper Denkyira East", "Upper Denkyira West"
+  ],
+
+  "Greater Accra": [
+    "Accra Metropolitan", "Achimota", "Adabraka", "Adenta",
+    "Tema Metropolitan", "OTHER", "Abelemkpe", "Ablekuma", "Abofu",
+    "Abokobi", "Abossey Okai", "Accra New Town", "Adjiriganor",
+    "Agbogba", "Agbogbloshie", "Airport Residential Area", "Akweteyman",
+    "Alajo", "Amrahia", "Anyaa", "Apenkwa", "Ashaiman Municipal",
+    "Ashaley Botwe", "Ashomang Estate", "Asylum Down", "Avenor Area",
+    "Awoshie", "Banana Inn", "Bubuashie", "BurmaCamp", "Cantonments",
+    "Chorkor", "Circle", "Control", "Danfa", "Dansoman", "Darkuman",
+    "Dodowa", "Dome", "Dworwulu", "Dzorwulu", "East Legon",
+    "GaEast Municipal", "Ga South Municipal", "Ga West Municipal",
+    "Gbawe", "Haatso", "James Town", "Kaneshie", "Kasoa", "Kokomlemle",
+    "Korle Gonno", "Kotobabi", "Kwashieman", "Labadi", "Labone",
+    "Lapaz", "Lartebiokorshie", "Lartebiokoshie", "Ledzokuku-Krowor",
+    "Little Legon", "Madina", "Mamobi", "Mamprobi", "Mataheko",
+    "McCarthy Hill", "Nii Boi Town", "Nima", "Ningo-Prampram",
+    "North Industrial Area", "North Legon", "Nungua", "Odorkor",
+    "Ofankor", "Okaishie", "Okponglo", "Old Ashomang", "Osu",
+    "Oyarifa", "Oyibi", "Pokuase", "Ridge", "Roman Ridge",
+    "SSNIT Flats", "Santa Maria", "Sege", "Sempe New Town",
+    "South La", "Shiashie", "Sowutwuom", "Spintex", "Sukura",
+    "Taifa-Burkina", "Tantra Hills", "Tesano", "Teshie", "Weija",
+    "West Legon", "Zoti Area"
+  ],
+
+  "Brong Ahafo": [
+    "Atebubu-Amantin", "Berekum Municipal", "Sunyani Municipal",
+    "Techiman Municipal", "OTHER", "Asunafo North Municipal",
+    "Asunafo South", "Asutifi North", "Asutifi South", "Banda",
+    "Dormaa East", "Dormaa Municipal", "Dormaa West", "Jaman North",
+    "Jaman South", "Kintampo North Municipal", "Kintampo South",
+    "Nkoranza North", "Nkoranza South", "Pru", "Sene East",
+    "Sene West", "Sunyani West", "Tain", "Tano North", "Tano South",
+    "Techiman South", "Wenchi Municipal"
+  ]
+};
+
+regionSelect.addEventListener("change", () => {
+  const region = regionSelect.value;
+  const areas = regionAreas[region] || [];
+
+  districtSelect.innerHTML = `<option value="">Select area</option>`;
+
+  areas.forEach(area => {
+    const option = document.createElement("option");
+    option.value = area;
+    option.textContent = area;
+    districtSelect.appendChild(option);
+  });
 });
 </script>
 

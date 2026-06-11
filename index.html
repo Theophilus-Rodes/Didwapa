@@ -1273,6 +1273,11 @@
       </div>
 
       <nav class="category-nav">
+         <button class="cat-tab active" onclick="filterByCategory('All', this)">
+          <span></span> All
+        </button>
+
+
         <button class="cat-tab active" onclick="filterByCategory('Electronics', this)">
           <span>📱</span> Electronics
         </button>
@@ -1413,11 +1418,7 @@
           <small>TVs, Fridges,<br>Furniture</small>
         </div>
 
-        <div class="shop-cat" onclick="filterByCategory('Services', document.querySelectorAll('.cat-tab')[4])">
-          <div class="shop-img">👨‍🔧</div>
-          <strong>Services</strong>
-          <small>Repairs, Cleaning,<br>Design & more</small>
-        </div>
+       
       </section>
 
       <div class="section-head">

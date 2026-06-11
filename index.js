@@ -38,34 +38,34 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const db = mysql.createConnection({
-  host: "didwapa-db-do-user-28779964-0.l.db.ondigitalocean.com",
-  port: 25060,
-  user: "doadmin",
-  password: "AVNS_degqR0I6013iI0PsQd5",
-  database: "didwapadb",
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
+// const db = mysql.createConnection({
+//   host: "didwapa-db-do-user-28779964-0.l.db.ondigitalocean.com",
+//   port: 25060,
+//   user: "doadmin",
+//   password: "AVNS_degqR0I6013iI0PsQd5",
+//   database: "didwapadb",
+//   ssl: {
+//     rejectUnauthorized: false
+//   }
+// });
 
-db.connect((err) => {
-  if (err) {
-    console.error("Database connection failed:", err);
-    return;
-  }
+// db.connect((err) => {
+//   if (err) {
+//     console.error("Database connection failed:", err);
+//     return;
+//   }
 
-  console.log("Connected to DigitalOcean MySQL database: didwapadb");
-});
+//   console.log("Connected to DigitalOcean MySQL database: didwapadb");
+// });
 
 
-// const db = mysql.createConnection({ 
-//   host: "localhost", user: "root", 
-//   password: "", 
-//   database: "didwapadb" }); 
-//   db.connect((err) => { if (err) 
-//     { console.error("Database connection failed:", err); return; } 
-//     console.log("Connected to MySQL database: didwapadb"); });
+const db = mysql.createConnection({ 
+  host: "localhost", user: "root", 
+  password: "", 
+  database: "didwapadb" }); 
+  db.connect((err) => { if (err) 
+    { console.error("Database connection failed:", err); return; } 
+    console.log("Connected to MySQL database: didwapadb"); });
 
 app.post("/api/create-account", async (req, res) => {
   try {
@@ -1356,12 +1356,11 @@ app.post("/api/admin/post-product", uploadProductImages.array("product_images", 
 app.get("/api/admin/products", (req, res) => {
   const sql = `
     SELECT 
-      products.id,
-      products.product_name,
-      products.status,
-      products.created_at,
+      products.*,
       users.firstname,
-      users.lastname
+      users.lastname,
+      users.email,
+      users.telephone
     FROM products
     LEFT JOIN users ON products.posted_by = users.id
     ORDER BY products.id DESC
@@ -1382,7 +1381,6 @@ app.get("/api/admin/products", (req, res) => {
     });
   });
 });
-
 
 // ===============================
 // ADMIN: GET SINGLE PRODUCT DETAILS
@@ -1468,14 +1466,14 @@ app.put("/api/admin/products/:id/status", (req, res) => {
 
 
 ///// Index Display
-///// Index Display
 app.get("/api/products", (req, res) => {
- const { category, search, region } = req.query;
+  const { category, search, region, district } = req.query;
 
   let sql = `
     SELECT 
       id,
       region,
+      district,
       product_name,
       category,
       product_type,
@@ -1500,9 +1498,14 @@ app.get("/api/products", (req, res) => {
   }
 
   if (region && region !== "All Ghana") {
-  sql += ` AND region = ?`;
-  values.push(region);
-}
+    sql += ` AND region = ?`;
+    values.push(region);
+  }
+
+  if (district && district.trim() !== "") {
+    sql += ` AND district = ?`;
+    values.push(district.trim());
+  }
 
   if (search && search.trim() !== "") {
     sql += ` AND product_name LIKE ?`;
@@ -1526,6 +1529,7 @@ app.get("/api/products", (req, res) => {
     });
   });
 });
+
 
 app.get("/api/products/:id", (req, res) => {
   const productId = req.params.id;
@@ -1870,32 +1874,34 @@ app.post(
 
     const userId = req.session.user.id;
 
-   const {
-  category,
-  region,
-  product_name,
-  product_type,
-  price,
-  product_color,
-  quantity_in_stock,
-  phone_number,
-  instructions,
-  description,
-  item_condition
-} = req.body;
+    const {
+      category,
+      region,
+      district,
+      product_name,
+      product_type,
+      price,
+      product_color,
+      quantity_in_stock,
+      phone_number,
+      instructions,
+      description,
+      item_condition
+    } = req.body;
 
-if (
-  !category ||
-  !region ||
-  !product_name ||
-  !product_type ||
-  !price
-) {
-  return res.status(400).json({
-    success:false,
-    message:"Please fill all required fields."
-  });
-}
+    if (
+      !category ||
+      !region ||
+      !district ||
+      !product_name ||
+      !product_type ||
+      !price
+    ) {
+      return res.status(400).json({
+        success:false,
+        message:"Please fill all required fields."
+      });
+    }
 
     if (!req.files || req.files.length < 5) {
       return res.status(400).json({
@@ -1904,57 +1910,55 @@ if (
       });
     }
 
-const imagePaths = req.files.map(
-  file => `/uploads/${file.filename}`
-);
+    const imagePaths = req.files.map(
+      file => `/uploads/${file.filename}`
+    );
 
-  const sql = `
-  INSERT INTO products (
-    category,
-    region,
-    product_name,
-    product_type,
-    price,
-    product_color,
-    quantity_in_stock,
-    status,
-    phone_number,
-    instructions,
-    description,
-    item_condition,
-    images,
-    posted_by
-  )
-  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-`;
+    const sql = `
+      INSERT INTO products (
+        category,
+        region,
+        district,
+        product_name,
+        product_type,
+        price,
+        product_color,
+        quantity_in_stock,
+        status,
+        phone_number,
+        instructions,
+        description,
+        item_condition,
+        images,
+        posted_by
+      )
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `;
 
     db.query(
       sql,
       [
-  category,
-  region,
-  product_name,
-  product_type,
-  price,
-  product_color,
-  quantity_in_stock,
-  "pending",
-  phone_number,
-  instructions || null,
-  description || null,
-  item_condition,
-  JSON.stringify(imagePaths),
-  userId
-],
+        category,
+        region,
+        district,
+        product_name,
+        product_type,
+        price,
+        product_color,
+        quantity_in_stock,
+        "pending",
+        phone_number,
+        instructions || null,
+        description || null,
+        item_condition,
+        JSON.stringify(imagePaths),
+        userId
+      ],
 
-      (err)=>{
+      (err) => {
 
-        if(err){
-
-          console.error(
-            "Upload product error:",
-            err
-          );
+        if (err) {
+          console.error("Upload product error:", err);
 
           return res.status(500).json({
             success:false,
@@ -1966,8 +1970,7 @@ const imagePaths = req.files.map(
 
         res.json({
           success:true,
-          message:
-            "Product uploaded successfully and pending approval."
+          message:"Product uploaded successfully and pending approval."
         });
 
       }
@@ -1975,7 +1978,6 @@ const imagePaths = req.files.map(
 
   }
 );
-
 
 /////User Products view 
 app.get(
@@ -6414,6 +6416,119 @@ app.post("/api/admin/report-messages/mark-read/:user_id", (req, res) => {
     res.json({
       success: true,
       updated: result.affectedRows
+    });
+  });
+});
+
+
+/////Comments 
+app.post("/api/products/:id/comments", (req, res) => {
+  const productId = req.params.id;
+  const userId = req.session.user ? req.session.user.id : null;
+  const { comment } = req.body;
+
+  if (!comment || comment.trim() === "") {
+    return res.status(400).json({
+      success: false,
+      message: "Comment cannot be empty."
+    });
+  }
+
+  const sql = `
+    INSERT INTO product_comments (
+      product_id,
+      user_id,
+      comment
+    )
+    VALUES (?, ?, ?)
+  `;
+
+  db.query(sql, [productId, userId, comment.trim()], (err) => {
+    if (err) {
+      console.error("Add comment error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to add comment."
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Comment added successfully."
+    });
+  });
+});
+
+
+app.get("/api/products/:id/comments", (req, res) => {
+  const productId = req.params.id;
+
+  const sql = `
+    SELECT 
+      pc.id,
+      pc.comment,
+      pc.created_at,
+      users.firstname,
+      users.lastname
+    FROM product_comments pc
+    LEFT JOIN users ON pc.user_id = users.id
+    WHERE pc.product_id = ?
+    ORDER BY pc.id DESC
+  `;
+
+  db.query(sql, [productId], (err, results) => {
+    if (err) {
+      console.error("Fetch comments error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load comments."
+      });
+    }
+
+    res.json({
+      success: true,
+      comments: results
+    });
+  });
+});
+
+
+app.get("/api/products/:id/related", (req, res) => {
+  const productId = req.params.id;
+
+  const sql = `
+    SELECT 
+      id,
+      product_name,
+      category,
+      region,
+      district,
+      price,
+      images
+    FROM products
+    WHERE status = 'approved'
+      AND id != ?
+      AND (
+        category = (SELECT category FROM products WHERE id = ?)
+        OR region = (SELECT region FROM products WHERE id = ?)
+        OR product_name LIKE CONCAT('%', (SELECT product_name FROM products WHERE id = ?), '%')
+      )
+    ORDER BY id DESC
+    LIMIT 10
+  `;
+
+  db.query(sql, [productId, productId, productId, productId], (err, results) => {
+    if (err) {
+      console.error("Related products error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load related products."
+      });
+    }
+
+    res.json({
+      success: true,
+      products: results
     });
   });
 });

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA - Category List</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --primary: #ff6600;
+      --green: #08b34f;
+      --bg: #f4f7f9;
+      --text: #111827;
+      --muted: #7b8794;
+      --border: #e5e7eb;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 82px;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: auto;
+      min-height: 100vh;
+      background: #fff;
+      animation: pageIn .4s ease;
+    }
+
+    @keyframes pageIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .top-bar {
+      background: var(--green);
+      height: 84px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .back-btn {
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+    }
+
+    .search-box {
+      flex: 1;
+      height: 48px;
+      background: #fff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,.12);
+    }
+
+    .search-box input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .search-box span {
+      font-size: 23px;
+      color: #607d8b;
+    }
+
+    .list {
+      background: #fff;
+    }
+
+    .list-item {
+      min-height: 86px;
+      display: grid;
+      grid-template-columns: 76px 1fr 28px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: .2s ease;
+      animation: slideIn .35s ease both;
+    }
+
+    .list-item:active {
+      background: #f1f5f9;
+      transform: scale(.98);
+    }
+
+    .list-item:nth-child(2) { animation-delay: .04s; }
+    .list-item:nth-child(3) { animation-delay: .08s; }
+    .list-item:nth-child(4) { animation-delay: .12s; }
+    .list-item:nth-child(5) { animation-delay: .16s; }
+    .list-item:nth-child(6) { animation-delay: .20s; }
+    .list-item:nth-child(7) { animation-delay: .24s; }
+    .list-item:nth-child(8) { animation-delay: .28s; }
+    .list-item:nth-child(9) { animation-delay: .32s; }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .thumb {
+      width: 64px;
+      height: 64px;
+      background: #edf2f7;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      font-size: 35px;
+      overflow: hidden;
+    }
+
+    .item-title {
+      font-size: 20px;
+      font-weight: 500;
+      color: #263238;
+      line-height: 1.2;
+    }
+
+    .ads-count {
+      margin-top: 5px;
+      font-size: 17px;
+      color: #7b8a97;
+    }
+
+    .arrow {
+      color: #78909c;
+      font-size: 34px;
+      font-weight: 300;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: 70px;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      z-index: 50;
+      box-shadow: 0 -6px 20px rgba(0,0,0,.08);
+    }
+
+    .nav-item {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      padding-top: 7px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .nav-item span {
+      display: block;
+      font-size: 23px;
+      margin-bottom: 4px;
+      line-height: 1;
+    }
+
+    .nav-item.active {
+      color: var(--green);
+    }
+
+    .sell-icon {
+      width: 25px;
+      height: 25px;
+      border: 2px solid #475569;
+      color: #475569;
+      border-radius: 4px;
+      display: grid !important;
+      place-items: center;
+      margin: 0 auto 4px;
+      font-size: 18px !important;
+      font-weight: 900;
+    }
+
+    .badge {
+      position: absolute;
+      top: 4px;
+      right: 20px;
+      background: #ef4444;
+      color: #fff;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      font-size: 11px;
+      display: grid;
+      place-items: center;
+      border: 2px solid #fff;
+    }
+
+    .empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 420px) {
+      .top-bar {
+        height: 78px;
+        padding: 10px;
+      }
+
+      .search-box {
+        height: 46px;
+      }
+
+      .list-item {
+        min-height: 82px;
+        grid-template-columns: 72px 1fr 24px;
+        padding: 9px 12px;
+      }
+
+      .thumb {
+        width: 60px;
+        height: 60px;
+        font-size: 32px;
+      }
+
+      .item-title {
+        font-size: 18px;
+      }
+
+      .ads-count {
+        font-size: 15px;
+      }
+
+      .arrow {
+        font-size: 30px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="top-bar">
+    <button class="back-btn" onclick="history.back()">‹</button>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="I am looking for..." oninput="filterList()">
+      <span>🔍</span>
+    </div>
+  </div>
+
+  <section class="list" id="categoryList"></section>
+
+</div>
+
+<nav class="bottom-nav">
+  <div class="nav-item active" onclick="window.location.href='index.html'">
+    <span>🏠</span>
+    Home
+  </div>
+
+  <div class="nav-item" onclick="window.location.href='cart.html'">
+    <span>🔖</span>
+    Saved
+  </div>
+
+  <div class="nav-item" onclick="window.location.href='sell-products.html'">
+    <span class="sell-icon">+</span>
+    Sell
+  </div>
+
+  <div class="nav-item" onclick="window.location.href='product-messages.html'">
+    <span>💬</span>
+    Messages
+    <div class="badge">1</div>
+  </div>
+
+  <div class="nav-item" onclick="window.location.href='user-profile.html'">
+    <span>👤</span>
+    Profile
+  </div>
+</nav>
+
+<script>
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
+
+const params = new URLSearchParams(window.location.search);
+
+const category = params.get("category") || "Vehicles";
+const region = params.get("region") || "All Ghana";
+const district = params.get("district") || "";
+
+const categoryData = {
+  "Vehicles": [
+    { name: "Vehicle Parts & Accessories", icon: "⚙️", ads: "109,612" },
+    { name: "Cars", icon: "🚗", ads: "19,779" },
+    { name: "Motorcycles & Scooters", icon: "🏍️", ads: "3,385" },
+    { name: "Buses & Microbuses", icon: "🚐", ads: "1,371" },
+    { name: "Trucks & Trailers", icon: "🚚", ads: "1,348" },
+    { name: "Construction & Heavy Machinery", icon: "🏗️", ads: "575" },
+    { name: "Watercraft & Boats", icon: "🛥️", ads: "" },
+    { name: "Personal Mobility", icon: "🚲", ads: "1,335" },
+    { name: "Car Services", icon: "🛞", ads: "974" }
+  ],
+
+  "Property": [
+    { name: "New Builds", icon: "🏢", ads: "229" },
+    { name: "Houses & Apartments For Rent", icon: "🏘️", ads: "13,843" },
+    { name: "Houses & Apartments For Sale", icon: "🏡", ads: "8,644" },
+    { name: "Short Let", icon: "🔑", ads: "424" },
+    { name: "Land & Plots for Rent", icon: "🌍", ads: "" },
+    { name: "Land & Plots For Sale", icon: "🌳", ads: "10,367" },
+    { name: "Event Centres, Venues & Workstations", icon: "🏛️", ads: "" },
+    { name: "Commercial Property For Rent", icon: "🏬", ads: "1,688" },
+    { name: "Commercial Property For Sale", icon: "🏪", ads: "620" }
+  ],
+
+  "Phones & Tablets": [
+    { name: "Mobile Phones", icon: "📱", ads: "33,325" },
+    { name: "Accessories for Phones & Tablets", icon: "🔌", ads: "12,301" },
+    { name: "Smart Watches", icon: "⌚", ads: "2,446" },
+    { name: "Tablets", icon: "📲", ads: "3,258" },
+    { name: "Headphones", icon: "🎧", ads: "5,450" }
+  ],
+
+  "Electronics": [
+    { name: "Laptops & Computers", icon: "💻", ads: "22,621" },
+    { name: "TV & Video Equipment", icon: "📺", ads: "62,671" },
+    { name: "Video Game Consoles", icon: "🎮", ads: "4,698" },
+    { name: "Audio & Music Equipment", icon: "🔊", ads: "46,544" },
+    { name: "Headphones", icon: "🎧", ads: "5,450" },
+    { name: "Photo & Video Cameras", icon: "📷", ads: "4,331" },
+    { name: "Security & Surveillance", icon: "📹", ads: "7,548" },
+    { name: "Networking Products", icon: "📡", ads: "10,027" },
+    { name: "Printers & Scanners", icon: "🖨️", ads: "3,946" },
+    { name: "Computer Monitors", icon: "🖥️", ads: "2,126" },
+    { name: "Computer Hardware", icon: "💾", ads: "5,071" },
+    { name: "Computer Accessories", icon: "🖱️", ads: "15,315" },
+    { name: "Accessories & Supplies for Electronics", icon: "🔋", ads: "20,961" },
+    { name: "Video Games", icon: "🕹️", ads: "2,074" },
+    { name: "Software", icon: "💿", ads: "2,880" }
+  ],
+
+  "Home, Furniture & Appliances": [
+    { name: "Furniture", icon: "🛋️", ads: "41,729" },
+    { name: "Lighting", icon: "💡", ads: "4,468" },
+    { name: "Storage & Organization", icon: "📦", ads: "2,002" },
+    { name: "Home Accessories", icon: "🛏️", ads: "14,230" },
+    { name: "Home Appliances", icon: "❄️", ads: "128,485" },
+    { name: "Kitchen Appliances", icon: "🧊", ads: "126,934" },
+    { name: "Kitchenware & Cookware", icon: "🍳", ads: "8,381" },
+    { name: "Household Chemicals", icon: "🧴", ads: "1,272" },
+    { name: "Garden Supplies", icon: "🌱", ads: "2,537" }
+  ],
+
+  "Fashion": [
+    { name: "Women's Fashion", icon: "👗", ads: "32,069" },
+    { name: "Men's Fashion", icon: "🤵", ads: "40,560" },
+    { name: "Baby&Kids’ Fashion", icon: "👕", ads: "4,919" }
+  ],
+
+  "Leisure & Activities": [
+    { name: "Personal Mobility", icon: "🚲", ads: "1,335" },
+    { name: "Sports Equipment", icon: "🏃", ads: "6,939" },
+    { name: "Massagers", icon: "🧘", ads: "1,215" },
+    { name: "Musical Instruments & Gear", icon: "🎹", ads: "4,211" },
+    { name: "Books & Table Games", icon: "📚", ads: "5,041" },
+    { name: "Arts, Crafts & Awards", icon: "🏆", ads: "1,477" },
+    { name: "Outdoor Gear", icon: "⛺", ads: "449" },
+    { name: "Music & Video", icon: "💿", ads: "" }
+  ],
+
+  "Services": [
+    { name: "Building & Trades Services", icon: "👷", ads: "7,672" },
+    { name: "Car Services", icon: "🛞", ads: "974" },
+    { name: "Computer & IT Services", icon: "🖥️", ads: "2,116" },
+    { name: "Repair Services", icon: "🧰", ads: "1,362" },
+    { name: "Cleaning Services", icon: "🧼", ads: "1,579" },
+    { name: "Printing Services", icon: "👕", ads: "2,584" },
+    { name: "Manufacturing Services", icon: "🏭", ads: "387" },
+    { name: "Logistics Services", icon: "🛵", ads: "220" },
+    { name: "Legal Services", icon: "⚖️", ads: "" },
+    { name: "Tax & Financial Services", icon: "🧾", ads: "" },
+    { name: "Recruitment Services", icon: "👩‍💼", ads: "" },
+    { name: "Rental Services", icon: "🏪", ads: "1,754" },
+    { name: "Chauffeur & Airport Transfer Services", icon: "🚕", ads: "" },
+    { name: "Travel Agents & Tours", icon: "🏖️", ads: "745" },
+    { name: "Classes & Courses", icon: "🧑‍🏫", ads: "512" },
+    { name: "Child Care & Education Services", icon: "🏫", ads: "" },
+    { name: "Health & Beauty Services", icon: "💆", ads: "242" },
+    { name: "Fitness & Personal Training Services", icon: "🏋️", ads: "" },
+    { name: "Party, Catering & Event Services", icon: "🍽️", ads: "852" },
+    { name: "DJ & Entertainment Services", icon: "🎧", ads: "" },
+    { name: "Wedding Venues & Services", icon: "💐", ads: "" },
+    { name: "Photography & Video Services", icon: "📸", ads: "392" },
+    { name: "Landscaping & Gardening Services", icon: "🌳", ads: "250" },
+    { name: "Pet Services", icon: "🐕", ads: "" },
+    { name: "Other Services", icon: "🧰", ads: "2,102" }
+  ],
+
+  "Babies & Kids": [
+    { name: "Toys & Games", icon: "🚗", ads: "2,402" },
+    { name: "Children's Furniture", icon: "🛏️", ads: "720" },
+    { name: "Children's Clothing", icon: "👕", ads: "2,991" },
+    { name: "Children's Shoes", icon: "👟", ads: "767" },
+    { name: "Babies & Kids Accessories", icon: "🧸", ads: "1,161" },
+    { name: "Baby Gear & Equipment", icon: "👶", ads: "1,049" },
+    { name: "Care & Feeding", icon: "🍼", ads: "3,399" },
+    { name: "Maternity & Pregnancy", icon: "🤰", ads: "531" },
+    { name: "Transport & Safety", icon: "🛒", ads: "404" },
+    { name: "Playground Equipment", icon: "🎪", ads: "308" },
+    { name: "Child Care & Education Services", icon: "🏫", ads: "" }
+  ],
+
+  "Animals & Pets": [
+    { name: "Pet's Accessories", icon: "🥣", ads: "2,814" },
+    { name: "Cats & Kittens", icon: "🐈", ads: "222" },
+    { name: "Dogs & Puppies", icon: "🐕", ads: "2,894" },
+    { name: "Fish", icon: "🐠", ads: "725" },
+    { name: "Birds", icon: "🦜", ads: "" },
+    { name: "Other Animals", icon: "🐹", ads: "" },
+    { name: "Pet Services", icon: "🐾", ads: "" }
+  ],
+
+  "Food, Agriculture & Farming": [
+    { name: "Food & Beverages", icon: "🥗", ads: "8,449" },
+    { name: "Farm Animals", icon: "🐓", ads: "1,219" },
+    { name: "Seeds & Fertilizers", icon: "🌱", ads: "1,098" },
+    { name: "Farm Machinery & Equipment", icon: "🚜", ads: "4,307" },
+    { name: "Farm Animal Feed & Supplements", icon: "🌾", ads: "293" }
+  ],
+
+  "Repair & Construction": [
+    { name: "Electrical Equipment", icon: "⚡", ads: "55,657" },
+    { name: "Building Materials & Supplies", icon: "🧱", ads: "6,723" },
+    { name: "Plumbing & Water Systems", icon: "🚽", ads: "12,033" },
+    { name: "Electrical Hand Tools", icon: "🔩", ads: "8,344" },
+    { name: "Hand Tools", icon: "🧰", ads: "7,702" },
+    { name: "Measuring & Testing Tools", icon: "📟", ads: "1,317" },
+    { name: "Hardware & Fasteners", icon: "🔩", ads: "536" },
+    { name: "Doors & Security", icon: "🚪", ads: "5,793" },
+    { name: "Windows & Glass", icon: "🪟", ads: "301" },
+    { name: "Other Repair & Construction Items", icon: "🪜", ads: "1,550" },
+    { name: "Building & Trades Services", icon: "👷", ads: "7,672" },
+    { name: "Repair Services", icon: "🧰", ads: "1,362" }
+  ]
+};
+
+let currentList = categoryData[category] || [];
+
+function renderList(list) {
+  const categoryList = document.getElementById("categoryList");
+
+  if (!list.length) {
+    categoryList.innerHTML = `
+      <div class="empty">
+        No subcategories found for ${category}.
+      </div>
+    `;
+    return;
+  }
+
+  categoryList.innerHTML = list.map(item => `
+    <div class="list-item" onclick="openSubcategory('${item.name.replace(/'/g, "\\'")}')">
+      <div class="thumb">${item.icon}</div>
+
+      <div>
+        <div class="item-title">${item.name}</div>
+        <div class="ads-count">${item.ads ? item.ads + " ads" : ""}</div>
+      </div>
+
+      <div class="arrow">›</div>
+    </div>
+  `).join("");
+}
+
+function filterList() {
+  const search = document.getElementById("searchInput").value.toLowerCase().trim();
+
+  if (!search) {
+    renderList(currentList);
+    return;
+  }
+
+  const filtered = currentList.filter(item =>
+    item.name.toLowerCase().includes(search)
+  );
+
+  renderList(filtered);
+}
+
+function openSubcategory(subcategory) {
+  window.location.href =
+    `index.html?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}&region=${encodeURIComponent(region)}&district=${encodeURIComponent(district)}`;
+}
+
+renderList(currentList);
+</script>
+
+</body>
+</html>
