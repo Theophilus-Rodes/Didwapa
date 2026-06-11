@@ -38,34 +38,34 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// const db = mysql.createConnection({
-//   host: "didwapa-db-do-user-28779964-0.l.db.ondigitalocean.com",
-//   port: 25060,
-//   user: "doadmin",
-//   password: "AVNS_degqR0I6013iI0PsQd5",
-//   database: "didwapadb",
-//   ssl: {
-//     rejectUnauthorized: false
-//   }
-// });
+const db = mysql.createConnection({
+  host: "didwapa-db-do-user-28779964-0.l.db.ondigitalocean.com",
+  port: 25060,
+  user: "doadmin",
+  password: "AVNS_degqR0I6013iI0PsQd5",
+  database: "didwapadb",
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
-// db.connect((err) => {
-//   if (err) {
-//     console.error("Database connection failed:", err);
-//     return;
-//   }
+db.connect((err) => {
+  if (err) {
+    console.error("Database connection failed:", err);
+    return;
+  }
 
-//   console.log("Connected to DigitalOcean MySQL database: didwapadb");
-// });
+  console.log("Connected to DigitalOcean MySQL database: didwapadb");
+});
 
 
-const db = mysql.createConnection({ 
-  host: "localhost", user: "root", 
-  password: "", 
-  database: "didwapadb" }); 
-  db.connect((err) => { if (err) 
-    { console.error("Database connection failed:", err); return; } 
-    console.log("Connected to MySQL database: didwapadb"); });
+// const db = mysql.createConnection({ 
+//   host: "localhost", user: "root", 
+//   password: "", 
+//   database: "didwapadb" }); 
+//   db.connect((err) => { if (err) 
+//     { console.error("Database connection failed:", err); return; } 
+//     console.log("Connected to MySQL database: didwapadb"); });
 
 app.post("/api/create-account", async (req, res) => {
   try {
