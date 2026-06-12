@@ -549,42 +549,51 @@
       }, 2500);
     }
 
-    function renderProductImages(imagesData) {
-      if (!imagesData) {
-        return `<strong>No product images uploaded</strong>`;
-      }
+   function renderProductImages(imagesData) {
+  if (!imagesData) {
+    return `<strong>No product images uploaded</strong>`;
+  }
 
-      let images = [];
+  let images = [];
 
-      try {
-        images = JSON.parse(imagesData);
-      } catch (e) {
-        images = [imagesData];
-      }
+  try {
+    images = JSON.parse(imagesData);
+  } catch (e) {
+    images = [imagesData];
+  }
 
-      if (!Array.isArray(images) || images.length === 0) {
-        return `<strong>No product images uploaded</strong>`;
-      }
+  if (!Array.isArray(images) || images.length === 0) {
+    return `<strong>No product images uploaded</strong>`;
+  }
 
-      return `
-        <div class="image-gallery">
-          ${images.map((img, index) => {
-            const cleanPath = img.startsWith("/") ? img : "/" + img;
-            const imageUrl = `${API_BASE}${cleanPath}`;
+  return `
+    <div class="image-gallery">
+      ${images.map((img, index) => {
+        let imageUrl = "";
 
-            return `
-              <div class="image-box" style="animation-delay:${index * 0.06}s" onclick="openImageModal('${imageUrl}')">
-                <img 
-                  src="${imageUrl}" 
-                  alt="Product Image"
-                  onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Found'"
-                >
-              </div>
-            `;
-          }).join("")}
-        </div>
-      `;
-    }
+        if (img.startsWith("http://") || img.startsWith("https://")) {
+          imageUrl = img;
+        } else if (img.startsWith("/uploads/")) {
+          imageUrl = `${API_BASE}${img}`;
+        } else if (img.startsWith("uploads/")) {
+          imageUrl = `${API_BASE}/${img}`;
+        } else {
+          imageUrl = `${API_BASE}/uploads/${img}`;
+        }
+
+        return `
+          <div class="image-box" style="animation-delay:${index * 0.06}s" onclick="openImageModal('${imageUrl}')">
+            <img 
+              src="${imageUrl}" 
+              alt="Product Image"
+              onerror="this.parentElement.innerHTML='<strong style=&quot;display:flex;align-items:center;justify-content:center;height:100%;color:#777;font-size:13px;&quot;>No Image</strong>'"
+            >
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
 
     function openImageModal(src) {
       modalImage.src = src;
@@ -647,6 +656,32 @@
               <strong>GHS ${p.price || "0.00"}</strong>
             </div>
 
+<div class="item">
+  <small>Region</small>
+  <strong>${p.region || "N/A"}</strong>
+</div>
+
+<div class="item">
+  <small>Area / District</small>
+  <strong>${p.district || "N/A"}</strong>
+</div>
+
+<div class="item full">
+  <small>Description</small>
+  <strong>${p.description || "No description provided"}</strong>
+</div>
+
+ <div class="item full">
+              <small>Instructions</small>
+              <strong>${p.instructions || "No instructions provided"}</strong>
+            </div>
+
+<div class="item">
+  <small>Posted Date</small>
+  <strong>${p.created_at ? new Date(p.created_at).toLocaleString() : "N/A"}</strong>
+</div>
+
+
             <div class="item">
               <small>Product Color</small>
               <strong>${p.product_color || "N/A"}</strong>
@@ -677,10 +712,7 @@
               ${renderProductImages(p.images)}
             </div>
 
-            <div class="item full">
-              <small>Instructions</small>
-              <strong>${p.instructions || "No instructions provided"}</strong>
-            </div>
+           
           </div>
 
           <div class="buttons">
