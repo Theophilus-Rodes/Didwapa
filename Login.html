@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIDWAPA Login</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(34, 197, 94, 0.16), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.14), transparent 28%),
+        linear-gradient(135deg, #061326, #0b1c36 45%, #0d223f 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    body::before {
+      width: 240px;
+      height: 240px;
+      background: rgba(34, 197, 94, 0.18);
+      top: 40px;
+      left: 40px;
+      animation: floatOne 7s ease-in-out infinite;
+    }
+
+    body::after {
+      width: 300px;
+      height: 300px;
+      background: rgba(37, 99, 235, 0.16);
+      bottom: 20px;
+      right: 20px;
+      animation: floatTwo 9s ease-in-out infinite;
+    }
+
+    @keyframes floatOne {
+      0%, 100% { transform: translateY(0px) translateX(0px); }
+      50% { transform: translateY(-18px) translateX(10px); }
+    }
+
+    @keyframes floatTwo {
+      0%, 100% { transform: translateY(0px) translateX(0px); }
+      50% { transform: translateY(16px) translateX(-12px); }
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 1120px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.28);
+      position: relative;
+      z-index: 1;
+      animation: fadeUp 0.8s ease;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .left-panel {
+      padding: 48px 42px;
+      color: #fff;
+      position: relative;
+      background: linear-gradient(180deg, rgba(7, 20, 40, 0.94), rgba(6, 18, 33, 0.90));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .logo-top {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .logo-top img {
+      width: 110px;
+      max-width: 100%;
+      object-fit: contain;
+      margin-bottom: 14px;
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
+      transition: transform 0.35s ease;
+    }
+
+    .logo-top img:hover {
+      transform: scale(1.05) rotate(-2deg);
+    }
+
+    .logo-top h1 {
+      font-size: 33px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #22c55e;
+    }
+
+    .logo-top p {
+      margin-top: 8px;
+      color: #d1d5db;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .welcome-box {
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 22px;
+      padding: 28px 24px;
+    }
+
+    .welcome-box h2 {
+      font-size: 31px;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+
+    .welcome-box p {
+      color: #d1d5db;
+      line-height: 1.8;
+      font-size: 15px;
+      margin-bottom: 20px;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 12px 14px;
+      border-radius: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .feature-item:hover {
+      transform: translateX(6px);
+      background: rgba(34, 197, 94, 0.12);
+    }
+
+    .feature-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: white;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .right-panel {
+      background: #ffffff;
+      padding: 54px 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .form-card {
+      width: 100%;
+      max-width: 430px;
+    }
+
+    .form-card h3 {
+      font-size: 30px;
+      color: #0f172a;
+      margin-bottom: 8px;
+      font-weight: 800;
+    }
+
+    .form-card .subtitle {
+      color: #64748b;
+      font-size: 15px;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #1e293b;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      height: 56px;
+      border: 1.5px solid #dbe3ee;
+      border-radius: 16px;
+      padding: 0 16px;
+      font-size: 15px;
+      color: #0f172a;
+      background: #f8fafc;
+      outline: none;
+      transition: all 0.32s ease;
+    }
+
+    .input-wrap input:hover {
+      border-color: #22c55e;
+      background: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(34, 197, 94, 0.10);
+    }
+
+    .input-wrap input:focus {
+      border-color: #16a34a;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.14), 0 10px 24px rgba(34, 197, 94, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .row-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #475569;
+      font-size: 14px;
+    }
+
+    .remember-me input {
+      accent-color: #16a34a;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .forgot-link {
+      color: #16a34a;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      transition: 0.3s ease;
+    }
+
+    .forgot-link:hover {
+      color: #0f172a;
+      text-decoration: underline;
+    }
+
+    .login-btn {
+      width: 100%;
+      border: none;
+      height: 58px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: white;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.32s ease;
+      box-shadow: 0 16px 28px rgba(34, 197, 94, 0.26);
+      letter-spacing: 0.3px;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: 0 20px 34px rgba(34, 197, 94, 0.34);
+      background: linear-gradient(135deg, #15803d, #22c55e);
+    }
+
+    .login-btn:active {
+      transform: translateY(0px) scale(0.995);
+    }
+
+    .signup-text {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .signup-text a {
+      color: #16a34a;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .signup-text a:hover {
+      text-decoration: underline;
+      color: #0f172a;
+    }
+
+    .bottom-note {
+      margin-top: 24px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        display: block;
+        padding: 18px;
+      }
+
+      .login-wrapper {
+        grid-template-columns: 1fr;
+        max-width: 680px;
+        margin: 0 auto;
+      }
+
+      .left-panel {
+        padding: 34px 24px 26px;
+      }
+
+      .right-panel {
+        padding: 34px 24px 36px;
+      }
+
+      .welcome-box h2 {
+        font-size: 28px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 14px;
+        align-items: flex-start;
+      }
+
+      .login-wrapper {
+        border-radius: 22px;
+      }
+
+      .left-panel,
+      .right-panel {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .left-panel {
+        padding-top: 24px;
+        padding-bottom: 22px;
+      }
+
+      .right-panel {
+        padding-top: 26px;
+        padding-bottom: 28px;
+      }
+
+      .logo-top {
+        margin-bottom: 16px;
+      }
+
+      .logo-top img {
+        width: 88px;
+        margin-bottom: 10px;
+      }
+
+      .logo-top h1 {
+        font-size: 26px;
+      }
+
+      .logo-top p {
+        font-size: 14px;
+      }
+
+      .welcome-box {
+        margin-top: 14px;
+        padding: 20px 16px;
+        border-radius: 18px;
+      }
+
+      .welcome-box h2 {
+        font-size: 22px;
+        margin-bottom: 10px;
+      }
+
+      .welcome-box p {
+        font-size: 14px;
+        line-height: 1.7;
+        margin-bottom: 16px;
+      }
+
+      .feature-list {
+        gap: 10px;
+      }
+
+      .feature-item {
+        padding: 10px 12px;
+        border-radius: 12px;
+        align-items: flex-start;
+      }
+
+      .feature-item span {
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .feature-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+      }
+
+      .form-card h3 {
+        font-size: 24px;
+      }
+
+      .form-card .subtitle {
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+
+      .input-group {
+        margin-bottom: 16px;
+      }
+
+      .input-group label {
+        font-size: 13px;
+      }
+
+      .input-wrap input {
+        height: 52px;
+        font-size: 14px;
+        border-radius: 14px;
+      }
+
+      .row-options {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 20px;
+      }
+
+      .login-btn {
+        height: 52px;
+        font-size: 15px;
+        border-radius: 14px;
+      }
+
+      .signup-text,
+      .bottom-note {
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      body {
+        padding: 10px;
+      }
+
+      .left-panel,
+      .right-panel {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .logo-top h1 {
+        font-size: 23px;
+      }
+
+      .welcome-box h2 {
+        font-size: 20px;
+      }
+
+      .form-card h3 {
+        font-size: 22px;
+      }
+
+      .feature-item span {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="left-panel">
+      <div class="logo-top">
+        <img src="DIDWAPA.png" alt="DIDWAPA Logo">
+        <h1>DIDWAPA</h1>
+        <p>Secure marketplace access for buyers, sellers, and administrators.</p>
+      </div>
+
+      <div class="welcome-box">
+        <h2>Welcome back</h2>
+        <p>
+          Sign in to continue managing your marketplace activities, track orders,
+          monitor escrow, and access your DIDWAPA dashboard securely.
+        </p>
+
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="feature-icon">✓</div>
+            <span>Secure account access</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">✓</div>
+            <span>Track escrow and disputes</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">✓</div>
+            <span>Manage listings and marketplace activity</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="form-card">
+       <h3>Admin Login</h3>
+<p class="subtitle">
+  Enter your admin email and PIN to access the DIDWAPA admin dashboard.
+</p>
+
+        <form id="adminLoginForm">
+          <div class="input-group">
+            <label for="email">Email Address</label>
+            <div class="input-wrap">
+              <input type="email" id="email" placeholder="Enter your email" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+           <label for="pin">PIN</label>
+<div class="input-wrap">
+  <input type="password" id="pin" placeholder="Enter your 6-digit PIN" maxlength="6" inputmode="numeric" required>
+</div>
+          </div>
+
+          <div class="row-options">
+            <label class="remember-me">
+              <input type="checkbox">
+              <span>Remember me</span>
+            </label>
+
+            <a href="#" class="forgot-link">Forgot Password?</a>
+          </div>
+
+          <button type="submit" class="login-btn">Login</button>
+          <div id="loginMessage" style="margin-top:14px;font-size:14px;font-weight:600;"></div>
+        </form>
+
+        <div class="signup-text">
+          Don’t have an account? <a href="create-account.html">Create one</a>
+        </div>
+
+        <div class="bottom-note">
+          DIDWAPA marketplace portal — modern, secure, and reliable.
+        </div>
+      </div>
+    </div>
+  </div>
+
+ <script>
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
+
+  const pinInput = document.getElementById("pin");
+  const loginMessage = document.getElementById("loginMessage");
+
+  pinInput.addEventListener("input", function () {
+    this.value = this.value.replace(/\D/g, "").slice(0, 6);
+  });
+
+  function showLoginMessage(message, isSuccess = false) {
+    loginMessage.textContent = message;
+    loginMessage.style.color = isSuccess ? "#16a34a" : "#dc2626";
+  }
+
+  document.getElementById("adminLoginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const email = document.getElementById("email").value.trim();
+    const pin = document.getElementById("pin").value.trim();
+
+    if (!email || !pin) {
+      showLoginMessage("Please enter your email and PIN.");
+      return;
+    }
+
+    if (pin.length !== 6) {
+      showLoginMessage("PIN must be exactly 6 digits.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          pin
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        showLoginMessage(data.message, true);
+
+        localStorage.setItem("didwapaAdmin", JSON.stringify(data.user));
+
+        setTimeout(() => {
+          window.location.href = "admin.html";
+        }, 1000);
+      } else {
+        showLoginMessage(data.message || "Login failed.");
+      }
+    } catch (error) {
+      console.error(error);
+      showLoginMessage("Network error. Make sure backend is running.");
+    }
+  });
+</script>
+</body>
+</html>
