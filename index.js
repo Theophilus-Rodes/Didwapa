@@ -38,6 +38,8 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use("/uploads", express.static("uploads"));
+
 const db = mysql.createConnection({
   host: "didwapa-db-do-user-28779964-0.l.db.ondigitalocean.com",
   port: 25060,
