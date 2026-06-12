@@ -346,6 +346,23 @@
         font-size:.92rem;
       }
     }
+
+    .submit-btn:disabled{
+  opacity: .8;
+  cursor: not-allowed;
+}
+
+.btn-spinner{
+  width:18px;
+  height:18px;
+  border:3px solid rgba(255,255,255,.4);
+  border-top:3px solid white;
+  border-radius:50%;
+  display:inline-block;
+  vertical-align:middle;
+  margin-right:8px;
+  animation:spin .8s linear infinite;
+}
   </style>
 </head>
 
@@ -599,6 +616,10 @@ function removeImage(index){
 document.getElementById("productForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const submitBtn = document.querySelector(".submit-btn");
+
+  if(submitBtn.disabled) return;
+
   const files = selectedFiles;
 
   if(files.length < 5){
@@ -625,7 +646,13 @@ document.getElementById("productForm").addEventListener("submit", async (e) => {
     formData.append("images", file);
   });
 
-  try{
+ submitBtn.disabled = true;
+submitBtn.innerHTML = `
+  <span class="btn-spinner"></span>
+  Uploading Product...
+`;
+
+try{
     const res = await fetch(`${API_BASE}/api/products/upload`, {
       method:"POST",
       credentials:"include",
@@ -639,16 +666,23 @@ document.getElementById("productForm").addEventListener("submit", async (e) => {
 
       document.getElementById("productForm").reset();
 
-      selectedFiles = [];
-      previewGrid.innerHTML = "";
-      previewCount.textContent = "0 images selected";
+     selectedFiles = [];
+previewGrid.innerHTML = "";
+previewCount.textContent = "0 images selected";
+
+submitBtn.disabled = false;
+submitBtn.innerHTML = "Upload Product";
     }else{
       showAlert(data.message || "Upload failed.", "error");
+      submitBtn.disabled = false;
+submitBtn.innerHTML = "Upload Product";
     }
 
   }catch(error){
     console.error(error);
     showAlert("Upload failed. Try again.", "error");
+    submitBtn.disabled = false;
+submitBtn.innerHTML = "Upload Product";
   }
 });
 
