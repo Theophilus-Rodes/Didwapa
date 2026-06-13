@@ -984,7 +984,6 @@ app.get("/api/admin/check-session", (req, res) => {
 
 
 
-
 app.post(
   "/api/user/create-account",
   upload.fields([
@@ -1051,76 +1050,129 @@ app.post(
           });
         }
 
-        const ghCardFront = req.files.gh_card_front[0].filename;
-        const ghCardBack = req.files.gh_card_back[0].filename;
+        try {
+          const frontFile = req.files.gh_card_front[0];
+          const backFile = req.files.gh_card_back[0];
 
-        const selfieBase64 = selfie_image.replace(/^data:image\/\w+;base64,/, "");
-        const selfieFileName = Date.now() + "-selfie.png";
-        const selfiePath = path.join(__dirname, "uploads", selfieFileName);
+          console.log("Front file buffer exists:", !!frontFile.buffer);
+console.log("Back file buffer exists:", !!backFile.buffer);
+console.log("Spaces bucket:", SPACES_BUCKET);
+console.log("Spaces region:", SPACES_REGION);
 
-        require("fs").writeFileSync(selfiePath, selfieBase64, "base64");
+          const frontExt = path.extname(frontFile.originalname);
+          const backExt = path.extname(backFile.originalname);
 
-        const pinHash = await bcrypt.hash(password, 10);
+          const frontKey = `users/ghana-cards/${Date.now()}-${Math.round(Math.random() * 1e9)}-front${frontExt}`;
+          const backKey = `users/ghana-cards/${Date.now()}-${Math.round(Math.random() * 1e9)}-back${backExt}`;
 
-        const sql = `
-          INSERT INTO users 
-          (
-            firstname,
-            lastname,
-            gender,
-            dob,
-            digital_address,
-            address,
-            telephone,
-            other_telephone,
-            gh_card_front,
-            gh_card_back,
-            selfie_image,
-            email,
-            pin_hash,
-            role,
-            status,
-            verification_status,
-            created_at
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-        `;
+          await spacesClient.send(
+            new PutObjectCommand({
+              Bucket: SPACES_BUCKET,
+              Key: frontKey,
+              Body: frontFile.buffer,
+              ACL: "public-read",
+              ContentType: frontFile.mimetype
+            })
+          );
 
-        db.query(
-          sql,
-          [
-            firstname,
-            lastname,
-            gender,
-            dob,
-            digital_address,
-            address,
-            telephone,
-            other_telephone || null,
-            ghCardFront,
-            ghCardBack,
-            selfieFileName,
-            email,
-            pinHash,
-            "user",
-            "approved",
-            "pending"
-          ],
-          (err) => {
-            if (err) {
-              console.error("Create user error:", err);
-              return res.status(500).json({
-                success: false,
-                message: "Database error while creating account."
+          await spacesClient.send(
+            new PutObjectCommand({
+              Bucket: SPACES_BUCKET,
+              Key: backKey,
+              Body: backFile.buffer,
+              ACL: "public-read",
+              ContentType: backFile.mimetype
+            })
+          );
+
+          const ghCardFrontUrl = `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/${frontKey}`;
+          const ghCardBackUrl = `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/${backKey}`;
+
+          const selfieBase64 = selfie_image.replace(/^data:image\/\w+;base64,/, "");
+          const selfieBuffer = Buffer.from(selfieBase64, "base64");
+
+          const selfieKey = `users/selfies/${Date.now()}-${Math.round(Math.random() * 1e9)}-selfie.png`;
+
+          await spacesClient.send(
+            new PutObjectCommand({
+              Bucket: SPACES_BUCKET,
+              Key: selfieKey,
+              Body: selfieBuffer,
+              ACL: "public-read",
+              ContentType: "image/png"
+            })
+          );
+
+          const selfieUrl = `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/${selfieKey}`;
+
+          const pinHash = await bcrypt.hash(password, 10);
+
+          const sql = `
+            INSERT INTO users 
+            (
+              firstname,
+              lastname,
+              gender,
+              dob,
+              digital_address,
+              address,
+              telephone,
+              other_telephone,
+              gh_card_front,
+              gh_card_back,
+              selfie_image,
+              email,
+              pin_hash,
+              role,
+              status,
+              verification_status,
+              created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+          `;
+
+          db.query(
+            sql,
+            [
+              firstname,
+              lastname,
+              gender,
+              dob,
+              digital_address,
+              address,
+              telephone,
+              other_telephone || null,
+              ghCardFrontUrl,
+              ghCardBackUrl,
+              selfieUrl,
+              email,
+              pinHash,
+              "user",
+              "approved",
+              "pending"
+            ],
+            (err) => {
+              if (err) {
+                console.error("Create user error:", err);
+                return res.status(500).json({
+                  success: false,
+                  message: "Database error while creating account."
+                });
+              }
+
+              res.json({
+                success: true,
+                message: "Account created successfully."
               });
             }
-
-            res.json({
-              success: true,
-              message: "Account created successfully."
-            });
-          }
-        );
+          );
+        } catch (uploadErr) {
+          console.error("User image Spaces upload error:", uploadErr);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to upload verification images."
+          });
+        }
       });
 
     } catch (error) {
@@ -1132,7 +1184,6 @@ app.post(
     }
   }
 );
-
 
 ///// User Login 
 app.post("/api/user/login", (req, res) => {
