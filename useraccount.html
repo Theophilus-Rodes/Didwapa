@@ -811,44 +811,54 @@ retakeBtn.addEventListener("click", () => {
   });
 
   form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!selfieImage.value) {
-      alert("Please take your selfie before creating the account.");
-      return;
+  if (submitBtn.disabled) return;
+
+  if (!selfieImage.value) {
+    alert("Please take your selfie before creating the account.");
+    return;
+  }
+
+  const password = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+
+  if (password !== confirmPassword) {
+    alert("Passwords do not match.");
+    return;
+  }
+
+  const formData = new FormData(form);
+
+  submitBtn.disabled = true;
+  document.getElementById("loadingPopup").style.display = "flex";
+
+  try {
+    const response = await fetch(`${API_BASE}/api/user/create-account`, {
+      method: "POST",
+      body: formData,
+      credentials: "include"
+    });
+
+    const result = await response.json();
+
+    document.getElementById("loadingPopup").style.display = "none";
+
+    if (result.success) {
+      document.getElementById("successPopup").style.display = "flex";
+      form.reset();
+    } else {
+      submitBtn.disabled = false;
+      alert(result.message);
     }
 
-    const password = document.getElementById("password").value;
-    const confirmPassword = document.getElementById("confirmPassword").value;
-
-    if (password !== confirmPassword) {
-      alert("Passwords do not match.");
-      return;
-    }
-
-   const formData = new FormData(form);
-
-document.getElementById("loadingPopup").style.display = "flex";
-
-try {
-      const response = await fetch(`${API_BASE}/api/user/create-account`, {
-        method: "POST",
-        body: formData,
-        credentials: "include"
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        document.getElementById("successPopup").style.display = "flex";
-      } else {
-        alert(result.message);
-      }
-    } catch (error) {
-      console.error("Create account error:", error);
-      alert("Something went wrong. Please try again.");
-    }
-  });
+  } catch (error) {
+    console.error("Create account error:", error);
+    document.getElementById("loadingPopup").style.display = "none";
+    submitBtn.disabled = false;
+    alert("Something went wrong. Please try again.");
+  }
+});
 </script>
 
 </body>
