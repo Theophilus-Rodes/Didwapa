@@ -432,6 +432,22 @@
         width: 100%;
       }
     }
+
+    .upload-success{
+  margin-top:10px;
+  padding:12px;
+  border-radius:14px;
+  background:#d1fae5;
+  color:#047857;
+  font-weight:800;
+  display:none;
+  animation:fadeUp .3s ease;
+}
+
+.upload-success span{
+  font-size:1.2rem;
+  margin-right:6px;
+}
   </style>
 </head>
 
@@ -547,6 +563,10 @@
                   <p>PNG, JPG or JPEG accepted</p>
                 </div>
               </label>
+
+              <div class="upload-success" id="frontSuccess">
+  <span>✅</span> Front Ghana Card selected successfully
+</div>
             </div>
 
             <div class="form-group">
@@ -559,6 +579,9 @@
                   <p>PNG, JPG or JPEG accepted</p>
                 </div>
               </label>
+              <div class="upload-success" id="backSuccess">
+  <span>✅</span> Back Ghana Card selected successfully
+</div>
             </div>
           </div>
 
@@ -599,6 +622,9 @@
 </div>
 
 <input type="hidden" name="selfie_image" id="selfieImage" required />
+<div class="upload-success" id="selfieSuccess">
+  <span>✅</span> Selfie captured successfully
+</div>
 
           <div class="note">
             Your selfie helps DIDWAPA verify that the account belongs to a real user.
@@ -751,7 +777,13 @@ selfieFileFallback.addEventListener("change", function () {
   const reader = new FileReader();
 
   reader.onload = function (e) {
+
+
     selfieImage.value = e.target.result;
+
+    document.getElementById("selfieSuccess").style.display = "block";
+document.getElementById("selfieSuccess").innerHTML =
+  `✅ Selfie selected successfully`;
     selfiePreview.src = e.target.result;
 
     selfiePreview.style.display = "block";
@@ -777,6 +809,9 @@ captureBtn.addEventListener("click", () => {
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   selfieImage.value = canvas.toDataURL("image/png");
+  document.getElementById("selfieSuccess").style.display = "block";
+document.getElementById("selfieSuccess").innerHTML =
+  "✅ Selfie captured successfully";
 
   video.style.display = "none";
   canvas.style.display = "block";
@@ -796,19 +831,13 @@ retakeBtn.addEventListener("click", () => {
   canvas.style.display = "none";
   selfiePreview.style.display = "none";
   cameraActions.style.display = "none";
+  document.getElementById("selfieSuccess").style.display = "none";
 
   if (stream) {
     stream.getTracks().forEach(track => track.stop());
   }
 });
 
-  retakeBtn.addEventListener("click", () => {
-    selfieImage.value = "";
-    startCameraBox.style.display = "grid";
-    video.style.display = "none";
-    canvas.style.display = "none";
-    cameraActions.style.display = "none";
-  });
 
   form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -857,6 +886,27 @@ retakeBtn.addEventListener("click", () => {
     document.getElementById("loadingPopup").style.display = "none";
     submitBtn.disabled = false;
     alert("Something went wrong. Please try again.");
+  }
+});
+
+
+
+const frontInput = document.querySelector('input[name="gh_card_front"]');
+const backInput = document.querySelector('input[name="gh_card_back"]');
+
+frontInput.addEventListener("change", () => {
+  if(frontInput.files.length){
+    document.getElementById("frontSuccess").style.display = "block";
+    document.getElementById("frontSuccess").innerHTML =
+      `✅ Front Ghana Card: ${frontInput.files[0].name}`;
+  }
+});
+
+backInput.addEventListener("change", () => {
+  if(backInput.files.length){
+    document.getElementById("backSuccess").style.display = "block";
+    document.getElementById("backSuccess").innerHTML =
+      `✅ Back Ghana Card: ${backInput.files[0].name}`;
   }
 });
 </script>
