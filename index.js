@@ -1,658 +1,2558 @@
-// ✅ IMPORTS
-require("dotenv").config();
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
-const bodyParser = require("body-parser");
-const bcrypt = require("bcryptjs");
-const nodemailer = require("nodemailer");
-const ExcelJS = require("exceljs"); // ✅ NEW
+const bcrypt = require("bcrypt");
+const session = require("express-session");
 const multer = require("multer");
-const xlsx = require("xlsx");
 const path = require("path");
 const fs = require("fs");
 
-//calling ussd 
-const moolreRouter = require("./shortcode/ussd");
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+const multer = require("multer");
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const path = require("path");
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 8 * 1024 * 1024 // 8MB per image
+  }
+});
+
+// TEMPORARY TEST VALUES
+const SPACES_KEY = "DO801XRL9F8AJ999F7Q6";
+const SPACES_SECRET = "M+wct3lzuKVE9RZ+quJ/9d88xWgHgI4QBfU9Ei9FKP0";
+const SPACES_BUCKET = "didwapa-images";
+const SPACES_REGION = "fra1";
+
+const spacesClient = new S3Client({
+  endpoint: `https://${SPACES_REGION}.digitaloceanspaces.com`,
+  region: SPACES_REGION,
+  credentials: {
+    accessKeyId: SPACES_KEY,
+    secretAccessKey: SPACES_SECRET
+  }
+});
+
+app.use(cors({
+  origin: [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://10.143.255.31:5000",
+    "https://didwapa.com",
+    "https://www.didwapa.com"
+  ],
+  credentials: true
+}));
+
+app.use(session({
+  secret: "didwapa_secret_key",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false,
+    httpOnly: true,
+    sameSite: "lax"
+  }
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use("/uploads", express.static("uploads"));
+
+const db = mysql.createConnection({
+  host: "didwapa-db-do-user-28779964-0.l.db.ondigitalocean.com",
+  port: 25060,
+  user: "doadmin",
+  password: "AVNS_degqR0I6013iI0PsQd5",
+  database: "didwapadb",
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error("Database connection failed:", err);
+    return;
+  }
+
+  console.log("Connected to DigitalOcean MySQL database: didwapadb");
+});
 
 
+// const db = mysql.createConnection({ 
+//   host: "localhost", user: "root", 
+//   password: "", 
+//   database: "didwapadb" }); 
+//   db.connect((err) => { if (err) 
+//     { console.error("Database connection failed:", err); return; } 
+//     console.log("Connected to MySQL database: didwapadb"); });
 
+app.post("/api/create-account", async (req, res) => {
+  try {
+    const {
+      firstname,
+      lastname,
+      email,
+      gender,
+      telephone,
+      otherTelephone,
+      role,
+      pin,
+      confirmPin
+    } = req.body;
 
-// --- Sessions helpers (place near other requires/configs) ---
-const crypto = require("crypto");
+    if (
+      !firstname ||
+      !lastname ||
+      !email ||
+      !gender ||
+      !telephone ||
+      !role ||
+      !pin ||
+      !confirmPin
+    ) {
+      return res.status(400).json({
+        ok: false,
+        message: "Please fill all required fields."
+      });
+    }
 
-function newRef(prefix = "S") {
-  return `${prefix}${Date.now()}${Math.floor(Math.random()*1000)}`.slice(0, 24);
-}
+    if (!["admin", "vendor", "user"].includes(role)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid account type selected."
+      });
+    }
 
+    if (!["Male", "Female"].includes(gender)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid gender selected."
+      });
+    }
 
-// Ensure uploads folder exists
-const uploadDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
+    if (!/^\d{6}$/.test(pin)) {
+      return res.status(400).json({
+        ok: false,
+        message: "PIN must be exactly 6 digits."
+      });
+    }
 
-// ✅ USSD CODE HELPER
-function generateUssdCode(baseCode, userId) {
-  return `${baseCode.slice(0, -1)}*${userId}#`;
-}
-
-
-// ===== ACCESS CONTROL (place after db is created, before routes) =====
-function normalizePhone(raw = "") {
-  const s = String(raw || "").replace(/\s+/g, "");
-  // +23324xxxxxxx -> 024xxxxxxx
-  if (s.startsWith("+233") && s.length >= 13) return "0" + s.slice(4, 6) + s.slice(6);
-  // 23324xxxxxxx -> 024xxxxxxx
-  if (s.startsWith("233") && s.length === 12)  return "0" + s.slice(3, 5) + s.slice(5);
-  return s; // assume already like 024xxxxxxx
-}
-
-function getAccessMode(cb) {
-  db.query(
-    "SELECT setting_value FROM app_settings WHERE setting_key='access_mode' LIMIT 1",
-    (err, rows) => cb(err, rows && rows[0] ? rows[0].setting_value : "all")
-  );
-}
-
-function setAccessMode(mode, cb) {
-  db.query(
-    "INSERT INTO app_settings (setting_key, setting_value) VALUES ('access_mode', ?) " +
-    "ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
-    [mode],
-    cb
-  );
-}
-
-function checkAccess(req, res, next) {
-  getAccessMode((err, mode) => {
-    if (err) return res.status(500).json({ error: "Settings error" });
-    if (mode !== "limited") return next(); // open for all
-
-    // Try to read the caller's phone from common fields
-    const raw =
-      (req.body && (req.body.phone_number || req.body.msisdn || req.body.momo_number)) ||
-      (req.query && (req.query.phone_number || req.query.msisdn)) ||
-      "";
-
-    const phone = normalizePhone(raw);
-    if (!phone) {
-      return res.status(403).json({ error: "You don't have access to this service" });
+    if (pin !== confirmPin) {
+      return res.status(400).json({
+        ok: false,
+        message: "PIN and Confirm PIN do not match."
+      });
     }
 
     db.query(
-      "SELECT 1 FROM telephone_numbers " +
-      "WHERE phone_number = ? AND (status IS NULL OR status = 'allowed') LIMIT 1",
-      [phone],
-      (qErr, rows) => {
-        if (qErr) return res.status(500).json({ error: "Database error" });
-        if (!rows || rows.length === 0) {
-          return res.status(403).json({ error: "You don't have access to this service" });
-        }
-        next(); // allowed
-      }
-    );
-  });
-}
-
-
-
-// ✅ INITIALIZE APP
-const app = express();
-app.use(cors({
-  origin: [
-    "https://sandypay.com",
-    "https://www.sandypay.com",
-    "https://sandypay.co",
-    "https://www.sandypay.co"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
-app.use(bodyParser.json());
-//Continue ussd
-app.use("/api/moolre", moolreRouter);
-
-
-
-
-// compat: GET /api/get-access
-app.get('/api/get-access', (req, res) => {
-  getAccessMode((err, mode) => {
-    if (err) return res.status(500).json({ error: 'Failed to read mode' });
-    res.json({ mode });
-  });
-});
-
-// compat: GET /api/set-access/:mode
-app.get('/api/set-access/:mode', (req, res) => {
-  const mode = req.params.mode;
-  if (!['all','limited'].includes(mode)) {
-    return res.status(400).json({ error: 'Invalid mode' });
-  }
-  setAccessMode(mode, (err) => {
-    if (err) return res.status(500).json({ error: 'Failed to update mode' });
-    res.json({ success: true, mode });
-  });
-});
-
-
-// ✅ Create database connection (SECURE + supports CA text or path)
-const required = ["DB_HOST", "DB_PORT", "DB_USER", "DB_NAME"];
-const missing = required.filter(k => !process.env[k] || String(process.env[k]).trim() === "");
-if (missing.length) {
-  console.error("❌ Missing environment variables:", missing.join(", "));
-}
-
-const DB_PASSWORD = process.env.DB_PASSWORD || process.env.DB_PASS || "";
-
-let caContent = null;
-try {
-  const caEnv = process.env.DB_SSL_CA;
-  if (caEnv && caEnv.trim().startsWith("-----BEGIN")) {
-    // CA provided as PEM text in the env var
-    caContent = caEnv;
-  } else {
-    // CA provided as a filesystem path OR fall back to system bundle
-    const caPath = caEnv && caEnv.trim() !== "" ? caEnv : "/etc/ssl/certs/ca-certificates.crt";
-    caContent = fs.readFileSync(caPath, "utf8");
-  }
-} catch (e) {
-  console.error("⚠️ Could not load CA certificate:", e.message);
-}
-
-const dbConfig = {
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
-  user: String(process.env.DB_USER || "").trim(),
-  password: DB_PASSWORD,
-  database: process.env.DB_NAME,
-  ssl: caContent
-    ? { ca: caContent, rejectUnauthorized: true, minVersion: "TLSv1.2" }
-    : { rejectUnauthorized: false }, // last-resort fallback (not recommended long-term)
-};
-
-if (!dbConfig.user) {
-  throw new Error("DB_USER is empty — set DB_USER in App Platform → Environment Variables.");
-}
-if (!DB_PASSWORD) {
-  throw new Error("DB_PASSWORD is empty — set DB_PASSWORD (or DB_PASS).");
-}
-
-const db = mysql.createConnection(dbConfig);
-
-db.connect(err => {
-  if (err) {
-    console.error("❌ Database connection failed:", err.message);
-  } else {
-    console.log("✅ Connected securely to DigitalOcean MySQL database!");
-  }
-});
-
-module.exports = db;
-
-
-// ✅ SETUP NODEMAILER
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "Sandipayghana@gmail.com",
-    pass: "qlrg kukn uvqm lcsz"
-  }
-});
-
-transporter.verify((error, success) => {
-  if (error) console.log("Transporter setup error:", error);
-  else console.log("SMTP is ready to send emails.");
-});
-
-
-
-
-// helper to make short refs (reuse if already defined)
-function newRef(prefix = "SW") {
-  return `${prefix}${Date.now()}${Math.floor(Math.random()*1000)}`.slice(0, 30);
-}
-
-app.post("/api/sessions/purchase", async (req, res) => {
-  try {
-    const { vendor_id, amount, computed_hits } = req.body;
-    if (!vendor_id || !amount || Number(amount) <= 0) {
-      return res.status(400).json({ error: "vendor_id and valid amount are required" });
-    }
-
-    const amt = Number(amount);
-    const HIT_COST = 0.02;
-    const hits = Number.isFinite(Number(computed_hits))
-      ? Math.max(0, Math.floor(Number(computed_hits)))
-      : Math.floor(amt / HIT_COST);
-
-    // 1) balance
-    const [balRows] = await db.promise().query(
-      "SELECT COALESCE(SUM(amount),0) AS balance FROM wallet_loads WHERE vendor_id = ?",
-      [vendor_id]
-    );
-    const balance = Number(balRows?.[0]?.balance || 0);
-    if (balance < amt) {
-      return res.status(400).json({ error: "Insufficient wallet balance", balance, required: amt });
-    }
-
-    // 2) TX begin
-    await db.promise().beginTransaction();
-
-    // 3) debit wallet (negative row)
-    await db.promise().query(
-      "INSERT INTO wallet_loads (vendor_id, momo, amount, date_loaded) VALUES (?, ?, ?, NOW())",
-      [vendor_id, "sessions_purchase", -amt]
-    );
-
-    // 4) insert purchase
-    const reference = newRef("SW");
-    const [ins] = await db.promise().query(
-      "INSERT INTO session_purchases (vendor_id, source, amount, hits, reference, status, meta_json) VALUES (?,?,?,?,?, 'completed', JSON_OBJECT('computed_hits', ?))",
-      [vendor_id, "wallet", amt, hits, reference, hits]
-    );
-
-    // 5) commit
-    await db.promise().commit();
-
-    return res.json({ id: ins.insertId, reference, status: "completed", hits, new_balance: balance - amt });
-  } catch (err) {
-    try { await db.promise().rollback(); } catch {}
-    console.error("sessions/purchase (wallet) error:", err.message);
-    return res.status(500).json({ error: "Server error", details: err.message });
-  }
-});
-
-
-
-
-
-
-
-// ========================================================
-//               MOOLRE SESSION PAYMENT CONFIG
-// ========================================================
-const MOOLRE_SESSIONS = {
-  // INIT endpoint
-  payUrl: "https://api.moolre.com/open/transact/payment",
-
-  // Payment Status endpoint from official docs
-  statusUrl: "https://api.moolre.com/open/transact/status",
-
-  // Moolre username
-  user: process.env.MOOLRE_USER || "acheamp",
-
-  // Used for INIT (sending OTP / payment request)
-  pubkey:
-    process.env.MOOLRE_PUBKEY ||
-    "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyaWQiOjEwNjU0OSwiZXhwIjoxOTI1MDA5OTk5fQ.YNoLN19xWWZRyr2Gdy_2DexpGLZv4V9yATnyYSFef2M",
-
-  // Used for STATUS checks (Moolre Public API Key)
-  apiKey:
-    process.env.MOOLRE_API_KEY ||
-    "9ILLNsdyPt6deXM1YWjpFzd1XIOPwDYXDHJKN930kGuw1Ndt2o4tF8uNUi5IhGzG",
-
-  // Your GHS wallet number
-  wallet: process.env.MOOLRE_WALLET || "10654906056819",
-};
-
-function moolreChannelId(network) {
-  switch (String(network || "").toLowerCase()) {
-    case "mtn":
-      return 13;
-    case "airteltigo":
-    case "airtel":
-    case "at":
-      return 7;
-    case "telecel":
-    case "vodafone":
-    case "voda":
-      return 6;
-    default:
-      return null;
-  }
-}
-
-function normalizeLocalMomo(msisdn) {
-  const digits = String(msisdn || "").replace(/[^\d]/g, "");
-  if (digits.startsWith("0") && digits.length >= 9) return digits;
-  if (digits.startsWith("233") && digits.length >= 12)
-    return "0" + digits.slice(3);
-  if (digits.startsWith("00233") && digits.length >= 14)
-    return "0" + digits.slice(5);
-  return digits;
-}
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-
-
-
-
-// ========================================================
-//     SESSIONS PURCHASE VIA THETELLER (MO MO PROMPT)
-// ========================================================
-app.post("/api/sessions/purchase-momo", async (req, res) => {
-  const { vendor_id, amount, momo_number, network, computed_hits } = req.body;
-
-  // Basic validation
-  if (!vendor_id || !amount || !momo_number || !network) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Missing fields: vendor_id, amount, momo_number, network are required." });
-  }
-
-  const numericAmount = parseFloat(amount);
-  if (isNaN(numericAmount) || numericAmount <= 0) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Invalid amount." });
-  }
-
-  // Local helper – same style as AFA
-  function getSwitchCode(net) {
-    switch (net.toLowerCase()) {
-      case "mtn":
-        return "MTN";
-      case "vodafone":
-      case "telecel":
-        return "VDF";
-      case "airteltigo":
-      case "airtel":
-        return "ATL";
-      case "tigo":
-        return "TGO";
-      default:
-        return null;
-    }
-  }
-
-  try {
-    const rSwitch = getSwitchCode(network);
-    if (!rSwitch) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Unsupported network." });
-    }
-
-    // Format MoMo as 233XXXXXXXXX (same idea as AFA)
-    const formattedMoMo = momo_number.replace(/^0/, "233");
-
-    // Unique transaction ID and reference
-    const transactionId = `TRX-SES-${Date.now()}`.slice(0, 30);
-    const reference = transactionId; // we also use this as "reference" in DB
-
-    // TheTeller wants amount in "pesewas" padded to 12 digits
-    const amountFormatted = String(Math.round(numericAmount * 100)).padStart(12, "0");
-
-    const payload = {
-      amount: amountFormatted,
-      processing_code: "000200",
-      transaction_id: transactionId,
-      desc: "USSD Session Purchase",
-      merchant_id: "TTM-00009388",
-      subscriber_number: formattedMoMo,
-      "r-switch": rSwitch,
-      redirect_url: "https://example.com/sessions-callback" // placeholder
-    };
-
-    // Same auth style as your AFA code
-   const token = Buffer.from(
-  "louis66a20ac942e74:ZmVjZWZlZDc2MzA4OWU0YmZhOTk5MDBmMDAxNDhmOWY="
-).toString("base64");
-
-    // Call TheTeller
-    const response = await axios.post(
-      "https://prod.theteller.net/v1.1/transaction/process",
-      payload,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${token}`,
-          "Cache-Control": "no-cache"
-        }
-      }
-    );
-
-    const status = response.data.status?.toLowerCase();
-    const code = response.data.code;
-
-    // Decide if payment is successful
-    if (status === "approved" || status === "successful" || code === "000") {
-      const HIT_COST = 0.02;
-
-      // If frontend sends computed_hits use it, otherwise derive from amount
-      const hits =
-        Number.isFinite(Number(computed_hits)) && Number(computed_hits) > 0
-          ? Math.floor(Number(computed_hits))
-          : Math.floor(numericAmount / HIT_COST);
-
-      // Insert into session_purchases
-      db.query(
-        `INSERT INTO session_purchases
-           (vendor_id, source, amount, hits, reference, status, meta_json)
-         VALUES (?, 'momo', ?, ?, ?, 'completed',
-           JSON_OBJECT('network', ?, 'momo', ?, 'verified', true))`,
-        [
-          vendor_id,
-          numericAmount,
-          hits,
-          reference,
-          network.toLowerCase(),
-          momo_number
-        ],
-        (err, result) => {
-          if (err) {
-            console.error("❌ Error inserting session_purchases:", err);
-            return res
-              .status(500)
-              .json({ success: false, message: "Payment went through but could not save sessions." });
-          }
-
-          return res.json({
-            success: true,
-            message: "Payment successful, sessions credited.",
-            hits,
-            reference
+      "SELECT id FROM users WHERE email = ?",
+      [email],
+      async (emailErr, emailRows) => {
+        if (emailErr) {
+          console.error("Email check error:", emailErr);
+          return res.status(500).json({
+            ok: false,
+            message: "Error checking email."
           });
         }
-      );
-    } else {
-      console.error("❌ TheTeller sessions payment declined:", response.data);
-      return res
-        .status(400)
-        .json({ success: false, message: "Payment declined.", raw: response.data });
-    }
-  } catch (error) {
-    console.error(
-      "❌ /api/sessions/purchase-momo (TheTeller) error:",
-      error.response?.data || error.message
+
+        if (emailRows.length > 0) {
+          return res.status(400).json({
+            ok: false,
+            message: "Email already exists."
+          });
+        }
+
+       try {
+  const hashedPin = await bcrypt.hash(pin, 10);
+
+  let accountStatus = "pending";
+
+  if (role === "admin" || role === "user") {
+    accountStatus = "approved";
+  } else if (role === "vendor") {
+    accountStatus = "pending";
+  }
+
+  const sql = `
+    INSERT INTO users
+    (firstname, lastname, email, gender, telephone, other_telephone, role, status, pin_hash)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    sql,
+    [
+      firstname,
+      lastname,
+      email,
+      gender,
+      telephone,
+      otherTelephone || null,
+      role,
+      accountStatus,
+      hashedPin
+    ],
+            (insertErr, result) => {
+              if (insertErr) {
+                console.error("Insert error:", insertErr);
+                return res.status(500).json({
+                  ok: false,
+                  message: "Failed to create account."
+                });
+              }
+
+              return res.json({
+                ok: true,
+                message: "Account created successfully.",
+                userId: result.insertId
+              });
+            }
+          );
+        } catch (hashErr) {
+          console.error("Hash error:", hashErr);
+          return res.status(500).json({
+            ok: false,
+            message: "Error securing PIN."
+          });
+        }
+      }
     );
-    return res
-      .status(500)
-      .json({ success: false, message: "Payment failed or cancelled." });
+  } catch (error) {
+    console.error("Server error:", error);
+    return res.status(500).json({
+      ok: false,
+      message: "Server error."
+    });
   }
 });
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// ========== MOOLRE PAYMENT WEBHOOK ==========
-app.post("/api/moolre/webhook", express.json(), (req, res) => {
-  console.log("🔔 MOOLRE WEBHOOK RECEIVED:", req.body);
+app.post("/api/dashboard/login", (req, res) => {
+  try {
+    const { email, pin } = req.body;
 
-  const wrapper = req.body || {};
-  const data = wrapper.data || {};
+    if (!email || !pin) {
+      return res.status(400).json({
+        ok: false,
+        success: false,
+        message: "Email and PIN are required."
+      });
+    }
 
-  const txstatus = Number(data.txstatus || 0);
-  const payer = data.payer;
-  const externalref = data.externalref;
-  const ts = data.ts;
-  const secret = data.secret;
+    const sql = `
+      SELECT id, firstname, lastname, email, role, status, pin_hash
+      FROM users
+      WHERE email = ?
+      LIMIT 1
+    `;
 
-  const expectedSecret = process.env.MOOLRE_WEBHOOK_SECRET || "";
-  if (expectedSecret && secret !== expectedSecret) {
-    return res.status(403).send("Forbidden");
+    db.query(sql, [email], async (err, rows) => {
+      if (err) {
+        console.error("Dashboard login query error:", err);
+        return res.status(500).json({
+          ok: false,
+          success: false,
+          message: "Server error during login."
+        });
+      }
+
+      if (rows.length === 0) {
+        return res.status(400).json({
+          ok: false,
+          success: false,
+          message: "Invalid email or PIN."
+        });
+      }
+
+      const user = rows[0];
+
+      if (user.role !== "admin" && user.role !== "vendor") {
+        return res.status(403).json({
+          ok: false,
+          success: false,
+          message: "Access denied. Only admin and vendor can login here."
+        });
+      }
+
+      if (user.status !== "approved") {
+        return res.status(403).json({
+          ok: false,
+          success: false,
+          message: "Your account is not approved yet."
+        });
+      }
+
+      const pinMatch = await bcrypt.compare(pin, user.pin_hash);
+
+      if (!pinMatch) {
+        return res.status(400).json({
+          ok: false,
+          success: false,
+          message: "Invalid email or PIN."
+        });
+      }
+
+      req.session.user = {
+        id: user.id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        role: user.role,
+        status: user.status
+      };
+
+      req.session.save(() => {
+        return res.json({
+          ok: true,
+          success: true,
+          message: "Login successful.",
+          user: {
+            id: user.id,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            role: user.role,
+            status: user.status
+          }
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error("Dashboard login error:", error);
+    return res.status(500).json({
+      ok: false,
+      success: false,
+      message: "Server error."
+    });
+  }
+});
+
+
+app.get("/api/dashboard/me", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Not logged in."
+    });
   }
 
-  if (txstatus !== 1) {
-    return res.status(200).send("OK");
+  res.json({
+    success: true,
+    user: req.session.user
+  });
+});
+
+
+///// Admin Detals update 
+// GET LOGGED-IN ADMIN OR VENDOR PROFILE
+app.get("/api/admin/profile", (req, res) => {
+
+  if (
+    !req.session.user ||
+    !["admin", "vendor"].includes(req.session.user.role)
+  ) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized. Please login first."
+    });
   }
 
-  if (!externalref) {
-    return res.status(400).send("Missing externalref");
+  const userId = req.session.user.id;
+
+  const sql = `
+    SELECT 
+      id,
+      firstname,
+      lastname,
+      email,
+      gender,
+      telephone,
+      other_telephone,
+      role,
+      status,
+      created_at
+    FROM users
+    WHERE id = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [userId], (err, result) => {
+
+    if (err) {
+      console.log(err);
+
+      return res.status(500).json({
+        success: false,
+        message: "Database error"
+      });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      user: result[0]
+    });
+
+  });
+
+});
+
+
+// UPDATE ADMIN PROFILE
+app.put("/api/admin/profile/update", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized. Please login as admin."
+    });
+  }
+
+  const adminId = req.session.user.id;
+
+  const {
+    firstname,
+    lastname,
+    email,
+    gender,
+    telephone,
+    other_telephone
+  } = req.body;
+
+  if (!firstname || !lastname || !email || !telephone) {
+    return res.status(400).json({
+      success: false,
+      message: "Firstname, lastname, email and telephone are required."
+    });
+  }
+
+  const sql = `
+    UPDATE users
+    SET firstname = ?, lastname = ?, email = ?, gender = ?, telephone = ?, other_telephone = ?
+    WHERE id = ? AND role = 'admin'
+  `;
+
+  db.query(
+    sql,
+    [firstname, lastname, email, gender, telephone, other_telephone || null, adminId],
+    (err) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update profile"
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Profile updated successfully"
+      });
+    }
+  );
+});
+
+
+// CHANGE ADMIN PASSWORD
+app.put("/api/admin/profile/change-password", async (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized. Please login as admin."
+    });
+  }
+
+  const adminId = req.session.user.id;
+  const { current_password, new_password, confirm_password } = req.body;
+
+  if (!current_password || !new_password || !confirm_password) {
+    return res.status(400).json({
+      success: false,
+      message: "All password fields are required."
+    });
+  }
+
+  if (new_password !== confirm_password) {
+    return res.status(400).json({
+      success: false,
+      message: "New password and confirm password do not match."
+    });
+  }
+
+  if (new_password.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: "Password must be at least 6 characters."
+    });
   }
 
   db.query(
-    `SELECT * FROM moolre_temp_orders WHERE externalref = ? LIMIT 1`,
-    [externalref],
-    (err, rows) => {
+    "SELECT pin_hash FROM users WHERE id = ? AND role = 'admin'",
+    [adminId],
+    async (err, result) => {
       if (err) {
-        console.error("❌ moolre_temp_orders lookup error:", err);
-        return res.status(500).send("Lookup error");
+        console.log(err);
+        return res.status(500).json({
+          success: false,
+          message: "Database error"
+        });
       }
 
-      if (!rows || !rows.length) {
-        return res.status(200).send("No matching temp order");
+      if (result.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Admin not found"
+        });
       }
 
-      const meta = rows[0];
+      const savedHash = result[0].pin_hash;
+      const isMatch = await bcrypt.compare(current_password, savedHash);
 
-      const mode = meta.mode;
-      const vendor_id = Number(meta.vendor_id);
-      const data_package = meta.data_package;
-      const network = String(meta.network || "").toLowerCase();
-      const recipient_number = meta.recipient_number || payer;
-      const momo_number = meta.momo_number || payer;
-      const amountPaid = Number(meta.amount);
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: "Current password is incorrect."
+        });
+      }
 
-      const package_id =
-        ts || new Date().toISOString().slice(0, 16).replace("T", " ");
+      const newHash = await bcrypt.hash(new_password, 10);
 
-      // ---------- PLAIN MODE ----------
-      if (mode === "plain") {
+      db.query(
+        "UPDATE users SET pin_hash = ? WHERE id = ? AND role = 'admin'",
+        [newHash, adminId],
+        (updateErr) => {
+          if (updateErr) {
+            console.log(updateErr);
+            return res.status(500).json({
+              success: false,
+              message: "Failed to change password"
+            });
+          }
+
+          res.json({
+            success: true,
+            message: "Password changed successfully"
+          });
+        }
+      );
+    }
+  );
+});
+
+
+
+///// Logout safe 
+app.get("/api/vendor/check-session", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "vendor") {
+    return res.json({
+      loggedIn: false
+    });
+  }
+
+  res.json({
+    loggedIn: true,
+    user: req.session.user
+  });
+});
+
+
+///// Verify 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueName = Date.now() + "-" + file.originalname.replace(/\s+/g, "_");
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fieldSize: 10 * 1024 * 1024,
+    fileSize: 10 * 1024 * 1024
+  }
+});
+
+
+
+
+
+
+app.get("/api/vendor/verification-details", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "vendor") {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized. Please login as vendor."
+    });
+  }
+
+  const vendorId = req.session.user.id;
+
+  const sql = `
+    SELECT 
+      verification_other_tel,
+      digital_address,
+      address,
+      alt_number,
+      alt_number_name
+    FROM users
+    WHERE id = ? AND role = 'vendor'
+  `;
+
+  db.query(sql, [vendorId], (err, results) => {
+    if (err) {
+      console.error("Fetch verification details error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load saved details."
+      });
+    }
+
+    res.json({
+      success: true,
+      data: results[0] || {}
+    });
+  });
+});
+
+
+app.post("/api/vendor/verify-step-one", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "vendor") {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized. Please login as vendor."
+    });
+  }
+
+  const vendorId = req.session.user.id;
+
+ const {
+  verification_other_tel,
+  digital_address,
+  address,
+  alt_number,
+  alt_number_name
+} = req.body || {};
+
+  if (
+    !verification_other_tel ||
+    !digital_address ||
+    !address ||
+    !alt_number ||
+    !alt_number_name
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "All Step 1 fields are required."
+    });
+  }
+
+  const sql = `
+    UPDATE users
+    SET verification_other_tel = ?,
+        digital_address = ?,
+        address = ?,
+        alt_number = ?,
+        alt_number_name = ?
+    WHERE id = ? AND role = 'vendor'
+  `;
+
+  db.query(
+    sql,
+    [
+      verification_other_tel,
+      digital_address,
+      address,
+      alt_number,
+      alt_number_name,
+      vendorId
+    ],
+    (err) => {
+      if (err) {
+        console.error("Step one verification error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to save details."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Details saved successfully."
+      });
+    }
+  );
+});
+
+
+app.post(
+  "/api/vendor/verify-account",
+  upload.fields([
+    { name: "selfie_image", maxCount: 1 },
+    { name: "gh_card_front", maxCount: 1 },
+    { name: "gh_card_back", maxCount: 1 }
+  ]),
+  (req, res) => {
+    if (!req.session.user || req.session.user.role !== "vendor") {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Please login as vendor."
+      });
+    }
+
+    const vendorId = req.session.user.id;
+
+    if (
+      !req.files.selfie_image ||
+      !req.files.gh_card_front ||
+      !req.files.gh_card_back
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Selfie, Ghana Card front and back pictures are required."
+      });
+    }
+
+    const selfie = req.files.selfie_image[0].filename;
+    const front = req.files.gh_card_front[0].filename;
+    const back = req.files.gh_card_back[0].filename;
+
+    const sql = `
+      UPDATE users
+      SET selfie_image = ?,
+          gh_card_front = ?,
+          gh_card_back = ?,
+          verification_status = 'pending'
+      WHERE id = ? AND role = 'vendor'
+    `;
+
+ db.query(sql, [selfie, front, back, vendorId], (err, result) => {
+  if (err) {
+    console.error("Vendor verification image error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to submit verification."
+    });
+  }
+
+  if (result.affectedRows === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "Vendor account not found or role is not vendor."
+    });
+  }
+
+  return res.json({
+    success: true,
+    message: "Verification submitted successfully. Please wait for admin approval."
+  });
+});
+  }
+);
+
+
+
+app.get("/api/vendor/profile", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "vendor") {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized. Please login as vendor."
+    });
+  }
+
+  const vendorId = req.session.user.id;
+
+  const sql = `
+    SELECT 
+      id,
+      firstname,
+      lastname,
+      email,
+      gender,
+      telephone,
+      other_telephone,
+      role,
+      status,
+      verification_other_tel,
+      digital_address,
+      address,
+      alt_number,
+      alt_number_name,
+      selfie_image,
+      gh_card_front,
+      gh_card_back,
+      verification_status,
+      created_at
+    FROM users
+    WHERE id = ? AND role = 'vendor'
+  `;
+
+  db.query(sql, [vendorId], (err, results) => {
+    if (err) {
+      console.error("Vendor profile error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load profile."
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor not found."
+      });
+    }
+
+    res.json({
+      success: true,
+      user: results[0]
+    });
+  });
+});
+
+
+
+
+
+
+
+
+///// Admin fetch users
+// GET ALL USERS FOR ADMIN
+app.get("/api/admin/users", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const sql = `
+    SELECT id, firstname, lastname, role, status, verification_status
+    FROM users
+    ORDER BY id DESC
+  `;
+
+  db.query(sql, (err, rows) => {
+    if (err) {
+      console.error("Fetch users error:", err);
+      return res.status(500).json({ success: false, message: "Failed to fetch users" });
+    }
+
+    res.json({ success: true, users: rows });
+  });
+});
+
+
+// GET SINGLE USER
+app.get("/api/admin/users/:id", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const { id } = req.params;
+
+  db.query("SELECT * FROM users WHERE id = ?", [id], (err, rows) => {
+    if (err) {
+      console.error("View user error:", err);
+      return res.status(500).json({ success: false, message: "Failed to fetch user" });
+    }
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, user: rows[0] });
+  });
+});
+
+
+// APPROVE USER
+app.put("/api/admin/users/:id/approve", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  db.query(
+    "UPDATE users SET status = 'approved', verification_status = 'approved' WHERE id = ?",
+    [req.params.id],
+    (err) => {
+      if (err) {
+        console.error("Approve user error:", err);
+        return res.status(500).json({ success: false, message: "Failed to approve user" });
+      }
+
+      res.json({ success: true, message: "User approved successfully" });
+    }
+  );
+});
+
+
+// SET USER PENDING
+app.put("/api/admin/users/:id/pending", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  db.query(
+    "UPDATE users SET status = 'pending', verification_status = 'pending' WHERE id = ?",
+    [req.params.id],
+    (err) => {
+      if (err) {
+        console.error("Pending user error:", err);
+        return res.status(500).json({ success: false, message: "Failed to update user" });
+      }
+
+      res.json({ success: true, message: "User set to pending" });
+    }
+  );
+});
+
+
+// DELETE USER
+app.delete("/api/admin/users/:id", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  db.query("DELETE FROM users WHERE id = ?", [req.params.id], (err) => {
+    if (err) {
+      console.error("Delete user error:", err);
+      return res.status(500).json({ success: false, message: "Failed to delete user" });
+    }
+
+    res.json({ success: true, message: "User deleted successfully" });
+  });
+});
+
+///// Check login Session 
+app.get("/api/admin/check-session", (req, res) => {
+
+  if (
+    !req.session.user ||
+    !["admin", "vendor"].includes(req.session.user.role)
+  ) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  res.json({
+    success: true,
+    user: req.session.user
+  });
+
+});
+
+
+
+
+
+
+
+
+
+app.post(
+  "/api/user/create-account",
+  upload.fields([
+    { name: "gh_card_front", maxCount: 1 },
+    { name: "gh_card_back", maxCount: 1 }
+  ]),
+  async (req, res) => {
+    try {
+      const {
+        firstname,
+        lastname,
+        gender,
+        dob,
+        digital_address,
+        address,
+        telephone,
+        other_telephone,
+        email,
+        password,
+        confirm_password,
+        selfie_image
+      } = req.body;
+
+      if (
+        !firstname || !lastname || !gender || !dob ||
+        !digital_address || !address || !telephone ||
+        !email || !password || !confirm_password ||
+        !selfie_image ||
+        !req.files?.gh_card_front ||
+        !req.files?.gh_card_back
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Please fill all required fields."
+        });
+      }
+
+      if (password !== confirm_password) {
+        return res.status(400).json({
+          success: false,
+          message: "Passwords do not match."
+        });
+      }
+
+      const checkSql = `
+        SELECT id FROM users 
+        WHERE email = ? OR telephone = ?
+        LIMIT 1
+      `;
+
+      db.query(checkSql, [email, telephone], async (checkErr, existingUser) => {
+        if (checkErr) {
+          console.error("Check user error:", checkErr);
+          return res.status(500).json({
+            success: false,
+            message: "Database error while checking account."
+          });
+        }
+
+        if (existingUser.length > 0) {
+          return res.status(409).json({
+            success: false,
+            message: "Email or telephone number already exists."
+          });
+        }
+
+        const ghCardFront = req.files.gh_card_front[0].filename;
+        const ghCardBack = req.files.gh_card_back[0].filename;
+
+        const selfieBase64 = selfie_image.replace(/^data:image\/\w+;base64,/, "");
+        const selfieFileName = Date.now() + "-selfie.png";
+        const selfiePath = path.join(__dirname, "uploads", selfieFileName);
+
+        require("fs").writeFileSync(selfiePath, selfieBase64, "base64");
+
+        const pinHash = await bcrypt.hash(password, 10);
+
+        const sql = `
+          INSERT INTO users 
+          (
+            firstname,
+            lastname,
+            gender,
+            dob,
+            digital_address,
+            address,
+            telephone,
+            other_telephone,
+            gh_card_front,
+            gh_card_back,
+            selfie_image,
+            email,
+            pin_hash,
+            role,
+            status,
+            verification_status,
+            created_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        `;
+
         db.query(
-          `INSERT INTO admin_orders
-           (vendor_id, recipient_number, data_package, amount, network, status, sent_at, package_id)
-           VALUES (?, ?, ?, ?, ?, 'pending', NOW(), ?)`,
-          [1, recipient_number, data_package, amountPaid, network, package_id],
-          (err1) => {
-            if (err1) {
-              console.error("❌ Error inserting plain admin_order:", err1);
+          sql,
+          [
+            firstname,
+            lastname,
+            gender,
+            dob,
+            digital_address,
+            address,
+            telephone,
+            other_telephone || null,
+            ghCardFront,
+            ghCardBack,
+            selfieFileName,
+            email,
+            pinHash,
+            "user",
+            "approved",
+            "pending"
+          ],
+          (err) => {
+            if (err) {
+              console.error("Create user error:", err);
+              return res.status(500).json({
+                success: false,
+                message: "Database error while creating account."
+              });
             }
 
-            db.query(
-              `INSERT INTO total_revenue (vendor_id, source, amount, date_received)
-               VALUES (?, ?, ?, NOW())`,
-              [1, "AdminData USSD sale", amountPaid],
-              (err2) => {
-                if (err2) {
-                  console.error("❌ Error inserting plain total_revenue:", err2);
-                }
-
-                db.query(
-                  "DELETE FROM moolre_temp_orders WHERE externalref = ?",
-                  [externalref]
-                );
-
-                return res.status(200).send("OK");
-              }
-            );
+            res.json({
+              success: true,
+              message: "Account created successfully."
+            });
           }
         );
+      });
 
-        return;
+    } catch (error) {
+      console.error("Create account error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error while creating account."
+      });
+    }
+  }
+);
+
+
+///// User Login 
+app.post("/api/user/login", (req, res) => {
+  const { login, password } = req.body;
+
+  if (!login || !password) {
+    return res.status(400).json({
+      success: false,
+      message: "Email/phone and password are required."
+    });
+  }
+
+  const sql = `
+    SELECT id, firstname, lastname, email, telephone, role, status, pin_hash
+    FROM users
+    WHERE email = ? OR telephone = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [login, login], async (err, results) => {
+
+    if (err) {
+      console.error("Login error:", err);
+
+      return res.status(500).json({
+        success: false,
+        message: "Server error. Please try again."
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email/phone or password."
+      });
+    }
+
+    const user = results[0];
+
+    const passwordMatch = await bcrypt.compare(password, user.pin_hash);
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email/phone or password."
+      });
+    }
+
+    req.session.user = {
+      id: user.id,
+      firstname: user.firstname,
+      lastname: user.lastname,
+      email: user.email,
+      telephone: user.telephone,
+      role: user.role,
+      status: user.status
+    };
+
+    req.session.save((saveErr) => {
+
+      if (saveErr) {
+        console.error("SESSION SAVE ERROR:", saveErr);
+
+        return res.status(500).json({
+          success: false,
+          message: "Failed to save login session."
+        });
       }
 
-      // ---------- VENDOR MODE ----------
-      db.query(
-        `SELECT amount FROM admin_data_packages WHERE data_package = ? LIMIT 1`,
-        [data_package],
-        (err3, rows2) => {
-          if (err3 || !rows2 || !rows2.length) {
-            console.error("❌ admin_data_packages lookup error:", err3 || "no rows");
-            return res.status(500).send("Package lookup error");
-          }
+      console.log("USER SESSION SAVED:", req.session.user);
 
-          const baseAmount = parseFloat(rows2[0].amount);
-let revenueAmount = baseAmount;
-let vendorAmount = parseFloat((amountPaid - baseAmount).toFixed(2));
+      return res.json({
+        success: true,
+        message: "Login successful.",
+        userId: user.id,
+        role: user.role,
+        status: user.status,
+        user: req.session.user
+      });
 
-          db.query(
-            `SELECT order_destination
-             FROM vendor_order_settings
-             WHERE vendor_id = ?
-             LIMIT 1`,
-            [vendor_id],
-            (destErr, destRows) => {
-              if (destErr) {
-                console.error("❌ vendor_order_settings lookup error:", destErr);
-              }
+    });
 
-              const destination =
-                destRows && destRows.length
-                  ? destRows[0].order_destination
-                  : "admin_orders";
+  });
+});
+///// Admin post products 
 
-              const targetTable =
-                destination === "vendor_orders" ? "vendor_orders" : "admin_orders";
-                // ✅ If vendor handles their own orders,
-// admin takes only 1%, vendor gets 99%
-if (targetTable === "vendor_orders") {
-  revenueAmount = parseFloat((amountPaid * 0.01).toFixed(2));
-  vendorAmount = parseFloat((amountPaid - revenueAmount).toFixed(2));
+
+const productUploadPath = path.join(__dirname, "uploads/products");
+
+if (!fs.existsSync(productUploadPath)) {
+  fs.mkdirSync(productUploadPath, { recursive: true });
 }
 
+const productStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, productUploadPath);
+  },
+  filename: function (req, file, cb) {
+    const uniqueName =
+      Date.now() + "-" + Math.round(Math.random() * 1e9) + path.extname(file.originalname);
+    cb(null, uniqueName);
+  }
+});
+
+const uploadProductImages = multer({
+  storage: productStorage,
+  limits: {
+    files: 10
+  }
+});
+
+app.use("/uploads/products", express.static(path.join(__dirname, "uploads/products")));
+
+app.post("/api/admin/post-product", uploadProductImages.array("product_images", 10), (req, res) => {
+  try {
+    console.log("SESSION USER:", req.session.user);
+    console.log("BODY:", req.body);
+    console.log("FILES:", req.files?.length);
+
+    if (!req.session.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Session expired. Please login again."
+      });
+    }
+
+    const posted_by = req.session.user.id;
+    const status = "approved";
+
+    const {
+      category,
+      product_name,
+      product_type,
+      price,
+      product_color,
+      quantity_in_stock,
+      instructions,
+      item_condition
+    } = req.body;
+
+    if (
+      !category ||
+      !product_name ||
+      !product_type ||
+      !price ||
+      quantity_in_stock === undefined ||
+      quantity_in_stock === ""
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please fill all required fields."
+      });
+    }
+
+    if (!req.files || req.files.length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Please upload at least 5 product pictures."
+      });
+    }
+
+    const userSql = "SELECT id, telephone FROM users WHERE id = ?";
+
+    db.query(userSql, [posted_by], (userErr, userResult) => {
+      if (userErr) {
+        console.error("USER CHECK ERROR:", userErr);
+        return res.status(500).json({
+          success: false,
+          message: userErr.sqlMessage || "Database error while checking logged-in user."
+        });
+      }
+
+      if (userResult.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Logged-in user not found."
+        });
+      }
+
+      const phoneNumber = userResult[0].telephone;
+      const imagePaths = req.files.map(file => `/uploads/products/${file.filename}`);
+
+      const insertSql = `
+        INSERT INTO products 
+        (
+          category,
+          product_name,
+          product_type,
+          price,
+          product_color,
+          quantity_in_stock,
+          status,
+          phone_number,
+          instructions,
+          item_condition,
+          images,
+          posted_by
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      db.query(
+        insertSql,
+        [
+          category,
+          product_name,
+          product_type,
+          price,
+          product_color || null,
+          quantity_in_stock,
+          status,
+          phoneNumber,
+          instructions || null,
+          item_condition || null,
+          JSON.stringify(imagePaths),
+          posted_by
+        ],
+        (insertErr) => {
+          if (insertErr) {
+            console.error("PRODUCT INSERT ERROR:", insertErr);
+            return res.status(500).json({
+              success: false,
+              message: insertErr.sqlMessage || "Failed to post product."
+            });
+          }
+
+          res.json({
+            success: true,
+            message: "Product posted successfully."
+          });
+        }
+      );
+    });
+
+  } catch (error) {
+    console.error("SERVER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error."
+    });
+  }
+});
+
+
+
+// ===============================
+// ADMIN: GET ALL PRODUCT POSTS
+// ===============================
+app.get("/api/admin/products", (req, res) => {
+  const sql = `
+    SELECT 
+      products.*,
+      users.firstname,
+      users.lastname,
+      users.email,
+      users.telephone
+    FROM products
+    LEFT JOIN users ON products.posted_by = users.id
+    ORDER BY products.id DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Fetch admin products error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch products"
+      });
+    }
+
+    res.json({
+      success: true,
+      products: results
+    });
+  });
+});
+
+// ===============================
+// ADMIN: GET SINGLE PRODUCT DETAILS
+// ===============================
+app.get("/api/admin/products/:id", (req, res) => {
+  const productId = req.params.id;
+
+  const sql = `
+    SELECT 
+      products.*,
+      users.firstname,
+      users.lastname,
+      users.email,
+      users.telephone
+    FROM products
+    LEFT JOIN users ON products.posted_by = users.id
+    WHERE products.id = ?
+  `;
+
+  db.query(sql, [productId], (err, results) => {
+    if (err) {
+      console.error("Fetch product details error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch product details"
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      product: results[0]
+    });
+  });
+});
+
+
+// ===============================
+// ADMIN: UPDATE PRODUCT STATUS
+// ===============================
+app.put("/api/admin/products/:id/status", (req, res) => {
+  const productId = req.params.id;
+  const { status } = req.body;
+
+  const allowedStatuses = ["pending", "approved", "under review", "denied"];
+
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid product status"
+    });
+  }
+
+  const sql = `
+    UPDATE products 
+    SET status = ?
+    WHERE id = ?
+  `;
+
+  db.query(sql, [status, productId], (err, result) => {
+    if (err) {
+      console.error("Update product status error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update product status"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Product marked as ${status}`
+    });
+  });
+});
+
+
+
+
+///// Index Display
+app.get("/api/products", (req, res) => {
+  const { category, search, region, district } = req.query;
+
+  let sql = `
+    SELECT 
+      id,
+      region,
+      district,
+      product_name,
+      category,
+      product_type,
+      price,
+      product_color,
+      quantity_in_stock,
+      status,
+      phone_number,
+      instructions,
+      item_condition,
+      images,
+      posted_by
+    FROM products
+    WHERE status = 'approved'
+  `;
+
+  const values = [];
+
+  if (category && category !== "All") {
+    sql += ` AND category = ?`;
+    values.push(category);
+  }
+
+  if (region && region !== "All Ghana") {
+    sql += ` AND region = ?`;
+    values.push(region);
+  }
+
+  if (district && district.trim() !== "") {
+    sql += ` AND district = ?`;
+    values.push(district.trim());
+  }
+
+  if (search && search.trim() !== "") {
+    sql += ` AND product_name LIKE ?`;
+    values.push(`%${search.trim()}%`);
+  }
+
+  sql += ` ORDER BY id DESC`;
+
+  db.query(sql, values, (err, results) => {
+    if (err) {
+      console.error("Fetch products error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load products"
+      });
+    }
+
+    res.json({
+      success: true,
+      products: results
+    });
+  });
+});
+
+
+app.get("/api/products/:id", (req, res) => {
+  const productId = req.params.id;
+
+  const sql = `
+    SELECT 
+      id,
+      region,
+      product_name,
+      product_type,
+      price,
+      product_color,
+      quantity_in_stock,
+      status,
+      phone_number,
+      instructions,
+      item_condition,
+      images,
+      posted_by
+    FROM products
+    WHERE id = ? AND status = 'approved'
+    LIMIT 1
+  `;
+
+  db.query(sql, [productId], (err, results) => {
+    if (err) {
+      console.error("Fetch product details error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load product details"
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      product: results[0]
+    });
+  });
+});
+
+
+
+
+app.get("/api/check-user-login", (req, res) => {
+  console.log("SESSION USER:", req.session.user);
+
+  if (req.session && req.session.user) {
+    return res.json({
+      loggedIn: true,
+      user: req.session.user
+    });
+  }
+
+  return res.json({
+    loggedIn: false
+  });
+});
+
+
+
+
+app.get("/api/user/notifications", (req, res) => {
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const sql = `
+    SELECT id, title, message, created_at
+    FROM admin_notifications
+    WHERE status = 'active'
+    ORDER BY created_at DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Notifications error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load notifications."
+      });
+    }
+
+    res.json({
+      success: true,
+      notifications: results
+    });
+  });
+});
+
+
+app.get("/api/user/profile", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const sql = `
+    SELECT 
+      id,
+      firstname,
+      lastname,
+      email,
+      gender,
+      dob,
+      telephone,
+      other_telephone,
+      role,
+      status,
+      digital_address,
+      address,
+      verification_status,
+      created_at
+    FROM users
+    WHERE id = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("User profile error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load profile."
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found."
+      });
+    }
+
+    res.json({
+      success: true,
+      user: results[0]
+    });
+  });
+});
+
+
+app.put("/api/user/profile/update", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const {
+    firstname,
+    lastname,
+    email,
+    telephone,
+    other_telephone,
+    gender,
+    dob,
+    digital_address,
+    address
+  } = req.body;
+
+  if (!firstname || !lastname || !email || !telephone) {
+    return res.status(400).json({
+      success: false,
+      message: "Firstname, lastname, email and telephone are required."
+    });
+  }
+
+  const sql = `
+    UPDATE users
+    SET 
+      firstname = ?,
+      lastname = ?,
+      email = ?,
+      telephone = ?,
+      other_telephone = ?,
+      gender = ?,
+      dob = ?,
+      digital_address = ?,
+      address = ?
+    WHERE id = ?
+  `;
+
+  db.query(
+    sql,
+    [
+      firstname,
+      lastname,
+      email,
+      telephone,
+      other_telephone || null,
+      gender || null,
+      dob || null,
+      digital_address || null,
+      address || null,
+      userId
+    ],
+    (err) => {
+      if (err) {
+        console.error("Update user profile error:", err);
+        return res.status(500).json({
+          success: false,
+          message: err.sqlMessage || "Failed to update profile."
+        });
+      }
+
+      req.session.user.firstname = firstname;
+      req.session.user.lastname = lastname;
+      req.session.user.email = email;
+      req.session.user.telephone = telephone;
+
+      req.session.save(() => {
+        res.json({
+          success: true,
+          message: "Profile updated successfully."
+        });
+      });
+    }
+  );
+});
+
+
+app.put("/api/user/profile/change-password", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const {
+    current_password,
+    new_password,
+    confirm_password
+  } = req.body;
+
+  if (!current_password || !new_password || !confirm_password) {
+    return res.status(400).json({
+      success: false,
+      message: "All password fields are required."
+    });
+  }
+
+  if (new_password !== confirm_password) {
+    return res.status(400).json({
+      success: false,
+      message: "New password and confirm password do not match."
+    });
+  }
+
+  if (new_password.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: "Password must be at least 6 characters."
+    });
+  }
+
+  db.query(
+    "SELECT pin_hash FROM users WHERE id = ? LIMIT 1",
+    [userId],
+    async (err, results) => {
+      if (err) {
+        console.error("Password fetch error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Database error."
+        });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found."
+        });
+      }
+
+      const match = await bcrypt.compare(current_password, results[0].pin_hash);
+
+      if (!match) {
+        return res.status(400).json({
+          success: false,
+          message: "Current password is incorrect."
+        });
+      }
+
+      const newHash = await bcrypt.hash(new_password, 10);
+
+      db.query(
+        "UPDATE users SET pin_hash = ? WHERE id = ?",
+        [newHash, userId],
+        (updateErr) => {
+          if (updateErr) {
+            console.error("Password update error:", updateErr);
+            return res.status(500).json({
+              success: false,
+              message: "Failed to change password."
+            });
+          }
+
+          res.json({
+            success: true,
+            message: "Password changed successfully."
+          });
+        }
+      );
+    }
+  );
+});
+
+
+///// Users Add Products 
+app.post(
+  "/api/products/upload",
+  upload.array("images", 10),
+
+  async (req, res) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({
+          success: false,
+          message: "Please login first."
+        });
+      }
+
+      const userId = req.session.user.id;
+
+      const {
+        category,
+        region,
+        district,
+        product_name,
+        product_type,
+        price,
+        product_color,
+        quantity_in_stock,
+        phone_number,
+        instructions,
+        description,
+        item_condition
+      } = req.body;
+
+      if (
+        !category ||
+        !region ||
+        !district ||
+        !product_name ||
+        !product_type ||
+        !price
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Please fill all required fields."
+        });
+      }
+
+      if (!req.files || req.files.length < 5) {
+        return res.status(400).json({
+          success: false,
+          message: "Please upload at least 5 images."
+        });
+      }
+
+      const imagePaths = [];
+
+      for (const file of req.files) {
+        const ext = path.extname(file.originalname);
+        const fileName = `products/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+
+        await spacesClient.send(
+          new PutObjectCommand({
+            Bucket: SPACES_BUCKET,
+            Key: fileName,
+            Body: file.buffer,
+            ACL: "public-read",
+            ContentType: file.mimetype
+          })
+        );
+
+        const imageUrl = `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/${fileName}`;
+        imagePaths.push(imageUrl);
+      }
+
+      const sql = `
+        INSERT INTO products (
+          category,
+          region,
+          district,
+          product_name,
+          product_type,
+          price,
+          product_color,
+          quantity_in_stock,
+          status,
+          phone_number,
+          instructions,
+          description,
+          item_condition,
+          images,
+          posted_by
+        )
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `;
+
+      db.query(
+        sql,
+        [
+          category,
+          region,
+          district,
+          product_name,
+          product_type,
+          price,
+          product_color,
+          quantity_in_stock,
+          "pending",
+          phone_number,
+          instructions || null,
+          description || null,
+          item_condition,
+          JSON.stringify(imagePaths),
+          userId
+        ],
+
+        (err) => {
+          if (err) {
+            console.error("Upload product error:", err);
+
+            return res.status(500).json({
+              success: false,
+              message: err.sqlMessage || "Failed to upload product."
+            });
+          }
+
+          res.json({
+            success: true,
+            message: "Product uploaded successfully and pending approval."
+          });
+        }
+      );
+
+    } catch (error) {
+      console.error("Spaces upload error:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Failed to upload images. Please try again."
+      });
+    }
+  }
+);
+
+/////User Products view 
+app.get(
+"/api/user/my-products",
+(req,res)=>{
+
+if(!req.session.user){
+
+return res.json({
+success:false
+});
+
+}
+
+const userId =
+req.session.user.id;
+
+db.query(
+`
+SELECT *
+FROM products
+WHERE posted_by = ?
+ORDER BY id DESC
+`,
+[userId],
+
+(err,results)=>{
+
+if(err){
+
+return res.json({
+success:false
+});
+
+}
+
+res.json({
+success:true,
+products:results
+});
+
+});
+
+});
+
+
+
+app.get(
+"/api/user/product/:id",
+(req,res)=>{
+
+if(!req.session.user){
+
+return res.json({
+success:false
+});
+
+}
+
+const productId =
+req.params.id;
+
+const userId =
+req.session.user.id;
+
+db.query(
+`
+SELECT *
+FROM products
+WHERE id = ?
+AND posted_by = ?
+`,
+[productId,userId],
+
+(err,results)=>{
+
+if(err || results.length===0){
+
+return res.json({
+success:false
+});
+
+}
+
+res.json({
+success:true,
+product:results[0]
+});
+
+});
+
+});
+
+
+
+app.delete(
+"/api/user/delete-product/:id",
+(req,res)=>{
+
+if(!req.session.user){
+
+return res.json({
+success:false,
+message:"Unauthorized"
+});
+
+}
+
+const productId =
+req.params.id;
+
+const userId =
+req.session.user.id;
+
+db.query(
+`
+DELETE FROM products
+WHERE id = ?
+AND posted_by = ?
+`,
+[productId,userId],
+
+(err)=>{
+
+if(err){
+
+return res.json({
+success:false,
+message:"Delete failed"
+});
+
+}
+
+res.json({
+success:true
+});
+
+});
+
+});
+
+
+
+///// Admin Delete Product 
+app.delete("/api/admin/products/:id", (req, res) => {
+  const productId = req.params.id;
+
+  db.query(
+    "DELETE FROM products WHERE id = ?",
+    [productId],
+    (err, result) => {
+      if (err) {
+        console.error("Delete product error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to delete product."
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Product not found."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Product deleted successfully."
+      });
+    }
+  );
+});
+
+
+/////Cart Display 
+app.post("/api/cart/add", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+  const { product_id } = req.body;
+
+  if (!product_id) {
+    return res.status(400).json({
+      success: false,
+      message: "Product ID is required."
+    });
+  }
+
+  const checkSql = `
+    SELECT id, quantity 
+    FROM carts 
+    WHERE user_id = ? AND product_id = ? AND status = 'active'
+    LIMIT 1
+  `;
+
+  db.query(checkSql, [userId, product_id], (err, rows) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Cart check failed."
+      });
+    }
+
+    if (rows.length > 0) {
+      const updateSql = `
+        UPDATE carts 
+        SET quantity = quantity + 1 
+        WHERE id = ?
+      `;
+
+      return db.query(updateSql, [rows[0].id], (updateErr) => {
+        if (updateErr) {
+          return res.status(500).json({
+            success: false,
+            message: "Failed to update cart."
+          });
+        }
+
+        res.json({
+          success: true,
+          message: "Product quantity updated in cart."
+        });
+      });
+    }
+
+    const insertSql = `
+      INSERT INTO carts (user_id, product_id, quantity)
+      VALUES (?, ?, 1)
+    `;
+
+    db.query(insertSql, [userId, product_id], (insertErr) => {
+      if (insertErr) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to add product to cart."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Product added to cart successfully."
+      });
+    });
+  });
+});
+
+
+app.get("/api/cart/my-cart", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const sql = `
+    SELECT 
+      carts.id AS cart_id,
+      carts.quantity,
+      carts.created_at,
+      products.id AS product_id,
+      products.product_name,
+      products.price,
+      products.product_color,
+      products.quantity_in_stock,
+      products.images,
+      products.item_condition,
+      products.phone_number
+    FROM carts
+    JOIN products ON carts.product_id = products.id
+    WHERE carts.user_id = ? AND carts.status = 'active'
+    ORDER BY carts.id DESC
+  `;
+
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("Cart fetch error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load cart."
+      });
+    }
+
+    res.json({
+      success: true,
+      cart: results
+    });
+  });
+});
+
+
+app.delete("/api/cart/remove/:id", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+  const cartId = req.params.id;
+
+  db.query(
+    "DELETE FROM carts WHERE id = ? AND user_id = ?",
+    [cartId, userId],
+    (err) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to remove item."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Item removed from cart."
+      });
+    }
+  );
+});
+
+
+
+
+///// Buy routes 
+app.get("/api/products/:id/check-stock", (req, res) => {
+  const productId = req.params.id;
+
+  db.query(
+    "SELECT id, quantity_in_stock FROM products WHERE id = ? LIMIT 1",
+    [productId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: "Stock check failed." });
+      }
+
+      if (rows.length === 0) {
+        return res.status(404).json({ success: false, message: "Product not found." });
+      }
+
+      const stock = Number(rows[0].quantity_in_stock);
+
+      res.json({
+        success: true,
+        inStock: stock > 0,
+        stock
+      });
+    }
+  );
+});
+
+
+
+app.post("/api/purchase/complete", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const buyerId = req.session.user.id;
+  const buyerName = `${req.session.user.firstname || ""} ${req.session.user.lastname || ""}`.trim();
+  const buyerPhone = req.session.user.telephone || "";
+
+  const { product_id, quantity } = req.body;
+
+  if (!product_id || !quantity || Number(quantity) <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid purchase details."
+    });
+  }
+
+  db.query("SELECT * FROM products WHERE id = ? LIMIT 1", [product_id], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: "Failed to load product." });
+    }
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Product not found." });
+    }
+
+    const product = rows[0];
+    const qty = Number(quantity);
+    const stock = Number(product.quantity_in_stock);
+    const unitPrice = Number(product.price);
+    const totalAmount = unitPrice * qty;
+    const sellerId = product.posted_by;
+
+    if (stock <= 0) {
+      return res.status(400).json({ success: false, message: "This product is out of stock." });
+    }
+
+    if (qty > stock) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${stock} item(s) available in stock.`
+      });
+    }
+
+    db.beginTransaction((txErr) => {
+      if (txErr) {
+        return res.status(500).json({ success: false, message: "Transaction failed." });
+      }
+
+      const insertPurchaseSql = `
+        INSERT INTO purchased_products
+        (
+          product_id, buyer_id, seller_id, buyer_name, buyer_phone,
+          product_name, quantity, unit_price, total_amount,
+          payment_status, order_status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'pending')
+      `;
+
+      db.query(
+        insertPurchaseSql,
+        [
+          product.id,
+          buyerId,
+          sellerId,
+          buyerName,
+          buyerPhone,
+          product.product_name,
+          qty,
+          unitPrice,
+          totalAmount
+        ],
+        (insertErr, purchaseResult) => {
+          if (insertErr) {
+            return db.rollback(() => {
+              res.status(500).json({ success: false, message: "Failed to save purchase." });
+            });
+          }
+
+          const purchaseId = purchaseResult.insertId;
+
+          const insertAdminSql = `
+  INSERT INTO admin_sales_records
+  (
+    purchase_id,
+    product_id,
+    seller_id,
+    buyer_id,
+    product_name,
+    quantity,
+    unit_price,
+    total_amount,
+    balance_amount,
+    payment_status
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid')
+`;
+
+          db.query(
+            insertAdminSql,
+            [
+  purchaseId,
+  product.id,
+  sellerId,
+  buyerId,
+  product.product_name,
+  qty,
+  unitPrice,
+  totalAmount,
+  totalAmount
+],
+            (adminErr) => {
+              if (adminErr) {
+                return db.rollback(() => {
+                  res.status(500).json({
+                    success: false,
+                    message: "Failed to save admin sales record."
+                  });
+                });
+              }
+
               db.query(
-                `INSERT INTO ${targetTable}
-                 (vendor_id, recipient_number, data_package, amount, network, status, sent_at, package_id)
-                 VALUES (?, ?, ?, ?, ?, 'pending', NOW(), ?)`,
-                [
-                  vendor_id,
-                  recipient_number,
-                  data_package,
-                  amountPaid,
-                  network,
-                  package_id
-                ],
-                (err4) => {
-                  if (err4) {
-                    console.error(`❌ Error inserting into ${targetTable}:`, err4);
-                  } else {
-                    console.log(`✅ Vendor order logged into ${targetTable}.`);
+                "UPDATE admin_account SET balance = balance + ? WHERE id = 1",
+                [totalAmount],
+                (adminAccountErr) => {
+                  if (adminAccountErr) {
+                    return db.rollback(() => {
+                      res.status(500).json({
+                        success: false,
+                        message: "Failed to update admin account."
+                      });
+                    });
                   }
 
                   db.query(
-                    `INSERT INTO wallet_loads (vendor_id, momo, amount, date_loaded)
-                     VALUES (?, ?, ?, NOW())`,
-                    [vendor_id, momo_number, vendorAmount],
-                    (err5) => {
-                      if (err5) {
-                        console.error("❌ Error inserting wallet_loads:", err5);
+                    "UPDATE products SET quantity_in_stock = quantity_in_stock - ? WHERE id = ?",
+                    [qty, product.id],
+                    (updateErr) => {
+                      if (updateErr) {
+                        return db.rollback(() => {
+                          res.status(500).json({
+                            success: false,
+                            message: "Failed to update stock."
+                          });
+                        });
                       }
 
-                      db.query(
-                        `INSERT INTO total_revenue (vendor_id, source, amount, date_received)
-                         VALUES (?, ?, ?, NOW())`,
-                        [
-                          vendor_id,
-                          `Admin base for ${network} ${data_package}`,
-                          revenueAmount
-                        ],
-                        (err6) => {
-                          if (err6) {
-                            console.error("❌ Error inserting vendor total_revenue:", err6);
-                          }
-
-                          db.query(
-                            "DELETE FROM moolre_temp_orders WHERE externalref = ?",
-                            [externalref]
-                          );
-
-                          return res.status(200).send("OK");
+                      db.commit((commitErr) => {
+                        if (commitErr) {
+                          return db.rollback(() => {
+                            res.status(500).json({
+                              success: false,
+                              message: "Failed to complete purchase."
+                            });
+                          });
                         }
-                      );
+
+                        res.json({
+                          success: true,
+                          message: "Payment successful. Product purchased successfully."
+                        });
+                      });
                     }
                   );
                 }
@@ -661,7298 +2561,2983 @@ if (targetTable === "vendor_orders") {
           );
         }
       );
-    }
-  );
-});
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//ADDED ACCOUNT FOR VENDORS 
-// ✅ GET vendor balances
-// /api/admin/vendor-balances
-
-// ✅ GET vendor balances (username from users, amount sum from wallet_loads)
-app.get("/api/admin/vendor-balances", (req, res) => {
-  // 1) detect whether users table has `rull` or `role`
-  db.query("SHOW COLUMNS FROM users LIKE 'rull'", (err, rullCol) => {
-    if (err) {
-      console.error("❌ SHOW COLUMNS error:", err);
-      return res.status(500).json({ ok: false, message: "Database error" });
-    }
-
-    const roleCol = (rullCol && rullCol.length > 0) ? "rull" : "role";
-
-    // 2) now run the main query using the detected column
-    const q = `
-      SELECT 
-        u.id,
-        u.username,
-        u.momo_number,
-        u.account_name,
-        COALESCE(SUM(w.amount), 0) AS total_amount
-      FROM users u
-      LEFT JOIN wallet_loads w ON w.vendor_id = u.id
-      WHERE u.${roleCol} = 'vendor'
-      GROUP BY u.id, u.username, u.momo_number, u.account_name
-      ORDER BY u.username ASC
-    `;
-
-    db.query(q, (err2, rows) => {
-      if (err2) {
-        console.error("❌ vendor-balances query error:", err2);
-        return res.status(500).json({ ok: false, message: "Database error" });
-      }
-
-      res.json({ ok: true, vendors: rows || [] });
     });
   });
 });
 
 
 
-// ✅ POST deduct vendor balance
-// /api/admin/deduct-vendor
-// ✅ Deduct only if vendor balance >= amount (no overdraft)
-// Uses a DB transaction + row lock to prevent race conditions.
-app.post("/api/admin/deduct-vendor", (req, res) => {
-  const vendor_id = Number(req.body.vendor_id);
-  const amount = Number(req.body.amount);
-
-  if (!vendor_id || amount <= 0) {
-    return res.json({ ok: false, message: "Invalid vendor or amount" });
-  }
-
-  // 1️⃣ First: get current balance
-  db.query(
-    "SELECT COALESCE(SUM(amount), 0) AS balance FROM wallet_loads WHERE vendor_id = ?",
-    [vendor_id],
-    (err, rows) => {
-      if (err) {
-        console.error("❌ balance check error:", err);
-        return res.status(500).json({ ok: false, message: "Database error" });
-      }
-
-      const balance = Number(rows[0].balance || 0);
-
-      // 2️⃣ Check if balance is enough
-      if (balance < amount) {
-        return res.json({
-          ok: false,
-          message: `Insufficient balance. Current balance is GHS ${balance.toFixed(2)}`
-        });
-      }
-
-      // 3️⃣ Deduct by inserting a negative value
-      const negAmount = -Math.abs(amount);
-
-      db.query(
-        "INSERT INTO wallet_loads (vendor_id, momo, amount) VALUES (?, ?, ?)",
-        [vendor_id, "admin_deduction", negAmount],
-        (err2) => {
-          if (err2) {
-            console.error("❌ deduct-vendor error:", err2);
-            return res.status(500).json({ ok: false, message: "Database error" });
-          }
-
-          res.json({
-            ok: true,
-            message: "Deducted successfully",
-            new_balance: balance - amount
-          });
-        }
-      );
-    }
-  );
-});
-
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//New Code 
-
-// ==============================
-// REQUIRED MIDDLEWARE (important)
-// ==============================
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// =====================================================
-// GET /api/admin-data?network=mtn|telecel|airteltigo
-// =====================================================
-app.get("/api/admin-data", (req, res) => {
-  const network = String(req.query.network || "").toLowerCase().trim();
-
-  if (!network) return res.json([]);
-
-  db.query(
-    "SELECT id, package_name, price, network FROM AdminData WHERE status='active' AND LOWER(network)=? ORDER BY price ASC",
-    [network],
-    (err, rows) => {
-      if (err) {
-        console.error("❌ AdminData fetch error:", err);
-        return res.status(500).json({ ok: false, message: "Database error" });
-      }
-      res.json(rows || []);
-    }
-  );
-});
-
-// ==============================
-// HELPERS (required for your flow)
-// ==============================
-
-// ✅ Map DB network -> TheTeller r-switch code
-// =====================================================
-//  THETELLER + BUY DATA (FULL WORKING)
-//  - INITIATE PAYMENT PROMPT
-//  - POLL STATUS
-//  - AUTO-INSERT INTO admin_orders WHEN APPROVED
-// =====================================================
-
-
-
-// =======================
-// THETELLER CONFIG
-// =======================
-const THETELLER = {
-  endpoint: "https://prod.theteller.net/v1.1/transaction/process",
-  statusBase: "https://prod.theteller.net/v1.1/users/transactions",
-  merchantId: process.env.THETELLER_MERCHANT_ID || "TTM-00009388",
-  username: process.env.THETELLER_USERNAME || "louis66a20ac942e74",
-  apiKey:
-    process.env.THETELLER_API_KEY ||
-    "ZmVjZWZlZDc2MzA4OWU0YmZhOTk5MDBmMDAxNDhmOWY=",
-};
-
-// ✅ Build Basic Auth token ONCE: base64("username:apikey")
-THETELLER.basicToken = Buffer.from(
-  `${THETELLER.username}:${THETELLER.apiKey}`
-).toString("base64");
-
-// =======================
-// HELPERS
-// =======================
-
-// ✅ TheTeller requires 12-digit amount in pesewas
-// Example: GHS 1.00 -> "000000000100"
-function thetellerAmount12(ghsAmount) {
-  const pesewas = Math.round(Number(ghsAmount || 0) * 100);
-  return String(pesewas).padStart(12, "0");
-}
-
-// ✅ r-switch mapping (TheTeller expects: MTN / ATL / VDF)
-function getSwitchCode(network) {
-  const n = String(network || "").toLowerCase().trim();
-  if (n === "mtn" || n.includes("mtn")) return "MTN";
-  if (
-    n === "airteltigo" ||
-    n.includes("airteltigo") ||
-    n.includes("airtel") ||
-    n.includes("tigo") ||
-    n.includes("atl")
-  )
-    return "ATL";
-  if (
-    n === "telecel" ||
-    n.includes("telecel") ||
-    n.includes("vodafone") ||
-    n.includes("voda") ||
-    n.includes("vdf")
-  )
-    return "VDF";
-  return null;
-}
-
-function isInitAccepted(data) {
-  const status = String(data?.status || "").toLowerCase();
-  const code = String(data?.code || "");
-
-  // Common “good” words from gateways
-  const goodStatusWords = [
-    "approved",
-    "success",
-    "successful",
-    "pending",
-    "processing",
-    "initiated",
-    "inprogress",
-    "in_progress",
-    "queued",
-    "accepted",
-    "ok",
-  ];
-
-  // If status contains any good word, accept
-  if (goodStatusWords.some(w => status.includes(w))) return true;
-
-  // If code looks like a success/pending code, accept
-  // (Gateways often use 00 / 000 / 200 / 201 / 202 for OK-ish init responses)
-  const goodCodes = new Set(["00", "000", "200", "201", "202", "100", "101", "102"]);
-  if (goodCodes.has(code)) return true;
-
-  // Sometimes response includes transaction id / reference even if status text is odd
-  if (data?.transaction_id || data?.transactionId || data?.reference || data?.checkout_url) return true;
-
-  return false;
-}
-
-
-// ✅ MSISDN -> 233XXXXXXXXX
-function formatMsisdnForTheTeller(msisdn) {
-  let n = String(msisdn || "").trim().replace(/[^\d]/g, "");
-
-  // If it starts with 0 and length is 10 => convert to 233 + 9 digits
-  if (n.startsWith("0") && n.length === 10) {
-    n = "233" + n.slice(1);
-  }
-
-  // If user typed 9 digits e.g. 20xxxxxxx => convert to 233 + 9
-  if (n.length === 9) {
-    n = "233" + n;
-  }
-
-  // If already 233 + 9 digits (12) keep it
-  if (n.startsWith("233") && n.length === 12) {
-    return n;
-  }
-
-  // fallback: return digits as-is
-  return n;
-}
-
-
-// ✅ Unique transaction id
-function makeTransactionId() {
-  return `SANDYPAY-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-}
-
-// ✅ Group package id for admin_orders download batch
-function makePackageId() {
-  return `PKG-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-}
-
-// ✅ status helpers (used by INIT)
-function isApprovedStatus(status, code) {
-  const s = String(status || "").toLowerCase().trim();
-  const c = String(code || "").trim();
-
-  return (
-    c === "000" || c === "00" || c === "0" ||
-    ["approved", "successful", "success", "completed", "paid", "done"].includes(s) ||
-    s.includes("success") ||
-    s.includes("approved") ||
-    s.includes("complete") ||
-    s.includes("paid")
-  );
-}
-
-function isPendingStatus(status, code) {
-  const s = String(status || "").toLowerCase().trim();
-  const c = String(code || "").trim();
-
-  return (
-    c === "099" ||
-    ["pending", "processing", "in progress", "in_progress", "initiated", "inprogress", "queued"].includes(s) ||
-    s.includes("pending") ||
-    s.includes("processing") ||
-    s.includes("progress") ||
-    s.includes("initiated") ||
-    s.includes("queued")
-  );
-}
-
-// ===========================
-// ✅ SERVER-SIDE AUTO CONFIRM
-// ===========================
-const watching = new Set();
-
-async function finalizeOrderIfApproved(transaction_id) {
-  const p = pendingOrders.get(transaction_id);
-  if (!p) return; // nothing to finalize
-
-  // Prevent duplicates
-  const [exists] = await db
-    .promise()
-    .query("SELECT 1 FROM admin_orders WHERE updated_reference=? LIMIT 1", [
-      transaction_id,
-    ]);
-
-  if (!exists.length) {
-    await db.promise().query(
-      `INSERT INTO admin_orders
-        (vendor_id, recipient_number, data_package, amount, network, status, sent_at, package_id, updated_reference)
-       VALUES (?, ?, ?, ?, ?, 'pending', NOW(), ?, ?)`,
-      [
-        p.vendor_id,
-        p.recipient_number,
-        p.package_name,
-        Number(p.amount),
-        String(p.network).toLowerCase(),
-        p.package_id,
-        transaction_id,
-      ]
-    );
-  }
-
-  pendingOrders.delete(transaction_id);
-}
-
-async function checkTheTellerStatusOnce(transaction_id) {
-  const url = `${THETELLER.statusBase}/${encodeURIComponent(transaction_id)}/status`;
-
-  const resp = await axios.get(url, {
-    headers: {
-      Authorization: `Basic ${THETELLER.basicToken}`,
-      "Merchant-Id": THETELLER.merchantId,
-      "Cache-Control": "no-cache",
-    },
-    timeout: 30000,
-  });
-
-  const raw = resp.data || {};
-
-  const statusRaw =
-    raw.status ??
-    raw.Status ??
-    raw.transaction_status ??
-    raw.transactionStatus ??
-    raw.response_status ??
-    raw.state ??
-    "";
-
-  const codeRaw =
-    raw.code ??
-    raw.Code ??
-    raw.response_code ??
-    raw.responseCode ??
-    raw.status_code ??
-    raw.statusCode ??
-    "";
-
-  const status = String(statusRaw).toLowerCase().trim();
-  const code = String(codeRaw).trim();
-
-  const approved =
-    code === "000" ||
-    code === "00" ||
-    code === "0" ||
-    ["approved", "successful", "success", "completed", "paid", "done"].includes(status) ||
-    status.includes("success") ||
-    status.includes("approved") ||
-    status.includes("complete") ||
-    status.includes("paid");
-
-  const failed =
-    ["failed", "declined", "cancelled", "canceled", "reversed"].includes(status) ||
-    status.includes("fail") ||
-    status.includes("decline") ||
-    status.includes("cancel");
-
-  return { approved, failed, status, code, raw };
-}
-
-
-function startServerSideWatcher(transaction_id, opts = {}) {
-  if (!transaction_id) return;
-
-  if (watching.has(transaction_id)) return;
-  watching.add(transaction_id);
-
-  const intervalMs = opts.intervalMs ?? 5000;
-  const maxMinutes = opts.maxMinutes ?? 10;
-  const maxTries = Math.ceil((maxMinutes * 60 * 1000) / intervalMs);
-
-  let tries = 0;
-
-  const timer = setInterval(async () => {
-    tries++;
-
-    try {
-      const result = await reconcilePaymentNow({
-        transaction_id,
-        source: "watcher"
-      });
-
-      if (result.finalized) {
-        clearInterval(timer);
-        watching.delete(transaction_id);
-        return;
-      }
-
-      // do NOT stop on one failed-like provider response
-      if (tries >= maxTries) {
-        clearInterval(timer);
-        watching.delete(transaction_id);
-        return;
-      }
-    } catch (e) {
-      console.error("startServerSideWatcher error:", e.message || e);
-
-      if (tries >= maxTries) {
-        clearInterval(timer);
-        watching.delete(transaction_id);
-      }
-    }
-  }, intervalMs);
-}
-
-
-// ===============================
-//  PENDING ORDERS STORE (MEMORY)
-// ===============================
-// Key: transaction_id
-// Value: { vendor_id, recipient_number, package_name, amount, network, package_id }
-const pendingOrders = new Map();
-
-// =====================================================
-// PAYMENT SESSION HELPERS
-// =====================================================
-async function getPaymentSessionByClientRef(client_ref) {
-  const [rows] = await db.promise().query(
-    "SELECT * FROM payment_sessions WHERE client_ref=? LIMIT 1",
-    [client_ref]
-  );
-  return rows.length ? rows[0] : null;
-}
-
-async function getPaymentSessionByTransactionId(transaction_id) {
-  const [rows] = await db.promise().query(
-    "SELECT * FROM payment_sessions WHERE transaction_id=? LIMIT 1",
-    [transaction_id]
-  );
-  return rows.length ? rows[0] : null;
-}
-
-
-async function reconcilePaymentNow({ client_ref = "", transaction_id = "", source = "manual" }) {
-  let session = null;
-
-  const normalizeStatus = (v) => String(v || "").trim().toLowerCase();
-  const normalizeCode = (v) => String(v || "").trim();
-
-  const isApprovedStatus = (status, code) => {
-    const s = normalizeStatus(status);
-    const c = normalizeCode(code);
-
-    return (
-      c === "000" ||
-      c === "00" ||
-      c === "0" ||
-      ["approved", "successful", "success", "completed", "paid", "done"].includes(s) ||
-      s.includes("success") ||
-      s.includes("approved") ||
-      s.includes("complete") ||
-      s.includes("paid")
-    );
-  };
-
-  try {
-    if (transaction_id) {
-      session = await getPaymentSessionByTransactionId(transaction_id);
-    }
-
-    if (!session && client_ref) {
-      session = await getPaymentSessionByClientRef(client_ref);
-      if (session?.transaction_id) {
-        transaction_id = String(session.transaction_id).trim();
-      }
-    }
-
-    if (!session) {
-      return {
-        ok: false,
-        finalized: false,
-        status: "unknown",
-        message: "Payment session not found."
-      };
-    }
-
-    // Trust local DB first
-    if (
-      Number(session.finalized) === 1 ||
-      normalizeStatus(session.payment_status) === "approved"
-    ) {
-      return {
-        ok: true,
-        finalized: true,
-        status: "approved",
-        transaction_id: session.transaction_id || transaction_id || null,
-        message: "Payment already confirmed locally."
-      };
-    }
-
-    if (!transaction_id) {
-      return {
-        ok: true,
-        finalized: false,
-        status: "pending",
-        message: "Transaction is still being prepared."
-      };
-    }
-
-    const url = `${THETELLER.statusBase}/${encodeURIComponent(transaction_id)}/status`;
-
-    let raw = {};
-    let status = "pending";
-    let code = "";
-    let message = "";
-
-    try {
-      const resp = await axios.get(url, {
-        headers: {
-          Authorization: `Basic ${THETELLER.basicToken}`,
-          "Merchant-Id": THETELLER.merchantId,
-          "Cache-Control": "no-cache",
-        },
-        timeout: 30000,
-      });
-
-      raw = resp.data || {};
-
-      status = normalizeStatus(
-        raw.status ??
-        raw.Status ??
-        raw.transaction_status ??
-        raw.transactionStatus ??
-        raw.response_status ??
-        raw.state ??
-        ""
-      );
-
-      code = normalizeCode(
-        raw.code ??
-        raw.Code ??
-        raw.response_code ??
-        raw.responseCode ??
-        raw.status_code ??
-        raw.statusCode ??
-        ""
-      );
-
-      message = String(
-        raw.reason ??
-        raw.message ??
-        raw.ResponseMessage ??
-        raw.response_message ??
-        ""
-      ).trim();
-    } catch (providerErr) {
-      console.error("reconcilePaymentNow provider error:", providerErr.response?.data || providerErr.message);
-
-      // provider failed? trust local DB again before giving up
-      const freshLocal = await getPaymentSessionByClientRef(session.client_ref);
-      if (
-        freshLocal &&
-        (
-          Number(freshLocal.finalized) === 1 ||
-          normalizeStatus(freshLocal.payment_status) === "approved"
-        )
-      ) {
-        return {
-          ok: true,
-          finalized: true,
-          status: "approved",
-          transaction_id: freshLocal.transaction_id || transaction_id || null,
-          message: "Payment already confirmed locally."
-        };
-      }
-
-      return {
-        ok: true,
-        finalized: false,
-        status: "pending",
-        transaction_id,
-        message: "Provider check delayed. Payment is still being confirmed."
-      };
-    }
-
-    const approved = isApprovedStatus(status, code);
-
-    await db.promise().query(
-      `INSERT INTO payment_reconcile_logs
-       (client_ref, transaction_id, check_source, provider_status, provider_code, local_payment_status, local_finalized, resolved, note, raw_response)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        session.client_ref,
-        transaction_id,
-        source,
-        status || null,
-        code || null,
-        session.payment_status || null,
-        Number(session.finalized) === 1 ? 1 : 0,
-        approved ? 1 : 0,
-        message || `${source} payment check`,
-        JSON.stringify(raw)
-      ]
-    ).catch(() => {});
-
-    if (approved) {
-      const conn = await db.getConnection();
-      try {
-        await conn.beginTransaction();
-
-        // Lock the payment session row
-        const [lockedRows] = await conn.query(
-          `SELECT *
-           FROM payment_sessions
-           WHERE client_ref=?
-           LIMIT 1
-           FOR UPDATE`,
-          [session.client_ref]
-        );
-
-        if (!lockedRows.length) {
-          await conn.rollback();
-          return {
-            ok: false,
-            finalized: false,
-            status: "unknown",
-            transaction_id,
-            message: "Payment session not found during finalization."
-          };
-        }
-
-        const locked = lockedRows[0];
-
-        // If another request already finalized it while we waited for lock, trust it
-        if (
-          Number(locked.finalized) === 1 ||
-          normalizeStatus(locked.payment_status) === "approved"
-        ) {
-          await conn.commit();
-          return {
-            ok: true,
-            finalized: true,
-            status: "approved",
-            transaction_id: locked.transaction_id || transaction_id || null,
-            message: "Payment already confirmed locally."
-          };
-        }
-
-        const [exists] = await conn.query(
-          `SELECT 1
-           FROM admin_orders
-           WHERE updated_reference=?
-           LIMIT 1`,
-          [transaction_id]
-        );
-
-        if (!exists.length) {
-          await conn.query(
-            `INSERT INTO admin_orders
-            (vendor_id, recipient_number, data_package, amount, network, status, sent_at, package_id, updated_reference)
-            VALUES (?, ?, ?, ?, ?, 'pending', NOW(), ?, ?)`,
-            [
-              locked.vendor_id,
-              locked.recipient_number,
-              locked.package_name,
-              Number(locked.amount),
-              String(locked.network || "").toLowerCase(),
-              locked.package_batch_id,
-              transaction_id
-            ]
-          );
-        }
-
-        await conn.query(
-          `UPDATE payment_sessions
-           SET payment_status='approved',
-               finalized=1,
-               updated_reference=?,
-               init_status='approved'
-           WHERE client_ref=?`,
-          [transaction_id, locked.client_ref]
-        );
-
-        await conn.commit();
-
-        return {
-          ok: true,
-          finalized: true,
-          status: "approved",
-          transaction_id,
-          message: "Payment successful. Order saved."
-        };
-      } catch (txErr) {
-        await conn.rollback();
-        throw txErr;
-      } finally {
-        conn.release();
-      }
-    }
-
-    // Keep non-approved states retryable
-    await db.promise().query(
-      `UPDATE payment_sessions
-       SET payment_status='pending'
-       WHERE client_ref=? AND finalized=0`,
-      [session.client_ref]
-    ).catch(() => {});
-
-    return {
-      ok: true,
-      finalized: false,
-      status: "pending",
-      transaction_id,
-      message: message || "Payment is still being confirmed."
-    };
-  } catch (err) {
-    console.error("reconcilePaymentNow error:", err.response?.data || err.message || err);
-
-    // Last local fallback
-    if (session?.client_ref) {
-      const latest = await getPaymentSessionByClientRef(session.client_ref).catch(() => null);
-
-      if (
-        latest &&
-        (
-          Number(latest.finalized) === 1 ||
-          String(latest.payment_status || "").toLowerCase() === "approved"
-        )
-      ) {
-        return {
-          ok: true,
-          finalized: true,
-          status: "approved",
-          transaction_id: latest.transaction_id || transaction_id || null,
-          message: "Payment already confirmed locally."
-        };
-      }
-    }
-
-    return {
-      ok: false,
-      finalized: false,
-      status: "unknown",
-      transaction_id: transaction_id || null,
-      message: "Could not reconcile payment right now."
-    };
-  }
-}
-
-// =====================================================
-// POST /api/buy-data-theteller
-// =====================================================
-app.post("/api/buy-data-theteller", async (req, res) => {
-  const {
-    client_ref,
-    package_id,
-    momo_number,
-    recipient_number,
-    vendor_id,
-    source_page
-  } = req.body;
-
-  const vid = Number(vendor_id || 1);
-
-  console.log("🔥 HIT /api/buy-data-theteller");
-  console.log("📥 BODY:", req.body);
-
-  if (!client_ref || !package_id || !momo_number || !recipient_number) {
-    console.log("➡️ INIT RESPONSE TO FRONTEND:", {
-      ok: false,
-      message: "Missing required fields."
-    });
-
-    return res.json({
-      ok: false,
-      message: "Missing required fields."
-    });
-  }
-
-  try {
-    // 1) if session already exists, return it
-    const existingSession = await getPaymentSessionByClientRef(client_ref);
-    if (existingSession) {
-      console.log("ℹ️ Existing payment session found:", existingSession.client_ref);
-
-      const alreadyApproved =
-        Number(existingSession.finalized) === 1 ||
-        String(existingSession.payment_status || "").toLowerCase() === "approved";
-
-      const payload = {
-        ok: true,
-        resumed: true,
-        client_ref: existingSession.client_ref,
-        transaction_id: existingSession.transaction_id || null,
-        status: alreadyApproved
-          ? "approved"
-          : (existingSession.payment_status || existingSession.init_status || "created"),
-        finalized: alreadyApproved,
-        message: alreadyApproved
-          ? "Payment already confirmed."
-          : "Existing payment session found."
-      };
-
-      console.log("➡️ INIT RESPONSE TO FRONTEND:", payload);
-      return res.json(payload);
-    }
-
-    // 2) Fetch package
-    const [rows] = await db.promise().query(
-      "SELECT id, package_name, price, network FROM AdminData WHERE id=? AND status='active' LIMIT 1",
-      [package_id]
-    );
-
-    if (!rows.length) {
-      console.log("➡️ INIT RESPONSE TO FRONTEND:", {
-        ok: false,
-        message: "Package not found or inactive."
-      });
-
-      return res.json({
-        ok: false,
-        message: "Package not found or inactive."
-      });
-    }
-
-    const pkg = rows[0];
-
-    // 3) Detect payer network from momo_number
-    const payerNet = detectMomoNetwork(momo_number); // 'mtn' | 'airteltigo' | 'telecel'
-    const rSwitch = getSwitchCode(payerNet);
-
-    if (!rSwitch) {
-      console.log("➡️ INIT RESPONSE TO FRONTEND:", {
-        ok: false,
-        message: "Unsupported payer network."
-      });
-
-      return res.json({
-        ok: false,
-        message: "Unsupported payer network."
-      });
-    }
-
-    // 4) Build ids
-    const transactionId = makeTransactionId();
-    const packageBatchId = makePackageId();
-
-    // 5) INSERT payment session FIRST
-    await db.promise().query(
-      `INSERT INTO payment_sessions
-      (
-        client_ref,
-        transaction_id,
-        vendor_id,
-        package_id,
-        package_name,
-        amount,
-        network,
-        payer_network,
-        momo_number,
-        recipient_number,
-        package_batch_id,
-        source_page,
-        init_status,
-        payment_status
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'starting', 'starting')`,
-      [
-        client_ref,
-        transactionId,
-        vid,
-        Number(package_id),
-        pkg.package_name,
-        Number(pkg.price),
-        String(pkg.network || "").toLowerCase(),
-        payerNet,
-        momo_number,
-        recipient_number,
-        packageBatchId,
-        source_page || "mtn.html"
-      ]
-    );
-
-    console.log("✅ payment_sessions row inserted:", {
-      client_ref,
-      transactionId,
-      vendor_id: vid
-    });
-
-    // 6) Build TheTeller payload
-    const payload = {
-      amount: thetellerAmount12(pkg.price),
-      processing_code: "000200",
-      transaction_id: transactionId,
-      desc: `Sandypay Data - ${pkg.package_name}`,
-      merchant_id: THETELLER.merchantId,
-      subscriber_number: formatMsisdnForTheTeller(momo_number),
-      "r-switch": rSwitch,
-      redirect_url: "https://sandipay.co/payment-callback",
-    };
-
-    console.log("🧾 Bundle network:", pkg.network);
-    console.log("💳 MoMo number raw:", momo_number);
-    console.log("💳 Detected payerNet:", payerNet);
-    console.log("💳 Using r-switch:", rSwitch);
-    console.log("💳 subscriber_number:", formatMsisdnForTheTeller(momo_number));
-    console.log("📤 TheTeller INIT payload:", payload);
-    console.log("🔐 Using merchant:", THETELLER.merchantId);
-
-    // 7) Call TheTeller INIT
-    const tt = await axios.post(THETELLER.endpoint, payload, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${THETELLER.basicToken}`,
-        "Cache-Control": "no-cache",
-      },
-      timeout: 30000,
-    });
-
-    console.log("📥 TheTeller INIT response:", tt.data);
-
-    const accepted = isInitAccepted(tt.data);
-
-    if (!accepted) {
-      console.log("❌ INIT not accepted raw:", tt.data);
-
-      await db.promise().query(
-        `UPDATE payment_sessions
-         SET init_status='failed',
-             payment_status='failed'
-         WHERE client_ref=?`,
-        [client_ref]
-      );
-
-      const out = {
-        ok: false,
-        message: `Payment prompt not accepted (status=${tt.data?.status}, code=${tt.data?.code}) ${tt.data?.message || tt.data?.reason || ""}`.trim(),
-        theteller: tt.data,
-      };
-
-      console.log("➡️ INIT RESPONSE TO FRONTEND:", out);
-      return res.json(out);
-    }
-
-    // 8) Update session after successful init
-    await db.promise().query(
-      `UPDATE payment_sessions
-       SET init_status='prompt_sent',
-           payment_status='pending'
-       WHERE client_ref=?`,
-      [client_ref]
-    );
-
-    // 9) optional memory cache too
-    pendingOrders.set(transactionId, {
-      vendor_id: vid,
-      recipient_number,
-      package_name: pkg.package_name,
-      amount: Number(pkg.price),
-      network: String(pkg.network || "").toLowerCase(),
-      payer_network: payerNet,
-      package_id: packageBatchId,
-    });
-
-    // 10) server-side watcher
-    startServerSideWatcher(transactionId, { intervalMs: 5000, maxMinutes: 6 });
-
-    const out = {
-      ok: true,
-      message: "✅ Prompt sent. Please approve on your phone.",
-      client_ref,
-      transaction_id: transactionId,
-      vendor_id: vid,
-    };
-
-    console.log("➡️ INIT RESPONSE TO FRONTEND:", out);
-    return res.json(out);
-
-  } catch (err) {
-    console.error("❌ TheTeller INIT error:", err.response?.data || err.message);
-
-    if (client_ref) {
-      try {
-        await db.promise().query(
-          `UPDATE payment_sessions
-           SET init_status='network_error'
-           WHERE client_ref=?`,
-          [client_ref]
-        );
-      } catch (e) {
-        console.error("❌ Could not update session to network_error:", e.message);
-      }
-    }
-
-    const out = {
-      ok: false,
-      message: "Payment could not be initiated. Try again.",
-      error: err.response?.data || err.message,
-    };
-
-    console.log("➡️ INIT RESPONSE TO FRONTEND:", out);
-    return res.status(500).json(out);
-  }
-});
-
-
-// =====================================================
-// GET /api/theteller-status?transaction_id=...&client_ref=...
-// =====================================================
-app.get("/api/theteller-status", async (req, res) => {
-  let transaction_id = String(req.query.transaction_id || "").trim();
-  const client_ref = String(req.query.client_ref || "").trim();
-
-  if (!transaction_id && !client_ref) {
-    const out = {
-      ok: false,
-      status: "unknown",
-      finalized: false,
-      message: "transaction_id or client_ref is required"
-    };
-
-    console.log("➡️ STATUS RESPONSE TO FRONTEND:", out);
-    return res.json(out);
-  }
-
-  try {
-    // 1) Load payment session first
-    let session = null;
-
-    if (transaction_id) {
-      session = await getPaymentSessionByTransactionId(transaction_id);
-    }
-
-    if (!session && client_ref) {
-      session = await getPaymentSessionByClientRef(client_ref);
-      if (session?.transaction_id) {
-        transaction_id = String(session.transaction_id).trim();
-      }
-    }
-
-    if (!transaction_id) {
-      const out = {
-        ok: true,
-        status: "pending",
-        finalized: false,
-        message: "Payment session found but transaction is still being prepared."
-      };
-
-      console.log("➡️ STATUS RESPONSE TO FRONTEND:", out);
-      return res.json(out);
-    }
-
-    // 2) If already finalized in DB, trust DB first
-    if (
-      session &&
-      (
-        Number(session.finalized) === 1 ||
-        String(session.payment_status || "").toLowerCase() === "approved"
-      )
-    ) {
-      const out = {
-        ok: true,
-        status: "approved",
-        finalized: true,
-        message: "✅ Payment already confirmed. Order saved.",
-        transaction_id
-      };
-
-      console.log("🟢 Session already finalized in DB:", {
-        transaction_id,
-        payment_status: session.payment_status,
-        finalized: session.finalized
-      });
-      console.log("➡️ STATUS RESPONSE TO FRONTEND:", out);
-      return res.json(out);
-    }
-
-    const url = `${THETELLER.statusBase}/${encodeURIComponent(transaction_id)}/status`;
-
-    const resp = await axios.get(url, {
-      headers: {
-        Authorization: `Basic ${THETELLER.basicToken}`,
-        "Merchant-Id": THETELLER.merchantId,
-        "Cache-Control": "no-cache",
-      },
-      timeout: 30000,
-    });
-
-    const raw = resp.data || {};
-
-    const statusRaw =
-      raw.status ??
-      raw.Status ??
-      raw.transaction_status ??
-      raw.transactionStatus ??
-      raw.response_status ??
-      raw.state ??
-      "";
-
-    const codeRaw =
-      raw.code ??
-      raw.Code ??
-      raw.response_code ??
-      raw.responseCode ??
-      raw.status_code ??
-      raw.statusCode ??
-      "";
-
-    const reasonRaw =
-      raw.reason ??
-      raw.message ??
-      raw.ResponseMessage ??
-      raw.response_message ??
-      "";
-
-    const status = String(statusRaw).toLowerCase().trim();
-    const code = String(codeRaw).trim();
-    const reason = String(reasonRaw).trim();
-
-    console.log("📥 TheTeller STATUS raw:", raw);
-    console.log("✅ Parsed STATUS:", { status, code, reason, transaction_id });
-
-    const approved =
-      code === "000" ||
-      code === "00" ||
-      code === "0" ||
-      ["approved", "successful", "success", "completed", "paid", "done"].includes(status) ||
-      status.includes("success") ||
-      status.includes("approved") ||
-      status.includes("complete") ||
-      status.includes("paid");
-
-    const pending =
-      ["pending", "processing", "in progress", "in_progress", "initiated", "inprogress", "queued"].includes(status) ||
-      status.includes("pending") ||
-      status.includes("processing") ||
-      status.includes("progress") ||
-      status.includes("initiated") ||
-      status.includes("queued") ||
-      code === "099";
-
-    // IMPORTANT:
-    // do NOT make declined/cancelled/etc permanently fail immediately
-    // because in your flow the user may approve later in MoMo approvals
-    const failedLike =
-      ["failed", "declined", "cancelled", "canceled", "reversed", "terminated", "expired"].includes(status) ||
-      status.includes("fail") ||
-      status.includes("decline") ||
-      status.includes("cancel") ||
-      status.includes("terminate") ||
-      code === "100";
-
-    // 3) Approved: finalize once
-    if (approved) {
-      if (!session && transaction_id) {
-        session = await getPaymentSessionByTransactionId(transaction_id);
-      }
-
-      if (session) {
-        const [exists] = await db.promise().query(
-          "SELECT 1 FROM admin_orders WHERE updated_reference=? LIMIT 1",
-          [transaction_id]
-        );
-
-        if (!exists.length) {
-          await db.promise().query(
-            `INSERT INTO admin_orders
-            (vendor_id, recipient_number, data_package, amount, network, status, sent_at, package_id, updated_reference)
-            VALUES (?, ?, ?, ?, ?, 'pending', NOW(), ?, ?)`,
-            [
-              session.vendor_id,
-              session.recipient_number,
-              session.package_name,
-              Number(session.amount),
-              String(session.network || "").toLowerCase(),
-              session.package_batch_id,
-              transaction_id
-            ]
-          );
-
-          console.log("✅ admin_orders inserted:", {
-            transaction_id,
-            vendor_id: session.vendor_id,
-            recipient_number: session.recipient_number,
-            package_name: session.package_name
-          });
-        } else {
-          console.log("ℹ️ admin_orders already exists for:", transaction_id);
-        }
-
-        await db.promise().query(
-          `UPDATE payment_sessions
-           SET payment_status='approved',
-               finalized=1,
-               updated_reference=?,
-               init_status='approved'
-           WHERE transaction_id=?`,
-          [transaction_id, transaction_id]
-        );
-
-        const out = {
-          ok: true,
-          status: "approved",
-          finalized: true,
-          message: "✅ Payment successful. Order saved.",
-          transaction_id,
-          code,
-          raw
-        };
-
-        console.log("➡️ STATUS RESPONSE TO FRONTEND:", out);
-        return res.json(out);
-      }
-
-      const out = {
-        ok: true,
-        status: "approved",
-        finalized: false,
-        message: "✅ Payment successful, but payment session not found.",
-        transaction_id,
-        code,
-        raw
-      };
-
-      console.log("➡️ STATUS RESPONSE TO FRONTEND:", out);
-      return res.json(out);
-    }
-
-    // 4) Normal pending
-    if (pending) {
-      await db.promise().query(
-        `UPDATE payment_sessions
-         SET payment_status='pending'
-         WHERE transaction_id=?`,
-        [transaction_id]
-      );
-
-      const out = {
-        ok: true,
-        status: "pending",
-        finalized: false,
-        message: "⏳ Awaiting approval...",
-        transaction_id,
-        code,
-        raw
-      };
-
-      console.log("➡️ STATUS RESPONSE TO FRONTEND:", {
-        transaction_id,
-        returned_status: "pending",
-        finalized: false,
-        provider_status: status,
-        provider_code: code
-      });
-
-      return res.json(out);
-    }
-
-    // 5) Failed-like from TheTeller:
-    // KEEP IT RETRYABLE, and trust our DB if already finalized elsewhere
-    if (failedLike) {
-      const [sessionRows] = await db.promise().query(
-        `SELECT finalized, payment_status, updated_reference
-         FROM payment_sessions
-         WHERE transaction_id=?
-         LIMIT 1`,
-        [transaction_id]
-      );
-
-      const localSession = sessionRows[0];
-
-      if (
-        localSession &&
-        (
-          Number(localSession.finalized) === 1 ||
-          String(localSession.payment_status || "").toLowerCase() === "approved"
-        )
-      ) {
-        const out = {
-          ok: true,
-          status: "approved",
-          finalized: true,
-          message: "✅ Payment successful. Order saved.",
-          transaction_id,
-          code,
-          raw
-        };
-
-        console.log("🟢 Local DB says payment is already approved despite provider failed-like response:", {
-          transaction_id,
-          payment_status: localSession.payment_status,
-          finalized: localSession.finalized,
-          updated_reference: localSession.updated_reference
-        });
-        console.log("➡️ STATUS RESPONSE TO FRONTEND:", out);
-        return res.json(out);
-      }
-
-      await db.promise().query(
-        `UPDATE payment_sessions
-         SET payment_status='pending'
-         WHERE transaction_id=?`,
-        [transaction_id]
-      );
-
-      console.log("⚠️ TheTeller returned failed-like status, but keeping session retryable:", {
-        transaction_id,
-        status,
-        code,
-        reason
-      });
-
-  const out = {
-  ok: true,
-  status: "pending",
-  hard_failed: false,
-  finalized: false,
-  message: reason
-    ? `${reason} If you have already approved on your phone, tap 'I've completed the payment' shortly.`
-    : "Payment is not yet confirmed. If you have already approved on your phone, tap 'I've completed the payment' shortly.",
-  transaction_id,
-  code,
-  raw
-};
-
-      console.log("➡️ STATUS RESPONSE TO FRONTEND:", {
-        transaction_id,
-        returned_status: "pending",
-        finalized: false,
-        provider_status: status,
-        provider_code: code,
-        provider_reason: reason
-      });
-
-      return res.json(out);
-    }
-
-    // 6) Anything unknown -> still retryable
-    await db.promise().query(
-      `UPDATE payment_sessions
-       SET payment_status='pending'
-       WHERE transaction_id=?`,
-      [transaction_id]
-    );
-
-    const out = {
-      ok: true,
-      status: "pending",
-      finalized: false,
-      message: "⏳ Checking payment status...",
-      transaction_id,
-      code,
-      raw
-    };
-
-    console.log("➡️ STATUS RESPONSE TO FRONTEND:", {
-      transaction_id,
-      returned_status: "pending",
-      finalized: false,
-      provider_status: status,
-      provider_code: code
-    });
-
-    return res.json(out);
-
-  } catch (e) {
-    console.error("❌ TheTeller status error:", e.response?.data || e.message);
-
-    const out = {
-      ok: false,
-      status: "unknown",
-      finalized: false,
-      message: "Could not check payment status"
-    };
-
-    console.log("➡️ STATUS RESPONSE TO FRONTEND:", out);
-    return res.json(out);
-  }
-});
-
-
-// =====================================================
-// GET /api/payment-session-status
-// =====================================================
-app.get("/api/payment-session-status", async (req, res) => {
-  const client_ref = String(req.query.client_ref || "").trim();
-
-  if (!client_ref) {
-    const out = { ok: false, message: "client_ref is required." };
-    console.log("➡️ PAYMENT SESSION RESPONSE TO FRONTEND:", out);
-    return res.json(out);
-  }
-
-  try {
-    const [rows] = await db.promise().query(
-      `SELECT
-         id,
-         client_ref,
-         transaction_id,
-         init_status,
-         payment_status,
-         finalized,
-         updated_reference,
-         package_id,
-         momo_number,
-         recipient_number,
-         vendor_id,
-         source_page
-       FROM payment_sessions
-       WHERE client_ref=?
-       LIMIT 1`,
-      [client_ref]
-    );
-
-    if (!rows.length) {
-      const out = { ok: false, message: "Payment session not found." };
-      console.log("➡️ PAYMENT SESSION RESPONSE TO FRONTEND:", out);
-      return res.json(out);
-    }
-
-    const row = rows[0];
-
-    const out = {
-      ok: true,
-      found: true,
-      client_ref: row.client_ref,
-      transaction_id: row.transaction_id || null,
-      init_status: row.init_status || "",
-      payment_status: row.payment_status || "",
-      finalized: !!row.finalized,
-      updated_reference: row.updated_reference || null,
-      package_id: row.package_id || null,
-      momo_number: row.momo_number || null,
-      recipient_number: row.recipient_number || null,
-      vendor_id: row.vendor_id || null,
-      source_page: row.source_page || "mtn.html"
-    };
-
-    console.log("➡️ PAYMENT SESSION RESPONSE TO FRONTEND:", out);
-    return res.json(out);
-  } catch (err) {
-    console.error("payment-session-status error:", err);
-
-    const out = {
-      ok: false,
-      message: "Could not fetch payment session."
-    };
-
-    console.log("➡️ PAYMENT SESSION RESPONSE TO FRONTEND:", out);
-    return res.status(500).json(out);
-  }
-});
-
-
-// =====================================================
-// POST /api/manual-verify-payment
-// =====================================================
-app.post("/api/manual-verify-payment", async (req, res) => {
-  const client_ref = String(req.body.client_ref || "").trim();
-  const transaction_id = String(req.body.transaction_id || "").trim();
-
-  if (!client_ref && !transaction_id) {
-    return res.json({
-      ok: false,
-      finalized: false,
-      status: "unknown",
-      message: "client_ref or transaction_id is required"
-    });
-  }
-
-  try {
-    const attempts = 8;
-    const delayMs = 3500;
-
-    let lastResult = {
-      ok: true,
-      finalized: false,
-      status: "pending",
-      transaction_id: transaction_id || null,
-      message: "Payment is still being confirmed."
-    };
-
-    for (let i = 0; i < attempts; i++) {
-      const result = await reconcilePaymentNow({
-        client_ref,
-        transaction_id,
-        source: "manual"
-      });
-
-      lastResult = result;
-
-      if (result.finalized) {
-        return res.json(result);
-      }
-
-      if (i < attempts - 1) {
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      }
-    }
-
-    return res.json({
-      ok: true,
-      finalized: false,
-      status: "pending",
-      transaction_id: lastResult.transaction_id || transaction_id || null,
-      message: "Payment is still being confirmed. If money was deducted, do not pay again. Tap again shortly."
-    });
-  } catch (err) {
-    console.error("manual-verify-payment error:", err.response?.data || err.message || err);
-
-    // one more local fallback
-    try {
-      let latest = null;
-
-      if (transaction_id) {
-        latest = await getPaymentSessionByTransactionId(transaction_id);
-      }
-      if (!latest && client_ref) {
-        latest = await getPaymentSessionByClientRef(client_ref);
-      }
-
-      if (
-        latest &&
-        (
-          Number(latest.finalized) === 1 ||
-          String(latest.payment_status || "").toLowerCase() === "approved"
-        )
-      ) {
-        return res.json({
-          ok: true,
-          finalized: true,
-          status: "approved",
-          transaction_id: latest.transaction_id || transaction_id || null,
-          message: "Payment successful. Order saved."
-        });
-      }
-    } catch (_) {}
-
-    return res.status(500).json({
-      ok: false,
-      finalized: false,
-      status: "unknown",
-      message: "Could not verify payment right now."
-    });
-  }
-});
-
-
-
-// =====================================================
-// GET /payment-callback
-// =====================================================
-app.get("/payment-callback", async (req, res) => {
-  try {
-    const q = req.query || {};
-    const client_ref = String(q.client_ref || q.order_id || "").trim();
-    const transaction_id = String(q.transaction_id || q.trans_id || "").trim();
-
-    await db.promise().query(
-      `INSERT INTO payment_reconcile_logs
-       (client_ref, transaction_id, check_source, note, raw_response)
-       VALUES (?, ?, 'callback', ?, ?)`,
-      [
-        client_ref || "",
-        transaction_id || null,
-        "TheTeller callback received",
-        JSON.stringify(q)
-      ]
-    ).catch(() => {});
-
-    if (client_ref || transaction_id) {
-      await reconcilePaymentNow({
-        client_ref,
-        transaction_id,
-        source: "callback"
-      }).catch(() => {});
-    }
-
-    return res.redirect(`/payment_wait.html?client_ref=${encodeURIComponent(client_ref)}&callback=1`);
-  } catch (err) {
-    console.error("payment-callback error:", err);
-    return res.status(500).send("Callback error");
-  }
-});
-
-// =====================================================
-// POST /api/reconcile-payment
-// Strong manual re-check for delayed MoMo approvals
-// =====================================================
-app.post("/api/reconcile-payment", async (req, res) => {
-  const client_ref = String(req.body.client_ref || "").trim();
-  let transaction_id = String(req.body.transaction_id || "").trim();
-
-  if (!client_ref && !transaction_id) {
-    return res.json({
-      ok: false,
-      finalized: false,
-      status: "unknown",
-      message: "client_ref or transaction_id is required"
-    });
-  }
-
-  try {
-    let session = null;
-
-    if (transaction_id) {
-      session = await getPaymentSessionByTransactionId(transaction_id);
-    }
-
-    if (!session && client_ref) {
-      session = await getPaymentSessionByClientRef(client_ref);
-      if (session?.transaction_id) {
-        transaction_id = String(session.transaction_id).trim();
-      }
-    }
-
-    if (!session) {
-      return res.json({
-        ok: false,
-        finalized: false,
-        status: "unknown",
-        message: "Payment session not found."
-      });
-    }
-
-    // if already finalized locally, trust DB immediately
-    if (
-      Number(session.finalized) === 1 ||
-      String(session.payment_status || "").toLowerCase() === "approved"
-    ) {
-      return res.json({
-        ok: true,
-        finalized: true,
-        status: "approved",
-        transaction_id: session.transaction_id || transaction_id || null,
-        message: "Payment already confirmed locally."
-      });
-    }
-
-    // try several times because provider may delay
-    const attempts = 6;
-    const delayMs = 3500;
-
-    for (let i = 0; i < attempts; i++) {
-      // reload latest session each round
-      const latestSession = await getPaymentSessionByClientRef(session.client_ref);
-
-if (
-  latestSession &&
-  (
-    Number(latestSession.finalized) === 1 ||
-    String(latestSession.payment_status || "").toLowerCase() === "approved"
-  )
-) {
-  try {
-    await db.promise().query(
-      `INSERT INTO payment_reconcile_logs
-       (
-         client_ref,
-         transaction_id,
-         check_source,
-         provider_status,
-         provider_code,
-         local_payment_status,
-         local_finalized,
-         resolved,
-         note
-       )
-       VALUES (?, ?, 'manual', ?, ?, ?, ?, 1, ?)`,
-      [
-        latestSession.client_ref,
-        latestSession.transaction_id || null,
-        "approved",
-        "LOCAL_DB",
-        latestSession.payment_status || "",
-        Number(latestSession.finalized) === 1 ? 1 : 0,
-        "Resolved from local DB during manual reconcile"
-      ]
-    );
-  } catch (e) {
-    console.error("Could not insert payment_reconcile_logs:", e.message);
-  }
-
-  return res.json({
-    ok: true,
-    finalized: true,
-    status: "approved",
-    transaction_id: latestSession.transaction_id || null,
-    message: "Payment successful. Order saved."
-  });
-}
-
-      const txIdToCheck = latestSession?.transaction_id || transaction_id;
-
-      if (txIdToCheck) {
-        // reuse your own existing endpoint logic internally by checking provider directly here
-        const url = `${THETELLER.statusBase}/${encodeURIComponent(txIdToCheck)}/status`;
-
-        try {
-          const resp = await axios.get(url, {
-            headers: {
-              Authorization: `Basic ${THETELLER.basicToken}`,
-              "Merchant-Id": THETELLER.merchantId,
-              "Cache-Control": "no-cache",
-            },
-            timeout: 30000,
-          });
-
-          const raw = resp.data || {};
-
-          const statusRaw =
-            raw.status ??
-            raw.Status ??
-            raw.transaction_status ??
-            raw.transactionStatus ??
-            raw.response_status ??
-            raw.state ??
-            "";
-
-          const codeRaw =
-            raw.code ??
-            raw.Code ??
-            raw.response_code ??
-            raw.responseCode ??
-            raw.status_code ??
-            raw.statusCode ??
-            "";
-
-          const reasonRaw =
-            raw.reason ??
-            raw.message ??
-            raw.ResponseMessage ??
-            raw.response_message ??
-            "";
-
-          const status = String(statusRaw).toLowerCase().trim();
-          const code = String(codeRaw).trim();
-          const reason = String(reasonRaw).trim();
-
-          const approved =
-            code === "000" ||
-            code === "00" ||
-            code === "0" ||
-            ["approved", "successful", "success", "completed", "paid", "done"].includes(status) ||
-            status.includes("success") ||
-            status.includes("approved") ||
-            status.includes("complete") ||
-            status.includes("paid");
-
-          await db.promise().query(
-            `INSERT INTO payment_reconcile_logs
-             (client_ref, transaction_id, check_source, provider_status, provider_code, local_payment_status, local_finalized, resolved, note, raw_response)
-             VALUES (?, ?, 'manual', ?, ?, ?, ?, ?, ?, ?)`,
-            [
-              session.client_ref,
-              txIdToCheck,
-              status || null,
-              code || null,
-              latestSession?.payment_status || null,
-              latestSession?.finalized ? 1 : 0,
-              approved ? 1 : 0,
-              reason || `Manual reconcile attempt ${i + 1}`,
-              JSON.stringify(raw)
-            ]
-          ).catch(() => {});
-
-          if (approved) {
-            const freshSession = await getPaymentSessionByTransactionId(txIdToCheck);
-
-            if (freshSession) {
-              const [exists] = await db.promise().query(
-                "SELECT 1 FROM admin_orders WHERE updated_reference=? LIMIT 1",
-                [txIdToCheck]
-              );
-
-              if (!exists.length) {
-                await db.promise().query(
-                  `INSERT INTO admin_orders
-                  (vendor_id, recipient_number, data_package, amount, network, status, sent_at, package_id, updated_reference)
-                  VALUES (?, ?, ?, ?, ?, 'pending', NOW(), ?, ?)`,
-                  [
-                    freshSession.vendor_id,
-                    freshSession.recipient_number,
-                    freshSession.package_name,
-                    Number(freshSession.amount),
-                    String(freshSession.network || "").toLowerCase(),
-                    freshSession.package_batch_id,
-                    txIdToCheck
-                  ]
-                );
-              }
-
-              await db.promise().query(
-                `UPDATE payment_sessions
-                 SET payment_status='approved',
-                     finalized=1,
-                     updated_reference=?,
-                     init_status='approved'
-                 WHERE transaction_id=?`,
-                [txIdToCheck, txIdToCheck]
-              );
-            }
-
-            return res.json({
-              ok: true,
-              finalized: true,
-              status: "approved",
-              transaction_id: txIdToCheck,
-              message: "Payment successful. Order saved."
-            });
-          }
-        } catch (providerErr) {
-          console.error("reconcile provider check error:", providerErr.response?.data || providerErr.message);
-        }
-      }
-
-      if (i < attempts - 1) {
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      }
-    }
-
-    const lastSession = await getPaymentSessionByClientRef(session.client_ref);
-
-    return res.json({
-      ok: true,
-      finalized: !!lastSession?.finalized,
-      status: String(lastSession?.payment_status || "pending").toLowerCase(),
-      transaction_id: lastSession?.transaction_id || transaction_id || null,
-      message: "Payment is still being confirmed. If money was deducted, do not start again. Tap again shortly."
-    });
-
-  } catch (err) {
-    console.error("reconcile-payment error:", err);
-    return res.status(500).json({
-      ok: false,
-      finalized: false,
-      status: "unknown",
-      message: "Could not reconcile payment right now."
-    });
-  }
-});
-
-
-// =====================================================
-// POST /api/payment-session-recover
-// =====================================================
-app.post("/api/payment-session-recover", async (req, res) => {
-  const client_ref = String(req.body.client_ref || "").trim();
-
-  if (!client_ref) {
-    return res.json({ ok: false, message: "client_ref is required." });
-  }
-
-  try {
-    const [rows] = await db.promise().query(
-      `SELECT * FROM payment_sessions WHERE client_ref=? LIMIT 1`,
-      [client_ref]
-    );
-
-    if (!rows.length) {
-      return res.json({ ok: false, message: "Payment session not found." });
-    }
-
-    const s = rows[0];
-
-    if (s.transaction_id) {
-      return res.json({
-        ok: true,
-        resumed: true,
-        transaction_id: s.transaction_id,
-        init_status: s.init_status || "",
-        payment_status: s.payment_status || ""
-      });
-    }
-
-    if (!s.package_id || !s.momo_number || !s.recipient_number) {
-      return res.json({
-        ok: false,
-        message: "Payment session exists but required fields are missing."
-      });
-    }
-
-    const [pkgRows] = await db.promise().query(
-      "SELECT id, package_name, price, network FROM AdminData WHERE id=? AND status='active' LIMIT 1",
-      [s.package_id]
-    );
-
-    if (!pkgRows.length) {
-      return res.json({ ok: false, message: "Package not found or inactive." });
-    }
-
-    const pkg = pkgRows[0];
-
-    const payerNet = detectMomoNetwork(s.momo_number);
-    const rSwitch = getSwitchCode(payerNet);
-
-    if (!rSwitch) {
-      return res.json({ ok: false, message: "Unsupported payer network." });
-    }
-
-    const transactionId = makeTransactionId();
-
-    const payload = {
-      amount: thetellerAmount12(pkg.price),
-      processing_code: "000200",
-      transaction_id: transactionId,
-      desc: `Sandypay Data - ${pkg.package_name}`,
-      merchant_id: THETELLER.merchantId,
-      subscriber_number: formatMsisdnForTheTeller(s.momo_number),
-      "r-switch": rSwitch,
-      redirect_url: "https://sandipay.co/payment-callback",
-    };
-
-    console.log("📤 Recover INIT payload:", payload);
-
-    const tt = await axios.post(THETELLER.endpoint, payload, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${THETELLER.basicToken}`,
-        "Cache-Control": "no-cache",
-      },
-      timeout: 30000,
-    });
-
-    console.log("📥 Recover INIT response:", tt.data);
-
-    const accepted = isInitAccepted(tt.data);
-
-    if (!accepted) {
-      await db.promise().query(
-        `UPDATE payment_sessions
-         SET init_status='failed', payment_status='failed'
-         WHERE client_ref=?`,
-        [client_ref]
-      );
-
-      return res.json({
-        ok: false,
-        message: tt.data?.message || "Payment prompt not accepted.",
-        theteller: tt.data
-      });
-    }
-
-    await db.promise().query(
-      `UPDATE payment_sessions
-       SET transaction_id=?,
-           init_status='prompt_sent',
-           payment_status='pending'
-       WHERE client_ref=?`,
-      [transactionId, client_ref]
-    );
-
-    startServerSideWatcher(transactionId, { intervalMs: 5000, maxMinutes: 6 });
-
-    return res.json({
-      ok: true,
-      resumed: true,
-      transaction_id: transactionId,
-      message: "Payment session recovered successfully."
-    });
-
-  } catch (err) {
-    console.error("payment-session-recover error:", err.response?.data || err.message);
-    return res.status(500).json({
-      ok: false,
-      message: "Could not recover payment session."
-    });
-  }
-});
-// =====================================================
-// POST /api/buy-data-confirm (OPTIONAL BACKUP)
-// Use only if you still want manual confirm from frontend.
-// =====================================================
-app.post("/api/buy-data-confirm", async (req, res) => {
-  const {
-    transaction_id,
-    vendor_id,
-    recipient_number,
-    package_name,
-    amount,
-    network,
-  } = req.body;
-
-  const amountNum = Number(amount);
-
-  if (
-    !transaction_id ||
-    !recipient_number ||
-    !package_name ||
-    !network ||
-    Number.isNaN(amountNum)
-  ) {
-    return res.json({ ok: false, message: "Missing confirm fields." });
-  }
-
-  try {
-    const [exists] = await db
-      .promise()
-      .query("SELECT 1 FROM admin_orders WHERE updated_reference=? LIMIT 1", [
-        transaction_id,
-      ]);
-
-    if (exists.length) return res.json({ ok: true, message: "Already confirmed." });
-
-    await db.promise().query(
-      `INSERT INTO admin_orders
-        (vendor_id, recipient_number, data_package, amount, network, status, sent_at, package_id, updated_reference)
-       VALUES (?, ?, ?, ?, ?, 'pending', NOW(), ?, ?)`,
-      [
-        Number(vendor_id || 1),
-        recipient_number,
-        package_name,
-        amountNum,
-        String(network).toLowerCase(),
-        makePackageId(),
-        transaction_id,
-      ]
-    );
-
-    return res.json({ ok: true, message: "Order confirmed and saved." });
-  } catch (err) {
-    console.error("❌ Confirm insert error:", err);
-    return res.json({ ok: false, message: "Could not save order." });
-  }
-});
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-app.get("/api/search-numbers", (req, res) => {
-  const search = req.query.q;
-
-  if (!search) return res.json([]);
-
-  const sql = `
-    SELECT phone_number
-    FROM telephone_numbers
-    WHERE phone_number LIKE ?
-    ORDER BY phone_number
-    LIMIT 10
-  `;
-
-  db.query(sql, [`${search}%`], (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json([]);
-    }
-
-    res.json(results);
-  });
-});
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// ============================
-//  AFRICA'S TALKING OTP (SMS)
-// ============================
-const AfricasTalking = require("africastalking");
-
-const AT_USERNAME = process.env.AT_USERNAME;
-const AT_API_KEY = process.env.AT_API_KEY;
-const AT_SENDER_ID = process.env.AT_SENDER_ID || ""; // optional
-const OTP_TTL = Number(process.env.AT_OTP_TTL_SECONDS || 300) * 1000;
-
-
-if (!AT_USERNAME || !AT_API_KEY) {
-  console.warn("⚠️ Missing AT_USERNAME or AT_API_KEY (Africa's Talking OTP will fail)");
-}
-console.log("AT_USERNAME:", AT_USERNAME);
-console.log("AT_API_KEY loaded:", !!AT_API_KEY);
-
-const at = AfricasTalking({ username: AT_USERNAME, apiKey: AT_API_KEY });
-const sms = at.SMS;
-
-// In-memory OTP store: momo -> { otp, expiresAt, attempts, sessionId, verifiedUntil }
-const otpStore = new Map();
-
-function normalizePhoneToE164Ghana(input = "") {
-  const v = String(input).replace(/\s+/g, "").replace(/^\+/, "");
-  // Accept:
-  // 0XXXXXXXXX (10 digits) -> +233XXXXXXXXX
-  // 233XXXXXXXXX -> +233XXXXXXXXX
-  // XXXXXXXXX (9 digits) -> +233XXXXXXXXX (if user entered without leading 0)
-  if (/^0\d{9}$/.test(v)) return "+233" + v.slice(1);
-  if (/^233\d{9}$/.test(v)) return "+" + v;
-  if (/^\d{9}$/.test(v)) return "+233" + v;
-  if (/^\d{10,15}$/.test(v)) return "+" + v; // fallback for other formats
-  return null;
-}
-
-function generateOtp(len = 6) {
-  let s = "";
-  for (let i = 0; i < len; i++) s += Math.floor(Math.random() * 10);
-  return s;
-}
-
-function genSessionId() {
-  return "otp_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 9);
-}
-
-async function sendOtpSmsAfricaTalking(toE164, otp) {
-  const message = `Sandypay OTP: ${otp}\nExpires in ${Math.round(OTP_TTL / 60000)} minutes. Do not share this code.`;
-
-  const options = {
-    to: [toE164],
-    message,
-  };
-
-  // Only include "from" if you actually have a Sender ID/shortcode approved
-  if (AT_SENDER_ID && AT_SENDER_ID.trim()) {
-    options.from = AT_SENDER_ID.trim();
-  }
-
-  // SDK sms.send(options)
-  // Ref: Africa's Talking Node SDK repo examples. :contentReference[oaicite:3]{index=3}
-  const resp = await sms.send(options);
-  return resp;
-}
-
-// ----------------------------
-// POST /api/send-momo-otp
-// body: { momo_number }
-// ----------------------------
-app.post("/api/send-momo-otp", async (req, res) => {
-  try {
-    const momoRaw = req.body?.momo_number;
-    const momoE164 = normalizePhoneToE164Ghana(momoRaw);
-
-    if (!momoE164) {
-      return res.json({ ok: false, message: "Invalid MoMo number format." });
-    }
-
-    // Anti-spam: if existing OTP still valid, block resend for a short time
-    const existing = otpStore.get(momoE164);
-    if (existing && Date.now() < existing.expiresAt) {
-      const waitSec = Math.ceil((existing.expiresAt - Date.now()) / 1000);
-      if (waitSec > (OTP_TTL / 1000 - 30)) {
-        // just created recently
-        return res.json({ ok: false, message: "OTP already sent. Please check your SMS." });
-      }
-    }
-
-    const otp = generateOtp(6);
-    const sessionId = genSessionId();
-    const expiresAt = Date.now() + OTP_TTL;
-
-    otpStore.set(momoE164, {
-      otp,
-      expiresAt,
-      attempts: 0,
-      sessionId,
-      verifiedUntil: 0,
-    });
-
-    const resp = await sendOtpSmsAfricaTalking(momoE164, otp);
-
-    // You can inspect resp for delivery status if needed.
-    return res.json({
-      ok: true,
-      message: "OTP sent successfully.",
-      session_id: sessionId,
-      // ⚠️ Do NOT return OTP in production
-      ...(String(process.env.NODE_ENV).toLowerCase() !== "production" ? { dev_note: "OTP sent (not returned)" } : {})
-    });
-
-  } catch (err) {
-    console.error("❌ send-momo-otp error:", err?.response?.data || err);
-    return res.status(500).json({ ok: false, message: "Failed to send OTP." });
-  }
-});
-
-// ----------------------------
-// POST /api/verify-momo-otp
-// body: { momo_number, otp, session_id }
-// ----------------------------
-app.post("/api/verify-momo-otp", (req, res) => {
-  try {
-    const momoRaw = req.body?.momo_number;
-    const otp = String(req.body?.otp || "").trim();
-    const sessionId = String(req.body?.session_id || "").trim();
-
-    const momoE164 = normalizePhoneToE164Ghana(momoRaw);
-    if (!momoE164) return res.json({ ok: false, message: "Invalid MoMo number." });
-    if (!/^\d{4,8}$/.test(otp)) return res.json({ ok: false, message: "Invalid OTP code." });
-
-    const rec = otpStore.get(momoE164);
-    if (!rec) return res.json({ ok: false, message: "No OTP request found. Please send OTP again." });
-
-    if (sessionId && rec.sessionId !== sessionId) {
-      return res.json({ ok: false, message: "OTP session mismatch. Please request a new OTP." });
-    }
-
-    if (Date.now() > rec.expiresAt) {
-      otpStore.delete(momoE164);
-      return res.json({ ok: false, message: "OTP expired. Please request a new OTP." });
-    }
-
-    rec.attempts = (rec.attempts || 0) + 1;
-    if (rec.attempts > 5) {
-      otpStore.delete(momoE164);
-      return res.json({ ok: false, message: "Too many attempts. Please request a new OTP." });
-    }
-
-    if (otp !== rec.otp) {
-      otpStore.set(momoE164, rec);
-      return res.json({ ok: false, message: "Incorrect OTP." });
-    }
-
-    // Mark verified for 10 minutes window
-    rec.verifiedUntil = Date.now() + (10 * 60 * 1000);
-    otpStore.set(momoE164, rec);
-
-    return res.json({ ok: true, message: "OTP verified." });
-
-  } catch (err) {
-    console.error("❌ verify-momo-otp error:", err);
-    return res.status(500).json({ ok: false, message: "OTP verification failed." });
-  }
-});
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-
-// GET /api/vendor/ussd-stats?vendor_id=5
-app.get("/api/vendor/ussd-stats", async (req, res) => {
-  const vendor_id = Number(req.query.vendor_id || 0);
-  if (!vendor_id) return res.status(400).json({ error: "vendor_id required" });
-
-  try {
-    const [used] = await db.promise().query(
-      `SELECT COALESCE(hits_used,0) AS used_hits
-         FROM ussd_session_counters
-        WHERE vendor_id = ?`,
-      [vendor_id]
-    );
-
-    const [remain] = await db.promise().query(
-      `SELECT COALESCE(SUM(CASE WHEN status='completed' THEN hits ELSE 0 END),0) AS remaining_hits
-         FROM session_purchases
-        WHERE vendor_id = ?`,
-      [vendor_id]
-    );
-
-    res.json({
-      used_hits: Number(used?.[0]?.used_hits || 0),
-      remaining_hits: Number(remain?.[0]?.remaining_hits || 0),
-    });
-  } catch (e) {
-    console.error("ussd-stats error:", e.message);
-    res.status(500).json({ error: "server_error" });
-  }
-});
-
-
-
-// GET /api/sessions/hits?vendor_id=5
-app.get("/api/sessions/hits", async (req, res) => {
-  try {
-    const vendor_id = req.query.vendor_id;
-    if (!vendor_id) return res.status(400).json({ error: "vendor_id is required" });
-
-    const [rows] = await db.promise().query(
-  `SELECT COALESCE(SUM(hits), 0) AS total_hits
-   FROM session_purchases
-   WHERE vendor_id = ?`,
-  [vendor_id]
-);
-
-    const total_hits = Number(rows?.[0]?.total_hits || 0);
-    res.json({ total_hits });
-  } catch (e) {
-    console.error("sessions/hits error:", e.message);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-
-
-
-// ✅ DOWNLOAD COMPLETED ORDERS & RECORD
-app.get("/api/download-orders", async (req, res) => {
-  const { network, userId } = req.query;
-  const sql = `SELECT recipient, volume, network, channel, delivery, payment, timestamp FROM transactions WHERE user_id = ? AND network = ?`;
-
-  db.query(sql, [userId, network], async (err, rows) => {
-    if (err || !rows.length) return res.status(500).send("No orders found");
-
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Orders");
-
-    sheet.columns = [
-      { header: "Date", key: "timestamp", width: 15 },
-      { header: "Recipient", key: "recipient", width: 20 },
-      { header: "Quantity", key: "volume", width: 15 },
-      { header: "Network", key: "network", width: 15 },
-      { header: "Price", key: "price", width: 10 },
-      { header: "Payment", key: "payment", width: 10 },
-      { header: "Status", key: "delivery", width: 10 },
-      { header: "Ref", key: "reference", width: 20 },
-      { header: "Platform", key: "platform", width: 10 },
-      { header: "Action", key: "action", width: 10 },
-    ];
-
-    const now = new Date().toISOString().slice(0, 19).replace("T", " ");
-
-// Add sorted rows to excel
-rows.forEach(row => {
-  const cleanPackage = row.data_package.replace(/[^\d.]/g, '');
-
-  // Convert 233XXXXXXXXX -> 0XXXXXXXXX
-  let recipient = String(row.recipient_number || "").replace(/\D/g, "");
-  if (recipient.startsWith("233") && recipient.length === 12) {
-    recipient = "0" + recipient.slice(3);   // 23354xxxxxxx -> 054xxxxxxx
-  }
-
-  worksheet.addRow({
-    recipient_number: recipient,
-    data_package: cleanPackage
-  });
-});
-
-
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename=${network}_orders.xlsx`);
-    await workbook.xlsx.write(res);
-    res.end();
-  });
-});
-
-// ✅ FETCH DOWNLOADED ORDERS FOR DISPLAY
-app.post("/api/downloaded-orders", (req, res) => {
-  const { userId } = req.body;
-  const sql = `SELECT * FROM downloaded_orders WHERE user_id = ? ORDER BY date DESC`;
-  db.query(sql, [userId], (err, rows) => {
-    if (err) return res.status(500).json({ error: "Failed to fetch downloaded orders" });
-    res.json(rows);
-  });
-});
-
-// (Leave all other existing routes and logic untouched below this comment)
-
-// ✅ REGISTER (FIXED)
-app.post("/api/register", async (req, res) => {
-  const { username, phone, sender_id, password, role } = req.body;
-
-  // ✅ Clean and validate email safely
-  const email = String(sender_id || "").trim().toLowerCase();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  if (!emailRegex.test(email)) {
-    return res.status(400).send("Invalid email format");
-  }
-
-  if (password === "0000") {
-    return res.status(400).send("PIN cannot be 0000.");
-  }
-
-  try {
-    // ✅ Check if PIN is already in use (your original logic kept)
-    db.query("SELECT id, password FROM users", async (err, users) => {
-      if (err) {
-        console.error("❌ Error checking PINs:", err);
-        return res.status(500).send("Error checking PINs.");
-      }
-
-      for (let user of users) {
-        try {
-          const match = await bcrypt.compare(password, user.password);
-          if (match) return res.status(400).send("PIN already in use.");
-        } catch (compareErr) {
-          console.error("❌ PIN compare error:", compareErr);
-          return res.status(500).send("PIN validation error.");
-        }
-      }
-
-      // ✅ Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // ✅ 1) Create the account FIRST (so email failure doesn’t block registration)
-      db.query(
-        "INSERT INTO users (username, phone, sender_id, password, role) VALUES (?, ?, ?, ?, ?)",
-        [username, phone, email, hashedPassword, role],
-        (insertErr, result) => {
-          if (insertErr) {
-            console.error("❌ Insert error:", insertErr);
-            return res.status(500).send("Registration failed.");
-          }
-
-          const userId = result.insertId;
-          const ussdCode = generateUssdCode("*203*500#", userId);
-          const publicLink = `https://sandipay.co/index1.html?id=${userId}`;
-
-          // ✅ 2) Save USSD and link
-          db.query(
-            "UPDATE users SET ussd_code = ?, public_link = ? WHERE id = ?",
-            [ussdCode, publicLink, userId],
-            (updateErr) => {
-              if (updateErr) {
-                console.error("❌ Update USSD/link error:", updateErr);
-                return res.status(500).send("Failed to save USSD code and Link.");
-              }
-
-              // ✅ 3) Try sending email AFTER registration succeeds
-              const mailOptions = {
-                from: "Sandipayghana@gmail.com",
-                to: email,
-                subject: "Vendor Portal - Email Verification",
-                text: `Hi ${username},\n\nWe are verifying this email for your account registration on Vendor Portal.`
-              };
-
-              transporter.sendMail(mailOptions, (emailErr) => {
-                if (emailErr) {
-                  // ✅ Don’t block registration because SMTP failed
-                  console.error("❌ Email sending error:", emailErr);
-
-                  return res.send(
-                    `Account created successfully! (Email not sent).\nYour USSD Code: ${ussdCode} | Link: ${publicLink}`
-                  );
-                }
-
-                // ✅ Email sent successfully
-                return res.send(
-                  `Account created and email sent successfully!\nYour USSD Code: ${ussdCode} | Link: ${publicLink}`
-                );
-              });
-            }
-          );
-        }
-      );
-    });
-  } catch (err) {
-    console.error("❌ Registration crash:", err);
-    res.status(500).send("Registration error.");
-  }
-});
-
-
-
-
-// ✅ LOGIN
-app.post("/api/login", (req, res) => {
-  const { username, pin, role } = req.body;
-  db.query("SELECT * FROM users WHERE username = ? AND role = ? LIMIT 1", [username, role], async (err, results) => {
-    if (err) return res.status(500).send("Login failed.");
-    if (!results.length) return res.status(401).send("Invalid credentials.");
-    const user = results[0];
-    const match = await bcrypt.compare(pin, user.password);
-    if (!match) return res.status(401).send("Incorrect PIN.");
-    res.json({ message: "Login successful", username: user.username, role: user.role, id: user.id });
-  });
-});
-
-// ✅ CHANGE PIN
-app.post("/api/change-pin", async (req, res) => {
-  const { userId, oldPin, newPin } = req.body;
-  if (newPin === "0000") return res.status(400).send("PIN cannot be 0000.");
-  db.query("SELECT password FROM users WHERE id = ?", [userId], async (err, results) => {
-    if (err) return res.status(500).send("Server error.");
-    if (!results.length) return res.status(400).send("User not found.");
-    const user = results[0];
-    const match = await bcrypt.compare(oldPin, user.password);
-    if (!match) return res.status(400).send("Old PIN incorrect.");
-    const hashedNewPin = await bcrypt.hash(newPin, 10);
-    db.query("UPDATE users SET password = ? WHERE id = ?", [hashedNewPin, userId], (err) => {
-      if (err) return res.status(500).send("Failed to change PIN.");
-      res.send("PIN changed successfully!");
-    });
-  });
-});
-
-// ✅ LOAD PRICING
-app.post("/api/load-pricing", (req, res) => {
-  const { network, userId } = req.body;
-  let tableName = "";
-  if (network === "mtn") tableName = "pricing_mtn";
-  else if (network === "airteltigo") tableName = "pricing_airteltigo";
-  else if (network === "telecel") tableName = "pricing_telecel";
-  else return res.status(400).send("Invalid network type");
-  const sql = `SELECT * FROM ${tableName} WHERE user_id = ?`;
-  db.query(sql, [userId], (err, results) => {
-    if (err) return res.status(500).send("Failed to load pricing.");
-    res.json(results);
-  });
-});
-
-// ✅ SAVE PRICING
-app.post("/api/save-pricing", (req, res) => {
-  const { network, userId, dataPlan, costPrice, sellingPrice } = req.body;
-  let tableName = "";
-  if (network === "mtn") tableName = "pricing_mtn";
-  else if (network === "airteltigo") tableName = "pricing_airteltigo";
-  else if (network === "telecel") tableName = "pricing_telecel";
-  else return res.status(400).send("Invalid network type");
-
-  const sql = `INSERT INTO ${tableName} (user_id, data_plan, cost_price, selling_price, status)
-               VALUES (?, ?, ?, ?, 'available')
-               ON DUPLICATE KEY UPDATE selling_price = VALUES(selling_price), status = 'available'`;
-
-  db.query(sql, [userId, dataPlan, costPrice, sellingPrice], (err) => {
-    if (err) return res.status(500).send("Failed to save pricing.");
-    res.send("Pricing saved.");
-  });
-});
-
-// ✅ DELETE PRICING
-app.post("/api/delete-pricing", (req, res) => {
-  const { network, userId, dataPlan } = req.body;
-  let tableName = "";
-  if (network === "mtn") tableName = "pricing_mtn";
-  else if (network === "airteltigo") tableName = "pricing_airteltigo";
-  else if (network === "telecel") tableName = "pricing_telecel";
-  else return res.status(400).send("Invalid network type");
-
-  const sql = `DELETE FROM ${tableName} WHERE user_id = ? AND data_plan = ?`;
-  db.query(sql, [userId, dataPlan], (err) => {
-    if (err) return res.status(500).send("Failed to delete pricing.");
-    res.send("Pricing deleted.");
-  });
-});
-
-// ✅ GET USERS
-app.get("/api/users", (req, res) => {
-  const sql = "SELECT id, username, role, status FROM users";
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).send("Failed to fetch users.");
-    res.json(results);
-  });
-});
-
-// ✅ DEACTIVATE
-app.post("/api/deactivate-user", async (req, res) => {
-  const { userId } = req.body;
-  const hashedPin = await bcrypt.hash("0000", 10);
-  db.query("UPDATE users SET password = ?, status = 'inactive' WHERE id = ?", [hashedPin, userId], (err) => {
-    if (err) return res.status(500).send("Failed to deactivate.");
-    res.send("User deactivated and PIN reset.");
-  });
-});
-
-// ✅ REACTIVATE
-app.post("/api/reactivate-user", async (req, res) => {
-  const { userId, newPin } = req.body;
-  if (newPin === "0000") return res.status(400).send("PIN cannot be 0000.");
-  const hashedPin = await bcrypt.hash(newPin, 10);
-  db.query("UPDATE users SET password = ?, status = 'active' WHERE id = ?", [hashedPin, userId], (err) => {
-    if (err) return res.status(500).send("Failed to reactivate.");
-    res.send("User reactivated.");
-  });
-});
-
-// ✅ USER INFO (Updated)
-app.post("/api/user-info", (req, res) => {
-  const { userId } = req.body;
-
-  if (!userId) {
-    return res.status(400).json({ error: "Missing userId" });
-  }
-
-  db.query(
-    "SELECT username, phone, sender_id, ussd_code, public_link, momo_number, account_name FROM users WHERE id = ? LIMIT 1",
-    [userId],
-    (err, results) => {
-      if (err) {
-        console.error("❌ user-info error:", err);
-        return res.status(500).json({ error: "Database error while fetching user." });
-      }
-
-      if (!results.length) {
-        return res.status(404).json({ error: "User not found." });
-      }
-
-      res.json(results[0]);
-    }
-  );
-});
-
-
-
-
-// ✅ UPDATE SETTINGS
-
-
-app.post("/api/update-settings", (req, res) => {
-  const {
-    userId,
-    username,
-    phone,
-    sender_id,
-    momo_number,
-    account_name
-  } = req.body;
-
-  if (!userId || !username || !phone || !sender_id) {
-    return res.status(400).send("All fields required.");
-  }
-
-  db.query(
-    "UPDATE users SET username = ?, phone = ?, sender_id = ?, momo_number = ?, account_name = ? WHERE id = ?",
-    [username, phone, sender_id, momo_number || null, account_name || null, userId],
-    (err) => {
-      if (err) {
-        console.error("❌ update-settings error:", err);
-        return res.status(500).send("Failed to update settings.");
-      }
-      res.send("Settings updated successfully.");
-    }
-  );
-});
-
-
-// ✅ FETCH DATA PACKAGES
-app.post("/api/get-packages", (req, res) => {
-  const { vendor_id, network } = req.body;
-
-  const query = `
-    SELECT * FROM data_packages 
-    WHERE vendor_id = ? AND network = ? AND status = 'available'
-  `;
-
-  db.query(query, [vendor_id, network], (err, results) => {
-    if (err) {
-      console.error("Error fetching packages:", err);
-      return res.status(500).send("Failed to fetch packages.");
-    }
-    res.json(results);
-  });
-});
-
-app.post("/api/get-all-packages", (req, res) => {
-  const { vendor_id, network } = req.body;
-
-  const query = `
-    SELECT
-      adp.id                AS admin_id,       -- admin_data_packages.id
-      adp.network,
-      adp.data_package,
-      adp.amount            AS cost_price,     -- admin cost price
-
-      dp.id                 AS vendor_id,      -- data_packages.id (can be null)
-      dp.amount             AS selling_price,  -- vendor selling price (can be null)
-      dp.status             AS status          -- vendor status (can be null)
-    FROM admin_data_packages adp
-    LEFT JOIN data_packages dp
-      ON dp.vendor_id    = ?
-     AND dp.network      = adp.network
-     AND dp.data_package = adp.data_package
-    WHERE adp.network = ?
-    ORDER BY adp.id ASC
-  `;
-
-  db.query(query, [vendor_id, network], (err, results) => {
-    if (err) {
-      console.error("Error fetching all packages:", err);
-      return res.status(500).send("Failed to fetch packages.");
-    }
-    res.json(results);
-  });
-});
-
-
-
-
-// ✅ UPDATE PACKAGE STATUS
-app.post("/api/update-status", (req, res) => {
-  const { id, status } = req.body;
-  const sql = `UPDATE data_packages SET status = ? WHERE id = ?`;
-  db.query(sql, [status, id], (err) => {
-    if (err) return res.status(500).send("Failed to update status.");
-    res.send("Status updated.");
-  });
-});
-
-
-// ✅ RESET PIN
-app.post("/api/reset-pin", async (req, res) => {
-  const { username, phone, newPin } = req.body;
-  if (newPin === "0000") return res.status(400).send("PIN cannot be 0000.");
-  const sql = "SELECT id FROM users WHERE username = ? AND phone = ? LIMIT 1";
-  db.query(sql, [username, phone], async (err, results) => {
-    if (err) return res.status(500).send("Server error.");
-    if (!results.length) return res.status(404).send("User not found.");
-    const userId = results[0].id;
-    const hashedPin = await bcrypt.hash(newPin, 10);
-    db.query("UPDATE users SET password = ? WHERE id = ?", [hashedPin, userId], (err) => {
-      if (err) return res.status(500).send("Failed to reset PIN.");
-      res.send("PIN reset successfully.");
-    });
-  });
-});
-// ✅ PLACE DATA ORDER WITH MOOLRE
-const axios = require("axios");
-
-// ✅ Multi-network payment endpoint (Moolre)
-app.post("/api/place-order", async (req, res) => {
-  const { vendor_id, network, data_package, amount, recipient_number, momo_number } = req.body;
-
-  console.log("📥 Incoming order body:", req.body);
-
-  if (!vendor_id || !network || !data_package || !amount || !recipient_number || !momo_number) {
-    return res.status(400).send("All fields are required.");
-  }
-
-  // Map network -> Moolre channel (from docs)
-  function getChannel(network) {
-    switch (network.toLowerCase()) {
-      case "mtn":
-        return 13; // MTN
-      case "airteltigo":
-      case "airtel":
-      case "at":
-        return 7; // AirtelTigo
-      case "vodafone":
-      case "telecel":
-      case "voda":
-        return 6; // Vodafone/Telecel
-      default:
-        return null;
-    }
-  }
-
-  const channel = getChannel(network);
-  if (!channel) {
-    return res.status(400).send("❌ Invalid or unsupported network selected.");
-  }
-
-  try {
-    // 🔐 Hardcoded Moolre Authentication
-    const MOOLRE_USER   = "dataguygh";                // ← your Moolre username
-    const MOOLRE_PUBKEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyaWQiOjEwNjkxNywiZXhwIjoxOTI1MDA5OTk5fQ.x2qzFc-tmOGM0j9tqD3KEsrRzkVFZ3cxvJMukb4bfos"; // ← paste full Public API key here (one line)
-    const MOOLRE_WALLET = "10691706051041";           // ← GHS Wallet (correct one)
-
-    // Debug auth being used (doesn't print full key)
-    console.log("🔐 Using Moolre auth:", {
-      user: MOOLRE_USER,
-      pubkeyStart: MOOLRE_PUBKEY.substring(0, 25) + "...",
-      wallet: MOOLRE_WALLET,
-    });
-
-    // Unique transaction reference
-    const transactionId = `TRX${Date.now()}`.slice(0, 30);
-
-    // 🔥 Moolre payment payload (matches docs)
-    const payload = {
-      type: 1,
-      channel: channel,
-      currency: "GHS",
-      payer: momo_number,            // e.g. "0532XXXXXX"
-      amount: Number(amount),        // e.g. 0.20
-      externalref: transactionId,
-      otpcode: "",                   // first call = empty
-      reference: `Purchase of ${data_package}`,
-      accountnumber: MOOLRE_WALLET,
-    };
-
-    console.log("📤 Sending to Moolre:", payload);
-
-    const response = await axios.post(
-      "https://api.moolre.com/open/transact/payment",
-      payload,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-USER": MOOLRE_USER,
-          "X-API-PUBKEY": MOOLRE_PUBKEY,
-        },
-        timeout: 30000,
-      }
-    );
-
-    console.log("✅ Moolre payment response:", response.data);
-
-    const mResp = response.data;
-    const statusNum = Number(mResp.status); // 1 = success, 0 = failed
-    const code = mResp.code;
-    const message = mResp.message;
-
-    const isSuccess = statusNum === 1;
-
-    if (isSuccess) {
-      // ====== DB: save order into admin_orders ======
-      const insertSql = `
-        INSERT INTO admin_orders 
-          (vendor_id, recipient_number, data_package, amount, network, status, sent_at)
-        VALUES (?, ?, ?, ?, ?, 'pending', NOW())
-      `;
-      db.query(insertSql, [vendor_id, recipient_number, data_package, amount, network], (err) => {
-        if (err) console.error("❌ Failed to insert into admin_orders:", err);
-        else console.log("✅ Order successfully inserted into admin_orders.");
-      });
-
-      // ====== Commission logic (98% vendor, 2% revenue) ======
-      const revenueAmount = (amount * 0.02).toFixed(2);
-      const vendorAmount = (amount - revenueAmount).toFixed(2);
-
-      // 98% to wallet_loads
-      db.query(
-        "INSERT INTO wallet_loads (vendor_id, momo, amount, date_loaded) VALUES (?, ?, ?, NOW())",
-        [vendor_id, momo_number, vendorAmount],
-        (err) => {
-          if (err) console.error("❌ Failed to insert into wallet_loads:", err);
-        }
-      );
-
-      // 2% to total_revenue
-      db.query(
-        "INSERT INTO total_revenue (vendor_id, source, amount, date_received) VALUES (?, ?, ?, NOW())",
-        [vendor_id, `2% from ${network} payment`, revenueAmount],
-        (err) => {
-          if (err) console.error("❌ Failed to insert into total_revenue:", err);
-        }
-      );
-
-      // TP14 = OTP / verification flow, but from your side you just tell user to approve
-      if (code === "TP14") {
-        return res.send(
-          "✅ Payment request sent. " +
-          (message || "Please complete the verification / approval sent to your phone.")
-        );
-      }
-
-      return res.send("✅ Payment successful.");
-    }
-
-    // If we get here, Moolre says the payment failed
-    console.error("❌ Moolre reported failure:", mResp);
-    return res
-      .status(400)
-      .send(`❌ Payment failed: ${message || "Authentication / validation error"}`);
-
-  } catch (err) {
-    console.error("🚫 Moolre error:", err.response?.data || err.message);
-    return res.status(400).send("❌ Payment failed or cancelled.");
-  }
-});
-
-
-
-
-
-
-//deleting users
-app.delete("/api/delete-user/:id", (req, res) => {
-  const userId = req.params.id;
-  const sql = "DELETE FROM users WHERE id = ?";
-  db.query(sql, [userId], (err) => {
-    if (err) return res.status(500).send("Failed to delete user.");
-    res.send("User deleted successfully.");
-  });
-});
-
-
-
-
-// ✅ API to get total revenue amount
-app.get("/api/total-revenue", (req, res) => {
-  const sql = `SELECT SUM(amount) AS total FROM total_revenue`;
-  db.query(sql, (err, result) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).send("Error retrieving total revenue.");
-    }
-    const total = result[0].total || 0;
-    res.json({ total });
-  });
-});
-
-///////////////////////////////////////////////////
-// ===================== ADMIN DATA PACKAGES ===================== //
-
-app.post("/api/admin/data-packages", async (req, res) => {
-  try {
-    const { package_name, price, network } = req.body;
-
-    if (!package_name || !price || !network) {
-      return res.json({
-        success: false,
-        message: "Package name, price and network are required.",
-      });
-    }
-
-    // Optional: validate network
-    const allowed = ["mtn", "airteltigo", "telecel"];
-    if (!allowed.includes(network.toLowerCase())) {
-      return res.json({
-        success: false,
-        message: "Invalid network. Use mtn, airteltigo or telecel.",
-      });
-    }
-
-    await db
-      .promise()
-      .query(
-        "INSERT INTO AdminData (package_name, price, network, status) VALUES (?, ?, ?, 'active')",
-        [package_name, price, network.toLowerCase()]
-      );
-
-    res.json({ success: true, message: "Package added successfully." });
-  } catch (err) {
-    console.error(err);
-    res.json({ success: false, message: "Server error while adding package." });
-  }
-});
-
-
-// Get all data packages
-app.get("/api/admin/data-packages", async (req, res) => {
-  try {
-    const [rows] = await db
-      .promise()
-      .query(`
-        SELECT id, package_name, price, network, status, created_at
-        FROM AdminData
-        ORDER BY 
-          FIELD(network, 'mtn', 'airteltigo', 'telecel'),  -- MTN first, then AirtelTigo, then Telecel
-          id DESC                                           -- newest first inside each network
-      `);
-
-    res.json({ success: true, data: rows });
-  } catch (err) {
-    console.error(err);
-    res.json({ success: false, message: "Failed to fetch packages." });
-  }
-});
-
-
-// Activate / Deactivate a package
-app.patch("/api/admin/data-packages/:id/status", (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body; // "active" or "inactive"
-
-  if (!["active", "inactive"].includes(status)) {
-    return res.status(400).json({ success: false, message: "Invalid status" });
-  }
-
-  const sql = `UPDATE AdminData SET status = ? WHERE id = ?`;
-  db.query(sql, [status, id], (err, result) => {
-    if (err) {
-      console.error("Error updating status:", err);
-      return res.status(500).json({ success: false, message: "Database error" });
-    }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: "Package not found" });
-    }
-    return res.json({ success: true, message: `Package ${status}` });
-  });
-});
-
-// Delete a package
-app.delete("/api/admin/data-packages/:id", (req, res) => {
-  const { id } = req.params;
-
-  const sql = `DELETE FROM AdminData WHERE id = ?`;
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("Error deleting package:", err);
-      return res.status(500).json({ success: false, message: "Database error" });
-    }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: "Package not found" });
-    }
-    return res.json({ success: true, message: "Package deleted" });
-  });
-});
-//////////////////////////////////////////////////////////////////////////
-
-
-
-
-// 📞 Get all telephone numbers
-app.get("/api/telephone-numbers", (req, res) => {
-  const sql = "SELECT * FROM telephone_numbers ORDER BY id DESC";
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Error fetching numbers:", err);
-      res.status(500).json({ error: "Failed to fetch numbers" });
-    } else {
-      res.json(results);
-    }
-  });
-});
-
-
-// ✅ Update status (Allow / Deny)
-app.post("/api/update-status", (req, res) => {
-  const { id, status } = req.body;
-  if (!id || !status) return res.status(400).json({ error: "Invalid data" });
-
-  const sql = "UPDATE telephone_numbers SET status = ? WHERE id = ?";
-  db.query(sql, [status, id], (err, result) => {
-    if (err) {
-      console.error("Error updating status:", err);
-      res.status(500).json({ error: "Database error" });
-    } else {
-      res.json({ success: true });
-    }
-  });
-});
-
-
-
-// Configure Multer for Excel uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
-});
-const upload = multer({ storage });
-
-// ✅ 1. Upload Excel and save numbers
-app.post("/api/upload-numbers", upload.single("excelFile"), (req, res) => {
-  try {
-    const workbook = xlsx.readFile(req.file.path);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = xlsx.utils.sheet_to_json(sheet);
-
-    let inserted = 0;
-    rows.forEach(row => {
-      const phone = row.phone_number || row.phone || row.number;
-      if (phone) {
-        db.query(
-          "INSERT IGNORE INTO telephone_numbers (phone_number) VALUES (?)",
-          [phone],
-          (err) => {
-            if (!err) inserted++;
-          }
-        );
-      }
-    });
-
-    res.json({ message: `${inserted} numbers uploaded successfully.` });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to process Excel file." });
-  }
-});
-
-// ✅ 2. Add single phone number manually
-app.post("/api/add-number", (req, res) => {
-  const { phone_number } = req.body;
-  if (!phone_number) return res.status(400).json({ error: "Phone number is required" });
-
-  db.query(
-    "INSERT INTO telephone_numbers (phone_number) VALUES (?)",
-    [phone_number],
-    (err) => {
-      if (err) {
-        console.error(err);
-        res.status(500).json({ error: "Failed to add number" });
-      } else {
-        res.json({ message: "Number added successfully!" });
-      }
-    }
-  );
-});
-
-
-
-app.post("/api/check-order", (req, res) => {
-  const { recipient_number } = req.body;
-
-  if (!recipient_number) return res.status(400).send("Phone number required.");
-
-  const sql = "SELECT status, amount, data_package, recipient_number FROM data_orders WHERE recipient_number = ?";
-  db.query(sql, [recipient_number], (err, rows) => {
-    if (err) return res.status(500).send("Database error.");
-    res.json(rows);
-  });
-});
-
-
-app.get("/api/afa-price/:vendor_id", (req, res) => {
-  const vendorId = req.params.vendor_id;
-  const sql = "SELECT price FROM afa_prices WHERE user_id = ? ORDER BY id DESC LIMIT 1";
-
-  db.query(sql, [vendorId], (err, result) => {
-    if (err) {
-      console.error("Price fetch error:", err);
-      return res.status(500).json({ message: "Failed to get price" });
-    }
-    if (!result.length) {
-      return res.status(404).json({ message: "No price set for this vendor" });
-    }
-    res.json({ price: result[0].price });
-  });
-});
-
-app.post("/api/submit-afa-payment", async (req, res) => {
-  const {
-    vendor_id, momo_number, network,
-    fullname, id_number, dob, phone_number,
-    location, region, occupation
-  } = req.body;
-
-  if (!vendor_id || !momo_number || !network || !fullname || !id_number || !dob || !phone_number || !location || !region || !occupation) {
-    return res.status(400).json({ success: false, message: "Missing AFA form fields." });
-  }
-
-  const priceQuery = "SELECT price FROM afa_prices WHERE user_id = ? ORDER BY id DESC LIMIT 1";
-  db.query(priceQuery, [vendor_id], async (err, rows) => {
-    if (err || !rows.length) return res.status(500).json({ success: false, message: "Failed to retrieve price." });
-
-    const amount = parseFloat(rows[0].price);
-    const revenueAmount = (amount * 0.02).toFixed(2);
-    const vendorAmount = (amount - revenueAmount).toFixed(2);
-
-  function getSwitchCode(net) {
-  const n = String(net || "").toLowerCase().trim();
-
-  if (n === "mtn") return "MTN";
-  if (n === "airteltigo" || n === "airtel" || n === "tigo" || n === "atl") return "ATL";
-  if (n === "telecel" || n === "vodafone" || n === "vdf") return "VDF";
-
-  return null;
-}
-
-
-    const rSwitch = getSwitchCode(network);
-    const formattedMoMo = momo_number.replace(/^0/, "233");
-    const transactionId = `TRX-AFA-${Date.now()}`.slice(0, 30);
-    const amountFormatted = String(Math.round(amount * 100)).padStart(12, "0");
-
-    const payload = {
-      amount: amountFormatted,
-      processing_code: "000200",
-      transaction_id: transactionId,
-      desc: "AFA Registration",
-      merchant_id: "TTM-00009388",
-      subscriber_number: formattedMoMo,
-      "r-switch": rSwitch,
-      redirect_url: "https://example.com/afa-callback"
-    };
-
-    const token = Buffer.from(
-  "louis66a20ac942e74:ZmVjZWZlZDc2MzA4OWU0YmZhOTk5MDBmMDAxNDhmOWY="
-).toString("base64");
-
-    try {
-      const response = await axios.post("https://prod.theteller.net/v1.1/transaction/process", payload, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${token}`,
-          "Cache-Control": "no-cache"
-        }
-      });
-
-      const status = response.data.status?.toLowerCase();
-      const code = response.data.code;
-
-      if (status === "approved" || status === "successful" || code === "000") {
-        db.query(`INSERT INTO wallet_loads (vendor_id, momo, amount, date_loaded) VALUES (?, ?, ?, NOW())`, [vendor_id, momo_number, vendorAmount]);
-        db.query(`INSERT INTO total_revenue (vendor_id, source, amount, date_received) VALUES (?, ?, ?, NOW())`, [vendor_id, "2% from AFA registration", revenueAmount]);
-        db.query(`INSERT INTO afa_requests (vendor_id, fullname, id_number, dob, phone_number, location, region, occupation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [vendor_id, fullname, id_number, dob, phone_number, location, region, occupation]);
-
-        return res.json({ success: true, message: "Payment and registration completed" });
-      } else {
-        return res.status(400).json({ success: false, message: "Payment declined." });
-      }
-
-    } catch (error) {
-      console.error("❌ AFA Payment error:", error.response?.data || error.message);
-      return res.status(500).json({ success: false, message: "Payment failed or cancelled." });
-    }
-  });
-});
-
-
-function normalizeGhanaMsisdn(input) {
-  let n = String(input || "").trim();
-
-  // remove spaces, +, -, etc
-  n = n.replace(/[^\d]/g, "");
-
-  // Handle Ghana formats:
-  // +233XXXXXXXXX  -> 233XXXXXXXXX
-  // 233XXXXXXXXX   -> 233XXXXXXXXX
-  // 0XXXXXXXXX     -> 0XXXXXXXXX
-
-  // If starts with 233 and length is 12 (233 + 9 digits), convert to local 0XXXXXXXXX
-  if (n.startsWith("233") && n.length === 12) {
-    n = "0" + n.slice(3);
-  }
-
-  // If user enters 9 digits only (e.g. 24xxxxxxx), make it 0XXXXXXXXX
-  if (n.length === 9) {
-    n = "0" + n;
-  }
-
-  // If user enters 10 digits, assume it's already 0XXXXXXXXX
-  return n;
-}
-
-function detectMomoNetwork(msisdn) {
-  const local = normalizeGhanaMsisdn(msisdn);
-
-  // Must be Ghana local format 0XXXXXXXXX
-  if (!/^0\d{9}$/.test(local)) return null;
-
-  const prefix = local.slice(0, 3); // e.g. 024
-
-  // ✅ MTN prefixes (Ghana)
-  const MTN = new Set(["024","025","053","054","055","059"]);
-
-  // ✅ AirtelTigo prefixes (Ghana)
-  const AT = new Set(["026","027","056","057"]);
-
-  // ✅ Telecel/Vodafone prefixes (Ghana)
-  const VDF = new Set(["020","050"]);
-
-  if (MTN.has(prefix)) return "mtn";
-  if (AT.has(prefix)) return "airteltigo";
-  if (VDF.has(prefix)) return "telecel";
-
-  return null;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-app.post("/api/transactions", (req, res) => {
-  const { userId } = req.body;
-  const sql = "SELECT * FROM transactions WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1";
-  db.query(sql, [userId], (err, result) => {
-    if (err) return res.status(500).send("Error fetching transactions");
-    res.json(result);
-  });
-});
-
-const { v4: uuidv4 } = require("uuid"); 
-
-const { format } = require("date-fns");
-
-app.get("/api/export-mtn-orders", (req, res) => {
-  const vendorId = req.query.vendor_id;
-  if (!vendorId) return res.status(400).send("Vendor ID missing");
-
-  const now = new Date();
-  const newPackageId = format(now, "yyyy-MM-dd HH:mm");
-
-  const assignQuery = `
-    UPDATE data_orders
-    SET package_id = ?
-    WHERE vendor_id = ? AND status = 'pending' AND network = 'mtn'
-  `;
-
-  db.query(assignQuery, [newPackageId, vendorId], (err) => {
-    if (err) return res.status(500).send("Error assigning package ID");
-
-    const selectQuery = `
-      SELECT recipient_number, data_package, amount, status, created_at
-      FROM data_orders
-      WHERE vendor_id = ? AND package_id = ?
-    `;
-
-    db.query(selectQuery, [vendorId, newPackageId], async (err, rows) => {
-      if (err) return res.status(500).send("Error fetching for export");
-
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("MTN Orders");
-
-      worksheet.columns = [
-  { header: "Recipient", key: "recipient_number", width: 20, style: { numFmt: '@' } },
-  { header: "Package", key: "data_package", width: 15 },
-      ];
-
-     
-// Add sorted rows to excel
-rows.forEach(row => {
-  const cleanPackage = row.data_package.replace(/[^\d.]/g, '');
-
-  // Convert 233XXXXXXXXX -> 0XXXXXXXXX
-  let recipient = String(row.recipient_number || "").replace(/\D/g, "");
-  if (recipient.startsWith("233") && recipient.length === 12) {
-    recipient = "0" + recipient.slice(3);
-  }
-
-  // Zero-width space to force Excel TEXT without showing anything
-  const textRecipient = "\u200B" + recipient;
-
-  worksheet.addRow({
-    recipient_number: textRecipient,
-    data_package: cleanPackage
-  });
-});
-
-
-
-
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-      res.setHeader("Content-Disposition", "attachment; filename=mtn_orders.xlsx");
-      await workbook.xlsx.write(res);
-      res.end();
-    });
-  });
-});
-
-
-
-app.post("/api/mark-package-delivered", (req, res) => {
-  const { package_id } = req.body;
-  const query = `UPDATE data_orders SET status = 'delivered' WHERE package_id = ?`;
-  db.query(query, [package_id], (err) => {
-    if (err) return res.status(500).send("Update failed");
-    res.send("Package marked as delivered.");
-  });
-});
-
-app.post("/api/mtn-orders", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).send("Missing vendor_id");
-
-  const query = `
-    SELECT id, recipient_number, data_package, amount, status, created_at, package_id
-    FROM data_orders
-    WHERE vendor_id = ? AND network = 'mtn'
-    ORDER BY created_at DESC
-  `;
-
-  db.query(query, [vendor_id], (err, results) => {
-    if (err) {
-      console.error("DB error:", err);
-      return res.status(500).send("Database error");
-    }
-    res.json(results);
-  });
-});
-
-
-// ✅ UPDATE ORDER STATUS
-app.post("/api/update-order-status", (req, res) => {
-  const { recipient_number, new_status, vendor_id } = req.body;
-
-  const sql = `
-    UPDATE data_orders
-    SET status = ?
-    WHERE recipient_number = ? AND vendor_id = ?
-  `;
-
-  db.query(sql, [new_status, recipient_number, vendor_id], (err, result) => {
-    if (err) {
-      console.error("Failed to update order status:", err);
-      return res.status(500).send("Failed to update status.");
-    }
-    res.send("Order status updated successfully.");
-  });
-});
-
-
-// ✅ MARK ORDER AS DELIVERED
-app.post("/api/mark-delivered", (req, res) => {
-  const { id } = req.body;
-
-  const sql = `
-    UPDATE data_orders
-    SET status = 'delivered'
-    WHERE id = ?
-  `;
-
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("Failed to mark as delivered:", err);
-      return res.status(500).send("Failed to mark as delivered.");
-    }
-
-    if (result.affectedRows === 0) return res.status(404).send("Order not found.");
-    res.send("Marked as delivered.");
-  });
-});
-
-
-// Telecel Orders
-app.post("/api/telecel-orders", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).send("Missing vendor_id");
-
-  const query = `
-    SELECT id, recipient_number, data_package, amount, status, created_at, package_id
-    FROM data_orders
-    WHERE vendor_id = ? AND network = 'telecel'
-    ORDER BY created_at DESC
-  `;
-
-  db.query(query, [vendor_id], (err, results) => {
-    if (err) {
-      console.error("DB error:", err);
-      return res.status(500).send("Database error");
-    }
-    res.json(results);
-  });
-});
-
-
-app.get("/api/export-telecel-orders", (req, res) => {
-  const vendorId = req.query.vendor_id;
-  if (!vendorId) return res.status(400).send("Vendor ID missing");
-
-  const now = new Date();
-  const newPackageId = format(now, "yyyy-MM-dd HH:mm");
-
-  const assignQuery = `
-    UPDATE data_orders
-    SET package_id = ?
-    WHERE vendor_id = ? AND status = 'pending' AND network = 'telecel'
-  `;
-
-  db.query(assignQuery, [newPackageId, vendorId], (err) => {
-    if (err) return res.status(500).send("Error assigning package ID");
-
-    const selectQuery = `
-      SELECT recipient_number, data_package, amount, status, created_at
-      FROM data_orders
-      WHERE vendor_id = ? AND package_id = ?
-    `;
-    db.query(selectQuery, [vendorId, newPackageId], async (err, rows) => {
-      if (err) return res.status(500).send("Error fetching for export");
-
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Telecel Orders");
-
-      worksheet.columns = [
-        { header: "Recipient", key: "recipient_number" },
-        { header: "Package", key: "data_package" },
-        
-      ];
-
-        rows.forEach(row => {
-        const cleanPackage = row.data_package.replace(/[^\d.]/g, '');
-        sheet.addRow({
-          recipient_number: row.recipient_number,
-          data_package: cleanPackage
-        });
-      });
-
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-      res.setHeader("Content-Disposition", "attachment; filename=telecel_orders.xlsx");
-
-      await workbook.xlsx.write(res);
-      res.end();
-    });
-  });
-});
-
-
-// AirtelTigo Orders
-app.post("/api/airteltigo-orders", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).send("Missing vendor_id");
-
-  const query = `
-    SELECT id, recipient_number, data_package, amount, status, created_at, package_id
-    FROM data_orders
-    WHERE vendor_id = ? AND network = 'airteltigo'
-    ORDER BY created_at DESC
-  `;
-
-  db.query(query, [vendor_id], (err, results) => {
-    if (err) return res.status(500).send("Database error");
-    res.json(results);
-  });
-});
-
-
-app.get("/api/export-airteltigo-orders", (req, res) => {
-  const vendorId = req.query.vendor_id;
-  if (!vendorId) return res.status(400).send("Missing vendor ID.");
-
-  const sql = `
-    SELECT recipient_number, data_package
-    FROM data_orders
-    WHERE vendor_id = ? AND status = 'pending' AND network = 'airteltigo'
-  `;
-
-  db.query(sql, [vendorId], async (err, rows) => {
-    if (err) return res.status(500).send("Failed to fetch orders.");
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Pending AirtelTigo Orders");
-    sheet.columns = [
-      { header: "Recipient Number", key: "recipient_number", width: 25 },
-      { header: "Data Package", key: "data_package", width: 30 }
-    ];
-      rows.forEach(row => {
-        const cleanPackage = row.data_package.replace(/[^\d.]/g, '');
-        sheet.addRow({
-          recipient_number: row.recipient_number,
-          data_package: cleanPackage
-        });
-      });
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", "attachment; filename=pending_airteltigo_orders.xlsx");
-    await workbook.xlsx.write(res);
-    res.end();
-  });
-});
-
-
-
-
-
-
-// ✅ SET ORDERS TO PROCESSING AFTER SENDING TO ADMIN
-app.post("/api/set-orders-processing", (req, res) => {
-  const { vendor_id, network } = req.body;
-
-  if (!vendor_id || !network) {
-    return res.status(400).send("Vendor ID and network are required.");
-  }
-
-  const query = `
-    UPDATE data_orders 
-    SET status = 'processing'
-    WHERE vendor_id = ? AND network = ? AND status = 'pending'
-  `;
-
-  db.query(query, [vendor_id, network], (err) => {
-    if (err) {
-      console.error("❌ Error updating status to processing:", err);
-      return res.status(500).send("Failed to update order status.");
-    }
-    res.send("Please Refresh your Page.");
-  });
-});
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-app.post("/api/send-orders-to-admin", (req, res) => {
-  const { vendor_id, network } = req.body;
-
-  if (!vendor_id || !network) {
-    return res.status(400).send("Vendor ID and network are required.");
-  }
-
-  // Step 1: Fetch vendor's pending orders
-  const fetchOrdersSql = `
-    SELECT id, recipient_number, data_package, amount 
-    FROM data_orders 
-    WHERE vendor_id = ? AND network = ? AND status = 'pending'
-  `;
-
-  db.query(fetchOrdersSql, [vendor_id, network], (err, orders) => {
-    if (err || !orders.length) {
-      return res.status(404).send("No pending orders found.");
-    }
-
-    // Step 2: Get matching admin prices
-    const packageNames = [...new Set(orders.map(o => o.data_package))];
-    const placeholders = packageNames.map(() => '?').join(',');
-
-    const adminPriceSql = `
-      SELECT data_package, amount 
-      FROM admin_data_packages 
-      WHERE network = ? AND data_package IN (${placeholders})
-    `;
-
-    db.query(adminPriceSql, [network, ...packageNames], (adminErr, adminPrices) => {
-      if (adminErr) {
-        console.error("Admin price fetch failed:", adminErr);
-        return res.status(500).send("Failed to fetch admin prices.");
-      }
-
-      const priceMap = {};
-      adminPrices.forEach(p => {
-        priceMap[p.data_package] = parseFloat(p.amount);
-      });
-
-      const matchedOrders = orders.filter(o => priceMap[o.data_package] !== undefined);
-      if (!matchedOrders.length) {
-        return res.status(400).send("No matching admin packages found.");
-      }
-
-      // Step 3: Calculate total amount required
-      const totalAdminAmount = matchedOrders.reduce((sum, o) => {
-        return sum + priceMap[o.data_package];
-      }, 0);
-
-      // Step 4: Check vendor's current wallet balance
-      const balanceSql = `
-        SELECT SUM(amount) AS balance FROM wallet_loads WHERE vendor_id = ?
-      `;
-
-      db.query(balanceSql, [vendor_id], (balErr, balResult) => {
-        if (balErr) {
-          console.error("Wallet balance check failed:", balErr);
-          return res.status(500).send("Failed to check wallet balance.");
-        }
-
-        const balance = parseFloat(balResult[0].balance) || 0;
-
-        if (balance < totalAdminAmount) {
-          return res.status(400).send("❌ You don’t have sufficient balance.");
-        }
-
-        // Step 5: Insert into admin_orders
-        const now = new Date();
-        const insertAdminValues = matchedOrders.map(o => [
-          vendor_id,
-          o.recipient_number,
-          o.data_package,
-          priceMap[o.data_package],
-          network,
-          'pending',
-          now
-        ]);
-
-        const insertAdminSql = `
-          INSERT INTO admin_orders (vendor_id, recipient_number, data_package, amount, network, status, sent_at)
-          VALUES ?
-        `;
-
-        db.query(insertAdminSql, [insertAdminValues], (insertErr) => {
-          if (insertErr) {
-            console.error("Insert into admin_orders failed:", insertErr);
-            return res.status(500).send("Failed to send orders to admin.");
-          }
-
-          // Step 6: Deduct from wallet
-          const momo = "system";
-          const deductWalletSql = `
-            INSERT INTO wallet_loads (vendor_id, momo, amount, date_loaded)
-            VALUES (?, ?, ?, NOW())
-          `;
-
-          db.query(deductWalletSql, [vendor_id, momo, -totalAdminAmount], (walletErr) => {
-            if (walletErr) {
-              console.error("Wallet deduction failed:", walletErr);
-              return res.status(500).send("Orders sent, but wallet deduction failed.");
-            }
-
-            // Step 7: Log total revenue
-            const source = `${network.toUpperCase()} orders sent to admin`;
-            const logRevenueSql = `
-              INSERT INTO total_revenue (vendor_id, source, amount, date_received)
-              VALUES (?, ?, ?, NOW())
-            `;
-
-            db.query(logRevenueSql, [vendor_id, source, totalAdminAmount], (revErr) => {
-              if (revErr) {
-                console.error("Revenue logging failed:", revErr);
-                return res.status(500).send("Orders sent, but revenue logging failed.");
-              }
-
-              // Step 8: Update data_orders status to 'processing' and add package_id
-          // ✅ Step 8: Update only matched data_orders to 'processing'
-const matchedOrderIds = matchedOrders.map(o => o.id);
-
-// Safety check: do not proceed if no matches (redundant but safe)
-if (!matchedOrderIds.length) {
-  return res.status(400).send("No matching admin packages found.");
-}
-
-// Generate a unique package ID from timestamp
-const packageId = now.toISOString().slice(0, 16).replace('T', ' ');
-
-// Prepare query
-const updateDataOrdersSql = `
-  UPDATE data_orders 
-  SET status = 'processing', package_id = ?
-  WHERE id IN (${matchedOrderIds.map(() => '?').join(',')})
-`;
-
-db.query(updateDataOrdersSql, [packageId, ...matchedOrderIds], (updateErr) => {
-  if (updateErr) {
-    console.error("Failed to update data_orders:", updateErr);
-    return res.status(500).send("Orders sent but data_orders not updated.");
-  }
-
-  res.send("✅ Orders sent Successfully.");
-});
-            });
-          });
-        });
-      });
-    });
-  });
-});
-
-
-
-
-
-
-
-
-
-
-// ✅ LOAD WALLET
-// ✅ NEW: Load Wallet via TheTeller for all networks
-app.post("/api/load-wallet-the-teller", async (req, res) => {
-  const { momo, amount, vendor_id, network } = req.body;
-
-  if (!momo || !amount || !vendor_id || !network) {
-    return res.status(400).send("All fields are required.");
-  }
-  
-  // Format values
-  const amountFormatted = String(Math.round(amount * 100)).padStart(12, "0");
-  const formattedMoMo = momo.replace(/^0/, "233");
-
-  // Map to r-switch
-  function getSwitchCode(net) {
-    switch (net.toLowerCase()) {
-      case "mtn": return "MTN";
-      case "vodafone":
-      case "telecel": return "VDF";
-      case "airteltigo":
-      case "airtel": return "ATL";
-      case "tigo": return "TGO";
-      default: return null;
-    }
-  }
-const localMomo = normalizeGhanaMsisdn(momo_number);
-const payerNet = detectMomoNetwork(momo_number);
-
-console.log("MoMo raw:", momo_number);
-console.log("MoMo normalized:", localMomo);
-console.log("Detected payerNet:", payerNet);
-
-  const rSwitch = getSwitchCode(network);
-  if (!rSwitch) return res.status(400).send("Unsupported network selected");
-
-  const payload = {
-    amount: amountFormatted,
-    processing_code: "000200",
-    transaction_id: `LOAD${Date.now()}`.slice(0, 30),
-    desc: `Wallet Top-up - ${network.toUpperCase()}`,
-    merchant_id: "TTM-00009388",
-    subscriber_number: formattedMoMo,
-    "r-switch": rSwitch,
-    redirect_url: "https://example.com/callback"
-  };
-
-  try {
-    const token = Buffer.from(
-  "louis66a20ac942e74:ZmVjZWZlZDc2MzA4OWU0YmZhOTk5MDBmMDAxNDhmOWY="
-).toString("base64");
-
-    const response = await axios.post(
-      "https://prod.theteller.net/v1.1/transaction/process",
-      payload,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${token}`,
-          "Cache-Control": "no-cache"
-        }
-      }
-    );
-
-    console.log("🔁 Load wallet response:", response.data);
-
-    const status = response.data.status?.toLowerCase();
-    const code = response.data.code;
-
-    if (status === "approved" || status === "successful" || code === "000") {
-      db.query(
-        `INSERT INTO wallet_loads (vendor_id, momo, amount, date_loaded) VALUES (?, ?, ?, NOW())`,
-        [vendor_id, momo, amount]
-      );
-
-      return res.send("✅ Wallet loaded successfully.");
-    } else {
-      return res.status(400).send("❌ Wallet load failed or declined.");
-    }
-  } catch (err) {
-    console.error("❌ TheTeller error:", err.response?.data || err.message);
-    return res.status(400).send("❌ Wallet load failed.");
-  }
-});
-
-
-// ✅ FETCH WALLET BALANCE
-app.post("/api/wallet-balance", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).send("Missing vendor ID");
-
-  const sql = "SELECT SUM(amount) AS balance FROM wallet_loads WHERE vendor_id = ?";
-  db.query(sql, [vendor_id], (err, result) => {
-    if (err) return res.status(500).send("Error fetching balance");
-    const balance = result[0].balance || 0;
-    res.json({ balance });
-  });
-});
-
-// ✅ FETCH DELIVERED ORDERS
-app.post("/api/fetch-delivered-orders", (req, res) => {
-  const { vendor_id } = req.body;
-  const sql = `
-    SELECT recipient_number, data_package, amount, network 
-    FROM data_orders 
-    WHERE vendor_id = ? AND status = 'delivered' 
-    ORDER BY created_at DESC
-  `;
-  db.query(sql, [vendor_id], (err, rows) => {
-    if (err) return res.status(500).send("Failed to fetch delivered orders.");
-    res.json(rows);
-  });
-});
-
-
-app.post("/api/dashboard-metrics", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).send("Missing vendor ID.");
-
-  const metrics = {};
-
-  // Wallet balance first
-  const q0 = `SELECT SUM(amount) AS wallet_balance FROM wallet_loads WHERE vendor_id = ?`;
-  db.query(q0, [vendor_id], (err, wallet) => {
-    if (err) return res.status(500).send("Error fetching wallet.");
-    metrics.wallet_balance = wallet[0].wallet_balance || 0;
-
-    // Continue with all other queries as before
-    const q1 = `SELECT COUNT(DISTINCT recipient_number) AS total_customers FROM data_orders WHERE vendor_id = ?`;
-    db.query(q1, [vendor_id], (err, r1) => {
-      if (err) return res.status(500).send("Error fetching customers.");
-      metrics.total_customers = r1[0].total_customers;
-
-      const q2 = `SELECT COUNT(*) AS total_transactions FROM data_orders WHERE vendor_id = ? AND status = 'delivered'`;
-      db.query(q2, [vendor_id], (err, r2) => {
-        if (err) return res.status(500).send("Error fetching transactions.");
-        metrics.total_transactions = r2[0].total_transactions;
-
-        const q3 = `SELECT COUNT(*) AS pending_mtn FROM data_orders WHERE vendor_id = ? AND status = 'pending' AND network = 'mtn'`;
-        db.query(q3, [vendor_id], (err, r3) => {
-          if (err) return res.status(500).send("Error fetching pending MTN.");
-          metrics.pending_mtn = r3[0].pending_mtn;
-
-          const q4 = `SELECT COUNT(*) AS pending_at FROM data_orders WHERE vendor_id = ? AND status = 'pending' AND network = 'airteltigo'`;
-          db.query(q4, [vendor_id], (err, r4) => {
-            if (err) return res.status(500).send("Error fetching pending AT.");
-            metrics.pending_at = r4[0].pending_at;
-
-            const q5 = `SELECT COUNT(*) AS pending_telecel FROM data_orders WHERE vendor_id = ? AND status = 'pending' AND network = 'telecel'`;
-            db.query(q5, [vendor_id], (err, r5) => {
-              if (err) return res.status(500).send("Error fetching pending Telecel.");
-              metrics.pending_telecel = r5[0].pending_telecel;
-
-              const q6 = `SELECT COUNT(*) AS pending_afa FROM afa_requests WHERE vendor_id = ?`;
-              db.query(q6, [vendor_id], (err, r6) => {
-                if (err) return res.status(500).send("Error fetching pending AFA.");
-                metrics.pending_afa = r6[0].pending_afa;
-
-                const q7 = `SELECT COUNT(*) AS completed_afa FROM afa_requests WHERE vendor_id = ?`;
-                db.query(q7, [vendor_id], (err, r7) => {
-                  if (err) return res.status(500).send("Error fetching completed AFA.");
-                  metrics.completed_afa = r7[0].completed_afa;
-
-                  // ✅ Finally respond with all metrics including wallet_balance
-                  res.json(metrics);
-                });
-              });
-            });
-          });
-        });
-      });
-    });
-  });
-});
-
-
-
-app.post("/api/dashboard-stats", (req, res) => {
-  const vendorId = req.body.vendor_id;
-  const queries = {
-    total_customers: `
-      SELECT COUNT(DISTINCT recipient_number) AS count
-      FROM data_orders
-      WHERE vendor_id = ? AND status IN ('pending', 'delivered')
-    `,
-    total_transactions: `
-      SELECT COUNT(*) AS count
-      FROM data_orders
-      WHERE vendor_id = ? AND status = 'delivered'
-    `,
-    pending_mtn: `
-      SELECT COUNT(*) AS count
-      FROM data_orders
-      WHERE vendor_id = ? AND network = 'mtn' AND status = 'pending'
-    `,
-    pending_at: `
-      SELECT COUNT(*) AS count
-      FROM data_orders
-      WHERE vendor_id = ? AND network = 'airteltigo' AND status = 'pending'
-    `,
-    pending_telecel: `
-      SELECT COUNT(*) AS count
-      FROM data_orders
-      WHERE vendor_id = ? AND network = 'telecel' AND status = 'pending'
-    `,
-    pending_afa: `
-      SELECT COUNT(*) AS count
-      FROM afa_requests
-      WHERE vendor_id = ?
-    `,
-    completed_afa: `
-      SELECT COUNT(*) AS count
-      FROM afa_requests
-      WHERE vendor_id = ? AND status = 'completed'
-    `
-  };
-
-  const results = {};
-  const keys = Object.keys(queries);
-  let remaining = keys.length;
-
-  keys.forEach(key => {
-    db.query(queries[key], [vendorId], (err, rows) => {
-      if (err) {
-        results[key] = 0;
-      } else {
-        results[key] = rows[0]?.count || 0;
-      }
-
-      remaining--;
-      if (remaining === 0) {
-        res.json(results);
-      }
-    });
-  });
-});
-
-// ✅ GET WALLET BALANCE
-app.post("/api/get-wallet-balance", (req, res) => {
-  const { vendor_id } = req.body;
-
-  const sql = `
-    SELECT COALESCE(SUM(amount), 0) AS total 
-    FROM wallet_loads 
-    WHERE vendor_id = ?
-  `;
-  db.query(sql, [vendor_id], (err, rows) => {
-    if (err) {
-      console.error("Error fetching wallet:", err);
-      return res.status(500).send("Failed to get wallet balance.");
-    }
-    res.json({ balance: rows[0].total });
-  });
-});
-
-
-
-app.get("/api/download-afa-orders", (req, res) => {
-  const { vendor_id } = req.query;
-  if (!vendor_id) return res.status(400).send("Missing vendor ID");
-
-  const sql = `
-    SELECT fullname, id_number, dob, phone_number, location, region, occupation, status 
-    FROM afa_requests 
-    WHERE vendor_id = ? AND status = 'pending'
-  `;
-
-  db.query(sql, [vendor_id], async (err, rows) => {
-    if (err) return res.status(500).send("Error fetching pending AFA data");
-
-    if (!rows.length) return res.status(404).send("No pending AFA orders found");
-
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Pending AFA Orders");
-
-    sheet.columns = [
-      { header: "Full Name", key: "fullname", width: 25 },
-      { header: "ID Number", key: "id_number", width: 20 },
-      { header: "DOB", key: "dob", width: 15 },
-      { header: "Phone", key: "phone_number", width: 15 },
-      { header: "Location", key: "location", width: 20 },
-      { header: "Region", key: "region", width: 20 },
-      { header: "Occupation", key: "occupation", width: 20 },
-      { header: "Status", key: "status", width: 15 }
-    ];
-
-    rows.forEach(row => sheet.addRow(row));
-
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", "attachment; filename=pending_afa_orders.xlsx");
-
-    await workbook.xlsx.write(res);
-    res.end();
-  });
-});
-
-app.post("/api/fetch-afa-orders", (req, res) => {
-  const { vendor_id } = req.body;
-
-  const sql = `
-    SELECT id, fullname, id_number, dob, phone_number, location, region, occupation, status
-    FROM afa_requests
-    WHERE vendor_id = ?
-    ORDER BY id DESC
-  `;
-
-  db.query(sql, [vendor_id], (err, rows) => {
-    if (err) {
-      console.error("Error fetching AFA orders:", err);
-      return res.status(500).send("Failed to fetch AFA orders.");
-    }
-    res.json(rows);
-  });
-});
-
-// ✅ UPDATE AFA STATUS
-app.post("/api/update-afa-status", (req, res) => {
-  const { id, status } = req.body;
-
-  if (!id || !status) return res.status(400).send("Missing fields");
-
-  const sql = "UPDATE afa_requests SET status = ? WHERE id = ?";
-  db.query(sql, [status, id], (err) => {
-    if (err) {
-      console.error("Failed to update AFA status:", err);
-      return res.status(500).send("Failed to update status");
-    }
-    res.send("AFA status updated successfully");
-  });
-});
-
-
- app.post("/api/request-withdrawal", (req, res) => {
-  const { vendor_id, momo_number, amount, network } = req.body;
-
-  if (!vendor_id || !momo_number || !amount || !network) {
-    return res.status(400).send("All fields are required.");
-  }
-
-  const checkSql = "SELECT SUM(amount) AS balance FROM wallet_loads WHERE vendor_id = ?";
-  db.query(checkSql, [vendor_id], (err, result) => {
-    if (err) return res.status(500).send("Error checking wallet balance.");
-
-    const balance = result[0].balance || 0;
-    if (balance < amount) {
-      return res.status(400).send("Insufficient wallet balance.");
-    }
-
-    // ✅ NEW: Fetch vendor name first
-    db.query("SELECT username FROM users WHERE id = ?", [vendor_id], (nameErr, nameResult) => {
-      if (nameErr || !nameResult.length) {
-        return res.status(500).send("Failed to fetch vendor name.");
-      }
-
-      const vendor_name = nameResult[0].username;
-
-      // ✅ Insert into withdrawal_requests (correct table now)
-      const insertSql = `
-        INSERT INTO withdrawal_requests (vendor_id, vendor_name, momo_number, amount, network, status, requested_at)
-        VALUES (?, ?, ?, ?, ?, 'pending', NOW())
-      `;
-
-      db.query(insertSql, [vendor_id, vendor_name, momo_number, amount, network], (err) => {
-        if (err) {
-          console.error("❌ Error inserting withdrawal:", err);
-          return res.status(500).send("Failed to request withdrawal.");
-        }
-
-        // Deduct from wallet
-        const deductSql = `
-          INSERT INTO wallet_loads (vendor_id, momo, amount, date_loaded)
-          VALUES (?, ?, ?, NOW())
-        `;
-        db.query(deductSql, [vendor_id, momo_number, -amount], (deductErr) => {
-          if (deductErr) {
-            console.error("❌ Error deducting from wallet:", deductErr);
-            return res.status(500).send("Wallet deduction failed.");
-          }
-
-          // ✅ Send Email to Admin
-          const mailOptions = {
-            from: '"DATAREQUEST" <Sandipayghana@gmail.com>',
-            to: "Sandipayghana@gmail.com",
-            subject: "New Withdrawal Request",
-            text: `A vendor has submitted a withdrawal request:\n\nVendor: ${vendor_name} (ID: ${vendor_id})\nNetwork: ${network.toUpperCase()}\nMoMo Number: ${momo_number}\nAmount: GHS ${amount}\n\nPlease process this manually.`
-          };
-
-          transporter.sendMail(mailOptions, (emailErr, info) => {
-            if (emailErr) {
-              console.error("❌ Email error:", emailErr);
-              return res.status(500).send("Request saved, but email failed.");
-            }
-
-            console.log("✅ Email sent:", info.response);
-            res.send("✅ DONE! Please wait 5 to 10 minutes, your withdrawal is processing.");
-          });
-        });
-      });
-    });
-  });
-});
-
-
-
-
-// ✅ GET all withdrawal requests sorted by vendor name
-app.get("/api/withdrawal-requests", (req, res) => {
-  const sql = `
-    SELECT * FROM withdrawal_requests 
-    ORDER BY vendor_name ASC, requested_at DESC
-  `;
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).send("Failed to fetch withdrawal requests.");
-    res.json(results);
-  });
-});
-
-// ✅ UPDATE withdrawal status to 'paid'
-app.post("/api/mark-withdrawal-paid", (req, res) => {
-  const { id } = req.body;
-  if (!id) return res.status(400).send("Missing withdrawal ID");
-
-  const sql = `UPDATE withdrawal_requests SET status = 'paid' WHERE id = ?`;
-  db.query(sql, [id], (err) => {
-    if (err) return res.status(500).send("Failed to update status.");
-    res.send("✅ Status updated to PAID.");
-  });
-});
-
-
-
-
-
-app.post("/api/mark-package-downloaded", (req, res) => {
-  const { vendor_id, network } = req.body;
-  if (!vendor_id || !network) return res.status(400).send("Vendor ID and network are required.");
-
-  const pendingSql = `SELECT id FROM data_orders WHERE vendor_id = ? AND network = ? AND status = 'pending'`;
-  db.query(pendingSql, [vendor_id, network], (err, orders) => {
-    if (err) return res.status(500).send("Failed to check orders.");
-    if (!orders.length) return res.status(404).send("No pending orders to mark.");
-
-    const orderIds = orders.map(o => o.id);
-    const checkSql = `SELECT package_id FROM downloaded_flags WHERE vendor_id = ? AND network = ? AND package_id IN (?)`;
-    db.query(checkSql, [vendor_id, network, orderIds], (err2, markedRows) => {
-      if (err2) return res.status(500).send("Failed to verify existing records.");
-
-      const alreadyMarkedIds = new Set(markedRows.map(r => r.package_id));
-      const toInsert = orderIds.filter(id => !alreadyMarkedIds.has(id));
-
-      if (!toInsert.length) return res.status(409).send("You've already downloaded this package.");
-
-      const insertValues = toInsert.map(id => [vendor_id, id, network]);
-      const insertSql = `INSERT INTO downloaded_flags (vendor_id, package_id, network) VALUES ?`;
-
-      db.query(insertSql, [insertValues], (err3) => {
-        if (err3) return res.status(500).send("Insert error.");
-        res.send(`Marked ${toInsert.length} orders as downloaded.`);
-      });
-    });
-  });
-});
-
-app.post("/api/set-processing-status", (req, res) => {
-  const { vendor_id, network } = req.body;
-  if (!vendor_id || !network) return res.status(400).send("Missing vendor_id or network");
-
-  const query = `
-    UPDATE data_orders
-    SET status = 'processing'
-    WHERE vendor_id = ? AND status = 'pending' AND network = ?
-  `;
-
-  db.query(query, [vendor_id, network], (err) => {
-    if (err) return res.status(500).send("Database update error");
-    res.send("Status updated to processing.");
-  });
-});
-
-
-app.get("/api/export-airtel-orders", (req, res) => {
-  const vendorId = req.query.vendor_id;
-  if (!vendorId) return res.status(400).send("Vendor ID missing");
-
-  const now = new Date();
-  const newPackageId = format(now, "yyyy-MM-dd HH:mm");
-
-  const assignQuery = `
-    UPDATE data_orders
-    SET package_id = ?
-    WHERE vendor_id = ? AND status = 'pending' AND network = 'airteltigo'
-  `;
-
-  db.query(assignQuery, [newPackageId, vendorId], (err) => {
-    if (err) return res.status(500).send("Error assigning package ID");
-
-    const selectQuery = `
-      SELECT recipient_number, data_package, amount, status, created_at
-      FROM data_orders
-      WHERE vendor_id = ? AND package_id = ?
-    `;
-    db.query(selectQuery, [vendorId, newPackageId], async (err, rows) => {
-      if (err) return res.status(500).send("Error fetching for export");
-
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("AirtelTigo Orders");
-
-      worksheet.columns = [
-        { header: "Recipient", key: "recipient_number" },
-        { header: "Package", key: "data_package" },
-     
-      ];
-
-        rows.forEach(row => {
-        const cleanPackage = row.data_package.replace(/[^\d.]/g, '');
-        sheet.addRow({
-          recipient_number: row.recipient_number,
-          data_package: cleanPackage
-        });
-      });
-
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-      res.setHeader("Content-Disposition", "attachment; filename=airteltigo_orders.xlsx");
-
-      await workbook.xlsx.write(res);
-      res.end();
-    });
-  });
-});
-
-
-
-app.get("/api/export-afa-orders", async (req, res) => {
-  const vendorId = req.query.vendor_id;
-
-  // Step 1: Generate a new package_id for grouping
-  const packageId = format(new Date(), "yyyy-MM-dd HH:mm");
-
-  // Step 2: Update pending orders to include package_id and mark as processing
-  db.query(
-    `UPDATE afa_requests SET package_id = ?, status = 'processing' WHERE vendor_id = ? AND status = 'pending'`,
-    [packageId, vendorId],
-    (err) => {
-      if (err) return res.status(500).send("Failed to update status");
-
-      // Step 3: Fetch all orders just updated
-      db.query(
-        `SELECT * FROM afa_requests WHERE vendor_id = ? AND package_id = ?`,
-        [vendorId, packageId],
-        async (err, rows) => {
-          if (err) return res.status(500).send("Failed to fetch orders");
-
-          // Step 4: Build Excel
-          const workbook = new ExcelJS.Workbook();
-          const sheet = workbook.addWorksheet("AFA Orders");
-
-          sheet.columns = [
-            { header: "Full Name", key: "fullname" },
-            { header: "ID Number", key: "id_number" },
-            { header: "DOB", key: "dob" },
-            { header: "Phone", key: "phone_number", style: { numFmt: "@" } },
-            { header: "Location", key: "location" },
-            { header: "Region", key: "region" },
-            { header: "Occupation", key: "occupation" },
-            { header: "Status", key: "status" },
-            { header: "Date", key: "created_at" }
-          ];
-
-          rows.forEach(row => {
-            row.phone_number = `'${row.phone_number}`;
-            sheet.addRow(row);
-          });
-
-          // Step 5: Stream Excel to response
-          res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-          res.setHeader("Content-Disposition", "attachment; filename=afa_orders.xlsx");
-
-          await workbook.xlsx.write(res);
-          res.end(); // ✅ This line is essential
-        }
-      );
-    }
-  );
-});
-
-
-
-
-// ✅ BACKEND: Fetch all AFA orders with status = 'processing' grouped by package_id
-// ✅ Fetch all AFA orders (processing + delivered) grouped by package_id
-app.post("/api/afa-all-packages", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).send("Missing vendor ID");
-
-  const sql = `
-    SELECT * FROM afa_requests
-    WHERE vendor_id = ? AND status IN ('processing', 'delivered')
-    ORDER BY package_id DESC, created_at DESC
-  `;
-  db.query(sql, [vendor_id], (err, rows) => {
-    if (err) {
-      console.error("❌ Failed to fetch packages:", err);
-      return res.status(500).send("Error fetching packages");
-    }
-    res.json(rows);
-  });
-});
-
-
-// ✅ BACKEND: Mark all orders in a package as delivered
-app.post("/api/mark-afa-delivered", (req, res) => {
-  const { vendor_id, package_id } = req.body;
-  if (!vendor_id || !package_id) return res.status(400).send("Missing vendor_id or package_id");
-
-  const sql = `UPDATE afa_requests SET status = 'delivered' WHERE vendor_id = ? AND package_id = ?`;
-  db.query(sql, [vendor_id, package_id], (err) => {
-    if (err) return res.status(500).send("Failed to update package");
-    res.send("✅ Marked as delivered");
-  });
-});
-
-
-
-
-
-app.post("/api/mark-afa-delivered", (req, res) => {
-  const { vendor_id, package_id } = req.body;
-
-  const query = `
-    UPDATE afa_requests
-    SET status = 'delivered'
-    WHERE vendor_id = ? AND package_id = ?
-  `;
-
-  db.query(query, [vendor_id, package_id], (err, result) => {
-    if (err) {
-      console.error("❌ Error marking AFA delivered:", err);
-      return res.status(500).send("Failed to update status");
-    }
-    res.send("AFA package marked as delivered.");
-  });
-});
-
-
-
-app.post("/api/set-afa-processing", (req, res) => {
-  const { vendor_id } = req.body;
-  db.query(`
-    UPDATE afa_requests SET status = 'processing' 
-    WHERE vendor_id = ? AND status = 'pending'`,
-    [vendor_id],
-    err => {
-      if (err) return res.status(500).send("Error updating AFA status");
-      res.send("AFA status updated to processing");
-    });
-});
-
-app.post("/api/afa-orders", (req, res) => {
-  const { vendor_id } = req.body;
-
-  const query = "SELECT * FROM afa_requests WHERE vendor_id = ? ORDER BY created_at DESC";
-
-  db.query(query, [vendor_id], (err, rows) => {
-    if (err) {
-      console.error("❌ MySQL Error in /api/afa-orders:", err); // ✅ Show exact error
-      return res.status(500).send("Error loading AFA orders");
-    }
-
-    console.log("✅ AFA Orders Fetched:", rows.length);
-    res.json(rows);
-  });
-});
-
-app.post("/api/save-whatsapp-link", (req, res) => {
-  const { vendor_id, link } = req.body;
-
-  if (!vendor_id || !link) {
-    return res.status(400).json({ message: "Missing vendor_id or link" });
-  }
-
-  const query = `
-    INSERT INTO whatsapp_community_links (vendor_id, link)
-    VALUES (?, ?)
-    ON DUPLICATE KEY UPDATE link = VALUES(link)
-  `;
-
-  db.query(query, [vendor_id, link], (err, result) => {
-    if (err) {
-      console.error("DB Error:", err);
-      return res.status(500).json({ message: "Database error" });
-    }
-    res.json({ message: "Link saved successfully" });
-  });
-});
-
-
-
-
-function createAdminDownloadRoute(app, db, network) {
-  app.get(`/api/admin-download-${network}`, (req, res) => {
-    const packageId = format(new Date(), "yyyy-MM-dd HH:mm");
-
-    // Step 1: Update admin_orders with package ID
-    const assignAdminQuery = `
-      UPDATE admin_orders
-      SET package_id = ?, status = 'processing'
-      WHERE status = 'pending' AND network = ?
-    `;
-
-    // Step 2: Update data_orders with same package ID
-    const assignDataQuery = `
-      UPDATE data_orders
-      SET package_id = ?, status = 'processing'
-      WHERE status = 'pending' AND network = ?
-    `;
-
-    db.query(assignAdminQuery, [packageId, network], (assignErr) => {
-      if (assignErr) {
-        console.error("❌ Failed to assign package ID to admin_orders:", assignErr);
-        return res.status(500).send("Error assigning package ID to admin_orders");
-      }
-
-      db.query(assignDataQuery, [packageId, network], (dataErr) => {
-        if (dataErr) {
-          console.error("❌ Failed to assign package ID to data_orders:", dataErr);
-          return res.status(500).send("Error assigning package ID to data_orders");
-        }
-
-        // Step 3: Select updated records for Excel
-        const selectQuery = `
-          SELECT recipient_number, data_package, amount, status, sent_at AS created_at
-          FROM admin_orders
-          WHERE package_id = ?
-        `;
-
-        db.query(selectQuery, [packageId], async (err, rows) => {
-          if (err) {
-            console.error("❌ Failed to fetch records:", err);
-            return res.status(500).send("Error fetching for export");
-          }
-
-          const workbook = new ExcelJS.Workbook();
-          const worksheet = workbook.addWorksheet(`${network.toUpperCase()} Orders`);
-
-          worksheet.columns = [
-           { header: "Recipient", key: "recipient_number", width: 20 },
-            { header: "Package", key: "data_package", width: 15 },
-          ];
-
-         // Sort rows from smallest → biggest
-rows.sort((a, b) => {
-  const numA = parseFloat(a.data_package.replace(/[^\d.]/g, ''));
-  const numB = parseFloat(b.data_package.replace(/[^\d.]/g, ''));
-  return numA - numB; // ascending
-});
-
-// Add sorted rows to excel
-// Add sorted rows to excel
-rows.forEach(row => {
-  const cleanPackage = row.data_package.replace(/[^\d.]/g, '');
-
-  let recipient = String(row.recipient_number || "").replace(/\D/g, "");
-
-  // CASE 1: 233XXXXXXXXX -> drop 233, keep local without leading 0
-  // 23354xxxxxxx (12 digits) -> "54xxxxxxx" (9 digits)
-  if (recipient.startsWith("233") && recipient.length === 12) {
-    recipient = recipient.slice(3); // remove "233"
-  }
-
-  // CASE 2: if it comes as 0XXXXXXXXX (10 digits), drop the 0
-  if (recipient.startsWith("0") && recipient.length === 10) {
-    recipient = recipient.slice(1); // "0543..." -> "543..."
-  }
-
-  const numericRecipient = Number(recipient); // true NUMBER
-
-  worksheet.addRow({
-    recipient_number: numericRecipient,   // stored as number in Excel
-    data_package: cleanPackage
-  });
-});
-
-
-
-
-
-
-          res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-          res.setHeader("Content-Disposition", `attachment; filename=admin_${network}_orders.xlsx`);
-
-          await workbook.xlsx.write(res);
-          res.end();
-        });
-      });
-    });
-  });
-}
-
-
-
-
-// Display Orders by Admin (only status = 'available')
-app.get("/api/get-admin-orders", (req, res) => {
-  const { network } = req.query;
-
-  if (!network) return res.status(400).send("Network is required");
-
-  const sql = `
-    SELECT data_package, amount 
-    FROM admin_data_packages 
-    WHERE network = ? AND status = 'active'
-    ORDER BY 
-      CAST(REGEXP_SUBSTR(data_package, '^[0-9]+') AS UNSIGNED),
-      data_package
-  `;
-
-  db.query(sql, [network], (err, results) => {
-    if (err) {
-      console.error("❌ Error fetching admin orders:", err);
-      return res.status(500).send("Error fetching admin orders");
-    }
-    res.json(results);
-  });
-});
-
-//Admin package deletion 
-app.post("/api/delete-admin-package", (req, res) => {
-  const { id } = req.body;
-
-  if (!id) return res.status(400).send("Missing package ID");
-
-  const sql = `DELETE FROM admin_data_packages WHERE id = ?`;
-
-  db.query(sql, [id], (err) => {
-    if (err) {
-      console.error("❌ Failed to delete package:", err);
-      return res.status(500).send("Failed to delete");
-    }
-    res.send("✅ Package deleted successfully.");
-  });
-});
-
-
-
-// Delete a telephone number
-app.post("/api/delete-telephone-number", (req, res) => {
-  const { id } = req.body;
-
-  if (!id) {
-    return res.status(400).json({
+///// purchased products view 
+app.get("/api/user/purchased-products", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
       success: false,
-      message: "ID is required",
+      message: "Please login first."
     });
   }
 
-  const sql = "DELETE FROM telephone_numbers WHERE id = ?";
+  const sellerId = req.session.user.id;
 
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("❌ Error deleting telephone number:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Database error while deleting number",
-      });
-    }
-
-    if (result.affectedRows === 0) {
-      return res.json({
-        success: false,
-        message: "Number not found",
-      });
-    }
-
-    return res.json({ success: true });
-  });
-});
-
-
-
-// ✅ CREATE FOR EACH NETWORK
-createAdminDownloadRoute(app, db, "mtn");
-createAdminDownloadRoute(app, db, "airteltigo");
-createAdminDownloadRoute(app, db, "telecel");
-
-// ✅ FETCH GROUPED ADMIN ORDERS (NO vendor_id filter)
-app.post("/api/admin-packages", (req, res) => {
-  const { network } = req.body;
-  if (!network) return res.status(400).send("Missing network field");
-
-  const sql = `
-    SELECT package_id, recipient_number, data_package, amount, status
-    FROM admin_orders
-    WHERE network = ? AND status IN ('processing', 'delivered')
-    ORDER BY package_id DESC
-  `;
-
-  db.query(sql, [network], (err, rows) => {
-    if (err) {
-      console.error("Failed to fetch admin packages:", err);
-      return res.status(500).send("Failed to fetch packages.");
-    }
-    res.json(rows);
-  });
-});
-
-// ✅ MARK ADMIN PACKAGE AS DELIVERED
-app.post("/api/admin-mark-delivered", (req, res) => {
-  const { package_id } = req.body;
-  if (!package_id) return res.status(400).send("Missing package ID");
-
-  const updateAdmin = `UPDATE admin_orders SET status = 'delivered' WHERE package_id = ?`;
-  const updateData = `UPDATE data_orders SET status = 'delivered' WHERE package_id = ?`;
-
-  db.query(updateAdmin, [package_id], (err) => {
-    if (err) {
-      console.error("Failed to update admin_orders:", err);
-      return res.status(500).send("Error updating admin_orders");
-    }
-
-    db.query(updateData, [package_id], (err2) => {
-      if (err2) {
-        console.error("Failed to update data_orders:", err2);
-        return res.status(500).send("Error updating data_orders");
-      }
-
-      res.send("Package marked as delivered in both tables.");
-    });
-  });
-});
-
-//DASHBOARD COUNTS 
-///////////////////////////////////////////////////////////////////////////////////////
-// Total users (exclude admins)
-app.get("/api/total-users", (req, res) => {
-  const sql = `
-    SELECT COUNT(*) AS totalUsers
-    FROM users
-    WHERE LOWER(role) <> 'admin'
-  `;
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Error counting users:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    const totalUsers = results[0]?.totalUsers || 0;
-    res.json({ totalUsers });
-  });
-});
-
-
-// ✅ Total pending orders from admin_orders
-app.get("/api/pending-orders", (req, res) => {
-  const sql = `
-    SELECT COUNT(*) AS pendingOrders
-    FROM admin_orders
-    WHERE LOWER(status) = 'pending'
-  `;
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Error counting pending orders:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-
-    const pendingOrders = results[0]?.pendingOrders || 0;
-    res.json({ pendingOrders });
-  });
-});
-
-
-// ✅ Revenue today (sum of total_revenue.amount for current date)
-app.get("/api/revenue-today", (req, res) => {
-  const sql = `
-    SELECT COALESCE(SUM(amount), 0) AS revenueToday
-    FROM total_revenue
-    WHERE DATE(date_received) = CURDATE()
-  `;
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Error getting today's revenue:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-
-    const revenueToday = results[0]?.revenueToday || 0;
-    res.json({ revenueToday });
-  });
-});
-
-
-// ✅ Total lifetime transactions (count all admin_orders)
-app.get("/api/total-transactions", (req, res) => {
-  const sql = `
-    SELECT COUNT(*) AS totalTransactions
-    FROM admin_orders
-  `;
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Error counting transactions:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-
-    const totalTransactions = results[0]?.totalTransactions || 0;
-    res.json({ totalTransactions });
-  });
-});
-
-
-
-
-
-
-app.post("/api/admin/add-package", (req, res) => {
-  const { network, data_package, amount } = req.body;
-
-  if (!network || !data_package || !amount) {
-    return res.status(400).send("Missing fields");
-  }
-
-  const sql = `
-    INSERT INTO admin_data_packages (network, data_package, amount)
-    VALUES (?, ?, ?)
-  `;
-
-  db.query(sql, [network, data_package, amount], (err, result) => {
-    if (err) {
-      console.error("Insert failed:", err);
-      return res.status(500).send("Insert failed");
-    }
-
-    // Return the newly inserted item with ID
-    res.json({
-      id: result.insertId,
-      network,
-      data_package,
-      amount,
-      status: 'active'
-    });
-  });
-});
-
-app.post("/api/admin/update-status", (req, res) => {
-  const { id, status } = req.body;
-
-  const sql = `
-    UPDATE admin_data_packages
-    SET status = ?
-    WHERE id = ?
-  `;
-
-  db.query(sql, [status, id], (err) => {
-    if (err) {
-      console.error("Status update failed:", err);
-      return res.status(500).send("Failed");
-    }
-    res.send("✅ Status updated");
-  });
-});
-
-app.get("/api/admin/packages", (req, res) => {
-  const { network } = req.query;
-
-  if (!network) return res.status(400).send("Network is required.");
-
-  const sql = `
-    SELECT * FROM admin_data_packages 
-    WHERE network = ?
-    ORDER BY 
-      CAST(SUBSTRING_INDEX(data_package, 'G', 1) AS DECIMAL)
-  `;
-
-  db.query(sql, [network], (err, results) => {
-    if (err) {
-      console.error("Fetch error:", err);
-      return res.status(500).send("Database error");
-    }
-    res.json(results);
-  });
-});
-
-
-// vendor packages are in data_packages
-// base cost price is in admin_data_packages
-app.post("/api/get-all-packages", (req, res) => {
-  const { vendor_id, network } = req.body;
-
-  const sql = `
-    SELECT
-      dp.id,
-      dp.data_package,
-      dp.amount,              -- SELLING PRICE (what you edit)
-      dp.status,
-      adp.amount AS cost_price -- COST PRICE from admin_data_packages
-    FROM data_packages dp
-    LEFT JOIN admin_data_packages adp
-      ON adp.network = dp.network
-     AND adp.data_package = dp.data_package
-    WHERE dp.vendor_id = ?
-      AND dp.network = ?
-    ORDER BY dp.id ASC
-  `;
-
-  db.query(sql, [vendor_id, network], (err, rows) => {
-    if (err) {
-      console.error("get-all-packages error:", err);
-      return res.status(500).json({ error: "db error" });
-    }
-    res.json(rows);
-  });
-});
-
-
-app.post("/api/update-package-amount", (req, res) => {
-  const { id, amount } = req.body;
-  if (!id || amount === undefined) {
-    return res.status(400).json({ error: "Missing id or amount" });
-  }
-
-  const sql = `UPDATE data_packages SET amount = ? WHERE id = ?`;
-  db.query(sql, [amount, id], (err) => {
-    if (err) {
-      console.error("update-package-amount error:", err);
-      return res.status(500).json({ error: "db error" });
-    }
-    res.json({ success: true });
-  });
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-app.get("/api/get-pending-counts", (req, res) => {
-  const sql = `
-    SELECT network, COUNT(*) AS count
-    FROM admin_orders
-    WHERE status = 'pending'
-    GROUP BY network
-  `;
-
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).send("DB error");
-
-    const counts = { MTN: 0, TELECEL: 0, AT: 0 };
-
-    results.forEach(row => {
-      const net = String(row.network || "").toLowerCase();
-
-      if (net === "mtn") counts.MTN = row.count;
-      else if (net === "telecel") counts.TELECEL = row.count;
-      else if (net === "airteltigo") counts.AT = row.count; // ✅ mapped
-    });
-
-    res.json(counts);
-  });
-});
-
-
-
-
-
-
-
-
-
-
-// GET user by ID
-app.get("/api/user/:id", (req, res) => {
-  const sql = "SELECT username, fullname, email, phone FROM users WHERE id = ?";
-  db.query(sql, [req.params.id], (err, result) => {
-    if (err) return res.status(500).send("Database error.");
-    if (result.length === 0) return res.status(404).send("User not found.");
-    res.json(result[0]);
-  });
-});
-
-// UPDATE user by ID
-app.put("/api/user/:id", (req, res) => {
-  const { fullname, email, phone } = req.body;
-  const sql = "UPDATE users SET fullname = ?, email = ?, phone = ? WHERE id = ?";
-  db.query(sql, [fullname, email, phone, req.params.id], (err, result) => {
-    if (err) return res.status(500).send("Failed to update user.");
-    res.send("✅ Account updated successfully.");
-  });
-});
-
-
-
-
-app.post("/api/theteller-withdraw", async (req, res) => {
-  const { vendor_id, momo_number, amount, network } = req.body;
-
-  if (!vendor_id || !momo_number || !amount || !network) {
-    return res.status(400).send("Missing fields");
-  }
-
-  // Format amount
-  const formattedAmount = String(Math.round(amount * 100)).padStart(12, "0");
-  const transactionId = `WD${Date.now()}`.slice(0, 30);
-  const formattedMoMo = momo_number.replace(/^0/, "233");
-
-  function getSwitchCode(net) {
-    switch (net.toLowerCase()) {
-      case "mtn": return "MTN";
-      case "airteltigo": return "ATL";
-      case "telecel": return "VDF";
-      default: return null;
-    }
-  }
-
-  const rSwitch = getSwitchCode(network);
-  if (!rSwitch) return res.status(400).send("Unsupported network");
-
- const payload = {
-  amount: formattedAmount,
-  processing_code: "404000",
-  transaction_id: transactionId,
-  desc: "Vendor Withdrawal",
-  merchant_id: "TTM-00009388",
-  subscriber_number: formattedMoMo,
-  "r-switch": rSwitch,
-  redirect_url: "https://example.com/withdrawal-callback",
-
-  // ✅ Required for 404000
-  account_number: formattedMoMo,       // usually same as MoMo number
-  account_issuer: rSwitch              // same as r-switch (e.g. MTN, ATL)
-};
-const token = Buffer.from(
-  "louis66a20ac942e74:ZmVjZWZlZDc2MzA4OWU0YmZhOTk5MDBmMDAxNDhmOWY="
-).toString("base64");
-
-  try {
-    const response = await axios.post(
-      "https://prod.theteller.net/v1.1/transaction/process",
-      payload,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${token}`,
-          "Cache-Control": "no-cache"
-        }
-      }
-    );
-
-    console.log("✅ TheTeller withdrawal:", response.data);
-    const code = response.data.code;
-    const status = response.data.status?.toLowerCase();
-
- if (code === "000" || status === "approved" || status === "successful") {
-  // ✅ Deduct from wallet here
-  const deductSql = `
-    INSERT INTO wallet_loads (vendor_id, momo, amount, date_loaded)
-    VALUES (?, ?, ?, NOW())
-  `;
-
-  db.query(deductSql, [vendor_id, momo_number, -amount], (deductErr) => {
-    if (deductErr) {
-      console.error("Failed to deduct:", deductErr);
-      return res.status(500).send("Withdrawal processed but deduction failed.");
-    }
-    res.send("✅ Withdrawal processed and wallet updated.");
-  });
-} else {
-  return res.status(400).send("❌ Withdrawal failed or declined.");
-}
-
-
-  } catch (err) {
-    console.error("❌ TheTeller error:", err.response?.data || err.message);
-    return res.status(400).send("Withdrawal failed.");
-  }
-});
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////API
-// ✅ Handle Allow / Close Limited and send email notice
-app.post("/api/access-mode", async (req, res) => {
-  const { mode } = req.body || {};
-  const action =
-    mode === "all"
-      ? "Allow For All (open access)"
-      : "Close Limited (restrict access)";
-
-  try {
-    await transporter.sendMail({
-      from: '"Sandypay Admin Alerts" <Sandipayghana@gmail.com>',
-      to: "edutheo33@gmail.com",
-      subject: `Sandypay Admin Request: ${action}`,
-      text:
-        `An admin has triggered the following action from the Allow Menu:\n\n` +
-        `Action: ${action}\n` +
-        `Time: ${new Date().toLocaleString()}\n\n` +
-        `Please log in and apply this change on the backend.`
-    });
-
-    // Frontend doesn't really use this, but we return success anyway
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("access-mode email error:", err);
-    return res.status(500).json({ success: false, error: "Mail send failed" });
-  }
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// NUMBER OF PENDING AFA ORDERS BY VENDOR ID
-app.get("/api/afa-pending-count", (req, res) => {
-  const { vendor_id } = req.query;
-
-  if (!vendor_id) {
-    return res.status(400).json({ error: "Vendor ID is required" });
-  }
-
-  const sql = `
-    SELECT COUNT(*) AS count
-    FROM afa_requests
-    WHERE status = 'pending' AND vendor_id = ?
-  `;
-
-  db.query(sql, [vendor_id], (err, result) => {
-    if (err) {
-      console.error("❌ AFA count error:", err);
-      return res.status(500).send("DB error");
-    }
-    res.json({ count: result[0].count });
-  });
-});
-
-
-
-//AFA 
-app.get('/api/afa-price/admin', (req, res) => {
-  db.query("SELECT price FROM afa_prices WHERE status = 'admin' ORDER BY created_at DESC LIMIT 1", (err, result) => {
-    if (err) return res.status(500).json({ error: err });
-    const price = result.length > 0 ? result[0].price : 0;
-    res.json({ adminPrice: price });
-  });
-});
-
-app.post('/api/afa-price/vendor', (req, res) => {
-  const { user_id, price } = req.body;
-  if (!user_id || !price) return res.status(400).json({ message: 'Missing fields' });
-
-  db.query("INSERT INTO afa_prices (user_id, status, price) VALUES (?, 'vendor', ?)", [user_id, price], (err) => {
-    if (err) return res.status(500).json({ error: err });
-    res.json({ message: 'Vendor price set successfully' });
-  });
-});
-
-
-
-app.post("/api/add-package", (req, res) => {
-  try {
-    const { network, value, amount, status, vendor_id } = req.body;
-
-    if (!network || !value || !amount || !status || !vendor_id) {
-      return res.status(400).json({
-        ok: false,
-        message: "Missing required fields."
-      });
-    }
-
-    const sql = `
-      INSERT INTO data_packages
-      (network, amount, data_package, status, vendor_id, created_at)
-      VALUES (?, ?, ?, ?, ?, NOW())
-    `;
-
-    db.query(
-      sql,
-      [network, amount, value, status, vendor_id],
-      (err, result) => {
-        if (err) {
-          console.error("ADD PACKAGE ERROR:", err);
-          return res.status(500).json({
-            ok: false,
-            message: "Failed to add package.",
-            error: err.message
-          });
-        }
-
-        return res.json({
-          ok: true,
-          message: "Package added successfully.",
-          insertId: result.insertId
-        });
-      }
-    );
-  } catch (error) {
-    console.error("ADD PACKAGE CATCH ERROR:", error);
-    return res.status(500).json({
-      ok: false,
-      message: "Server error.",
-      error: error.message
-    });
-  }
-});
-
-
-
-
-
-
-//WHATSAPP LINK
-app.post("/api/get-whatsapp-link", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).json({ error: "Vendor ID required" });
-
-  const sql = `SELECT link FROM whatsapp_community_links WHERE vendor_id = ? ORDER BY updated_at DESC LIMIT 1`;
-
-  db.query(sql, [vendor_id], (err, rows) => {
-    if (err) {
-      console.error("❌ Failed to fetch WhatsApp link:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-
-    if (!rows.length || !rows[0].link) {
-      return res.json({ link: null });
-    }
-
-    res.json({ link: rows[0].link });
-  });
-});
-//VENDOR DELETE PACKAGE
-app.post("/api/delete-package", (req, res) => {
-  const { id } = req.body;
-  db.query("DELETE FROM data_packages WHERE id = ?", [id], (err) => {
-    if (err) {
-      console.error("❌ Failed to delete package:", err);
-      return res.status(500).send("Failed to delete");
-    }
-    res.send("Deleted successfully");
-  });
-});
-
-
-
-
-
-// ADMIN AFA PRICE SETUP - Update for admin ID 25
-app.post('/api/afa-price/admin', (req, res) => {
-  const { price } = req.body;
-
-  const user_id = 25;
-  const status = 'admin';
-
-  if (!price) {
-    return res.status(400).json({ message: 'Missing price' });
-  }
-
-  const updateQuery = `
-    UPDATE afa_prices 
-    SET price = ?, created_at = NOW()
-    WHERE user_id = ? AND status = ?
-  `;
-
-  db.query(updateQuery, [price, user_id, status], (err, result) => {
-    if (err) return res.status(500).json({ message: 'Update error', error: err });
-
-    if (result.affectedRows === 0) {
-      // No row to update — optionally insert it
-      const insertQuery = `
-        INSERT INTO afa_prices (user_id, status, price) 
-        VALUES (?, ?, ?)
-      `;
-      db.query(insertQuery, [user_id, status, price], (insertErr) => {
-        if (insertErr) return res.status(500).json({ message: 'Insert failed', error: insertErr });
-        return res.json({ message: 'AFA price inserted successfully' });
-      });
-    } else {
-      res.json({ message: 'AFA price updated successfully' });
-    }
-  });
-});
-
-
-
-
-
-
-app.post("/api/send-afa-orders", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).send("Vendor ID required");
-
-  // 1. Get AFA price
-  const priceSql = `SELECT price FROM afa_prices WHERE status = 'admin' ORDER BY id DESC LIMIT 1`;
-
-  db.query(priceSql, async (priceErr, priceRows) => {
-    if (priceErr || !priceRows.length) {
-      console.error("❌ Failed to fetch AFA price:", priceErr);
-      return res.status(500).send("Failed to get AFA price.");
-    }
-
-    const afaPrice = parseFloat(priceRows[0].price);
-
-    // 2. Get pending orders
-    const fetchSql = `
-      SELECT * FROM afa_requests 
-      WHERE vendor_id = ? AND status = 'pending'
-    `;
-
-    db.query(fetchSql, [vendor_id], (err, rows) => {
-      if (err) {
-        console.error("❌ AFA Fetch Error:", err);
-        return res.status(500).send("Failed to fetch pending orders");
-      }
-
-      if (!rows.length) return res.status(404).send("No pending orders found");
-
-      const totalAmount = afaPrice * rows.length;
-
-      // 3. Check available wallet balance
-      const walletSql = `
-        SELECT SUM(amount) AS total FROM wallet_loads WHERE vendor_id = ?
-      `;
-
-      db.query(walletSql, [vendor_id], (walletErr, walletRows) => {
-        if (walletErr) {
-          console.error("❌ Wallet check failed:", walletErr);
-          return res.status(500).send("Could not verify wallet balance");
-        }
-
-        const walletBalance = parseFloat(walletRows[0].total || 0);
-        if (walletBalance < totalAmount) {
-          return res.status(400).send(`❌ Insufficient wallet balance. Required: GHS ${totalAmount}`);
-        }
-
-        // 4. Deduct from wallet
-        const deductSql = `
-          INSERT INTO wallet_loads (vendor_id, momo, amount, date_loaded)
-          VALUES (?, '', ?, NOW())
-        `;
-
-        db.query(deductSql, [vendor_id, -totalAmount], (deductErr) => {
-          if (deductErr) {
-            console.error("❌ Failed to deduct from wallet:", deductErr);
-            return res.status(500).send("Wallet deduction failed");
-          }
-
-          // 5. Insert into afareceive with updated fields
-          const packageId = new Date().toISOString().slice(0, 16).replace("T", " ");
-          const now = new Date();
-
-          const insertValues = rows.map(r => [
-            vendor_id,
-            r.fullname,
-            r.id_number,
-            r.dob,
-            r.phone_number,
-            r.location,
-            r.region,
-            r.occupation,
-            r.submitted_at || now,
-            'pending'
-           
-          ]);
-
-          const insertSql = `
-            INSERT INTO afareceive (
-              vendor_id, fullname, id_number, dob, phone_number,
-              location, region, occupation, submitted_at,
-              status
-            ) VALUES ?
-          `;
-
-          db.query(insertSql, [insertValues], (insertErr) => {
-            if (insertErr) {
-              console.error("❌ Insert into afareceive failed:", insertErr);
-              return res.status(500).send("Failed to send orders to admin");
-            }
-
-            // 6. Update original afa_requests status
-            const updateSql = `
-              UPDATE afa_requests
-              SET status = 'processing', package_id = ?
-              WHERE vendor_id = ? AND status = 'pending'
-            `;
-
-            db.query(updateSql, [packageId, vendor_id], () => {
-              res.send("✅ AFA orders sent to admin and wallet updated");
-            });
-          });
-        });
-      });
-    });
-  });
-});
-
-
-
-
-//adming afa download 
-app.get("/api/admin-export-afa-orders", async (req, res) => {
-  const sql = `
-    SELECT * FROM afareceive WHERE status = 'pending'
-  `;
-
-  db.query(sql, async (err, rows) => {
-    if (err) {
-      console.error("❌ Failed to export:", err);
-      return res.status(500).send("Export failed");
-    }
-
-    // Update status to processing
-    const packageId = new Date().toISOString().slice(0, 16).replace("T", " ");
-    db.query(`UPDATE afareceive SET status = 'processing', package_id = ? WHERE status = 'pending'`, [packageId]);
-
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("AFA Admin Orders");
-
-    sheet.columns = [
-      { header: "Full Name", key: "fullname" },
-      { header: "ID Number", key: "id_number" },
-      { header: "DOB", key: "dob" },
-      { header: "Phone", key: "phone_number" },
-      { header: "Location", key: "location" },
-      { header: "Region", key: "region" },
-      { header: "Occupation", key: "occupation" },
-      { header: "Status", key: "status" },
-      { header: "Created At", key: "created_at" },
-    ];
-
-    rows.forEach(row => sheet.addRow(row));
-
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", "attachment; filename=afa_admin_orders.xlsx");
-    await workbook.xlsx.write(res);
-    res.end();
-  });
-});
-
-app.post("/api/afa-mark-delivered", (req, res) => {
-  const { package_id } = req.body;
-  if (!package_id) return res.status(400).send("Missing package_id");
-
-  const sql = `UPDATE afareceive SET status = 'delivered' WHERE package_id = ?`;
-
-  db.query(sql, [package_id], (err) => {
-    if (err) {
-      console.error("❌ Failed to update status:", err);
-      return res.status(500).send("Failed to update status");
-    }
-
-    res.send("✅ All orders marked as delivered");
-  });
-});
-
-
-
-app.post("/api/afa-admin-processing", (req, res) => {
-  const sql = `
-    SELECT * FROM afareceive
-    WHERE status IN ('processing', 'delivered')
-    ORDER BY package_id DESC, created_at DESC
-  `;
-
-  db.query(sql, (err, rows) => {
-    if (err) {
-      console.error("❌ Failed to fetch AFA processing packages:", err);
-      return res.status(500).send("Failed to fetch processing orders");
-    }
-
-    res.json(rows);
-  });
-});
-
-
-
-//badges
-app.get("/api/afa-admin-pending-count", (req, res) => {
-  const sql = `
-    SELECT COUNT(*) AS count FROM afareceive WHERE status = 'pending'
-  `;
-
-  db.query(sql, (err, rows) => {
-    if (err) {
-      console.error("❌ Failed to count pending:", err);
-      return res.status(500).send("Error counting pending orders");
-    }
-
-    res.json({ count: rows[0].count });
-  });
-});
-
-
-
-app.post("/api/vendor-transactions", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).send("Vendor ID required");
-
-  const results = {};
-
-  const queries = {
-    data_orders: `SELECT * FROM data_orders WHERE vendor_id = ? ORDER BY created_at DESC`,
-    afa_requests: `SELECT * FROM afa_requests WHERE vendor_id = ? ORDER BY created_at DESC`,
-    wallet_loads: `SELECT * FROM wallet_loads WHERE vendor_id = ? ORDER BY date_loaded DESC`,
-    withdrawals: `SELECT * FROM withdrawals WHERE vendor_id = ? ORDER BY requested_at DESC` // ✅ fixed field name
-  };
-
-  const runQuery = (key, sql, next) => {
-    db.query(sql, [vendor_id], (err, rows) => {
-      if (err) return res.status(500).send(`Error loading ${key}`);
-      results[key] = rows;
-      next();
-    });
-  };
-
-  runQuery("data_orders", queries.data_orders, () => {
-    runQuery("afa_requests", queries.afa_requests, () => {
-      runQuery("wallet_loads", queries.wallet_loads, () => {
-        runQuery("withdrawals", queries.withdrawals, () => {
-          res.json(results);
-        });
-      });
-    });
-  });
-});
-
-
-
-//USSD FETCH
-app.post("/api/get-ussd-code", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).send("Vendor ID required");
-
-  const sql = "SELECT ussd_code FROM users WHERE id = ?";
-  db.query(sql, [vendor_id], (err, rows) => {
-    if (err) {
-      console.error("❌ Failed to fetch USSD code:", err);
-      return res.status(500).send("Failed to fetch USSD code");
-    }
-
-    if (!rows.length) return res.status(404).send("USSD code not found");
-
-    res.json({ ussd_code: rows[0].ussd_code });
-  });
-});
-
-
-
-
-
-//NAME FETCH
-app.post("/api/fetch-vendor-name", (req, res) => {
-  const { vendor_id } = req.body;
-  if (!vendor_id) return res.status(400).json({ error: "Vendor ID is required" });
-
-  const sql = "SELECT username AS name FROM users WHERE id = ?";
-  db.query(sql, [vendor_id], (err, result) => {
-    if (err) {
-      console.error("DB error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-    if (result.length === 0) return res.status(404).json({ error: "Vendor not found" });
-
-    res.json({ name: result[0].name });
-  });
-});
-
-
-//LINK DOMAIN 
-app.post("/api/update-public-link-by-username", (req, res) => {
-  const { username, publicLink } = req.body;
-  if (!username || !publicLink) return res.status(400).json({ success: false, message: "Missing fields" });
-
-  const sql = "UPDATE users SET public_link = ? WHERE username = ?";
-  db.query(sql, [publicLink, username], (err, result) => {
-    if (err) return res.status(500).json({ success: false, message: "Database error" });
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "User not found" });
-    res.json({ success: true, message: "✅ Domain linked successfully!" });
-  });
-});
-
-
-//REMOVE DOMAIN
-app.post("/api/reset-public-link", (req, res) => {
-  const { username } = req.body;
-  if (!username) return res.status(400).json({ success: false, message: "Missing username" });
-
-  const sql = "UPDATE users SET public_link = NULL WHERE username = ?";
-  db.query(sql, [username], (err, result) => {
-    if (err) return res.status(500).json({ success: false, message: "Database error" });
-    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "User not found" });
-    res.json({ success: true, message: "✅ Domain removed" });
-  });
-});
-
-
-//GET ALL USERS
-app.get("/api/get-users-domains", (req, res) => {
-  const sql = "SELECT id, username, role, status, public_link FROM users ORDER BY id DESC";
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json([]);
-    res.json(results);
-  });
-});
-
-
-//GERERATE CODE AND SEND TO DATABASE FOR MTN
-app.post('/api/insert-mtn-code', (req, res) => {
-  const { vendor_id, code } = req.body;
-
-  if (!vendor_id || !code) {
-    return res.status(400).json({ status: 'error', message: 'Missing vendor_id or code' });
-  }
-
-  const sql = "UPDATE data_orders SET code = ? WHERE vendor_id = ? AND status = 'pending'";
-  db.query(sql, [code, vendor_id], (err, result) => {
-    if (err) {
-      console.error("Error updating code:", err);
-      return res.status(500).json({ status: 'error', message: 'Database update failed' });
-    }
-    return res.json({ status: 'success', message: 'Code inserted successfully' });
-  });
-});
-
-
-//GERERATE CODE AND SEND TO DATABASE FOR TELECEL
-app.post('/api/insert-telecel-code', (req, res) => {
-  const { vendor_id, code } = req.body;
-
-  if (!vendor_id || !code) {
-    return res.status(400).json({ status: 'error', message: 'Missing vendor_id or code' });
-  }
-
-  const sql = "UPDATE data_orders SET code = ? WHERE vendor_id = ? AND network = 'telecel' AND status = 'pending'";
-  db.query(sql, [code, vendor_id], (err, result) => {
-    if (err) {
-      console.error("Error inserting Telecel code:", err);
-      return res.status(500).json({ status: 'error', message: 'Database error' });
-    }
-
-    return res.json({ status: 'success', message: 'Telecel code inserted successfully' });
-  });
-});
-
-
-
-//GERERATE CODE AND SEND TO DATABASE FOR AIRTELTIGO
-app.post('/api/insert-airteltigo-code', (req, res) => {
-  const { vendor_id, code } = req.body;
-
-  if (!vendor_id || !code) {
-    return res.status(400).json({ status: 'error', message: 'Missing vendor_id or code' });
-  }
-
-  const sql = "UPDATE data_orders SET code = ? WHERE vendor_id = ? AND network = 'airteltigo' AND status = 'pending'";
-  db.query(sql, [code, vendor_id], (err, result) => {
-    if (err) {
-      console.error("Error inserting AirtelTigo code:", err);
-      return res.status(500).json({ status: 'error', message: 'Database error' });
-    }
-
-    return res.json({ status: 'success', message: 'AirtelTigo code inserted successfully' });
-  });
-});
-
-
-
-
-
-
-app.get('/api/download-by-code', async (req, res) => {
-  const { code } = req.query;
-  if (!code) return res.status(400).send("Missing code");
-
-  try {
-    const [orders] = await db.promise().query(
-      "SELECT * FROM data_orders WHERE code = ? AND status = 'pending'",
-      [code]
-    );
-
-    if (!orders.length) return res.status(404).send("No pending orders found for this code");
-
-    const vendorId = orders[0].vendor_id;
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Orders");
-
-    sheet.columns = [
-      { header: "Recipient", key: "recipient_number" },
-      { header: "Package", key: "data_package" }
-    ];
-
-    let totalAmount = 0;
-    const matchingOrderIds = [];
-
-    for (const order of orders) {
-      const cleanPkg = order.data_package.replace(/\s/g, ''); // e.g., "1 GB" -> "1GB"
-      const network = order.network;
-
-      const [adminMatch] = await db.promise().query(
-        "SELECT amount FROM admin_data_packages WHERE network = ? AND REPLACE(data_package, ' ', '') = ? LIMIT 1",
-        [network, cleanPkg]
-      );
-
-      if (adminMatch.length) {
-        const adminAmount = parseFloat(adminMatch[0].amount);
-        totalAmount += adminAmount;
-        matchingOrderIds.push(order.id);
-
-        // ➕ Extract only numeric part from package (e.g., "1GB" -> "1")
-        const numericOnly = cleanPkg.replace(/[^\d.]/g, '');
-
-        sheet.addRow({
-          recipient_number: order.recipient_number,
-          data_package: numericOnly
-        });
-      }
-    }
-
-    if (matchingOrderIds.length === 0) {
-      return res.status(400).send("❌ No matching packages found. Nothing was processed.");
-    }
-
-    // Get wallet balance
-    const [wallet] = await db.promise().query(
-      "SELECT SUM(amount) as balance FROM wallet_loads WHERE vendor_id = ?",
-      [vendorId]
-    );
-
-    const balance = parseFloat(wallet[0].balance || 0);
-    if (balance < totalAmount) {
-      return res.status(400).send("❌ Insufficient wallet balance.");
-    }
-
-    // Deduct from wallet
-    await db.promise().query(
-      "INSERT INTO wallet_loads (vendor_id, momo, amount, date_loaded) VALUES (?, '', ?, NOW())",
-      [vendorId, -totalAmount]
-    );
-
-    // Add to total revenue
-    await db.promise().query(
-      "INSERT INTO total_revenue (vendor_id, source, amount, date_received) VALUES (?, ?, ?, NOW())",
-      [vendorId, `Code ${code} order`, totalAmount]
-    );
-
-    // Generate package ID using timestamp
-    const packageId = new Date().toISOString().slice(0, 16).replace("T", " ");
-
-    // Update only matched orders
-    await db.promise().query(
-      `UPDATE data_orders 
-       SET status = 'processing', package_id = ?
-       WHERE id IN (${matchingOrderIds.map(() => '?').join(',')})`,
-      [packageId, ...matchingOrderIds]
-    );
-
-    // Return Excel
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename=Orders_${code}.xlsx`);
-    await workbook.xlsx.write(res);
-    res.end();
-
-  } catch (err) {
-    console.error("❌ Download by code failed:", err);
-    res.status(500).send("Server error");
-  }
-});
-
-
-
-
-
-
-
-
-
-
-//PENDING TO STATUS
-app.post('/api/set-processing-by-code', (req, res) => {
-  const { code } = req.body;
-  if (!code) return res.status(400).send("Missing code");
-
-  // Generate new package ID using current timestamp
-  const packageId = new Date().toISOString().slice(0, 16).replace("T", " "); // e.g. 2025-07-03 19:46
-
-  const sql = `
-    UPDATE data_orders
-    SET status = 'processing', package_id = ?
-    WHERE code = ?
-  `;
-
-  db.query(sql, [packageId, code], (err, result) => {
-    if (err) {
-      console.error("❌ Failed to update rows:", err);
-      return res.status(500).send("Failed to update package info");
-    }
-
-    res.send(`✅ ${result.affectedRows} orders grouped as package: ${packageId}`);
-  });
-});
-
-
-//PACK
-// /api/admin-packages
-app.post('/api/admin-packages-by-network', (req, res) => {
-  const { vendor_id, network } = req.body;
-
-const sql = `
-  SELECT * FROM data_orders
-  WHERE package_id IS NOT NULL
-    AND status IN ('processing', 'delivered')
-  ORDER BY package_id DESC
-`;
-
-  db.query(sql, [vendor_id, network], (err, result) => {
-    if (err) {
-      console.error("❌ Error fetching packages:", err);
-      return res.status(500).send("Error fetching package data");
-    }
-
-    res.json(result);
-  });
-});
-
-
-function makeDownloadPackageCode() {
-  return "PKG-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
-}
-
-app.post("/api/admin/payment-sessions/download-package", async (req, res) => {
-  const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
-
-  if (!ids.length) {
-    return res.status(400).json({
-      ok: false,
-      message: "No rows selected."
-    });
-  }
-
-  const cleanIds = ids
-    .map(id => Number(id))
-    .filter(id => Number.isInteger(id) && id > 0);
-
-  if (!cleanIds.length) {
-    return res.status(400).json({
-      ok: false,
-      message: "Invalid selected ids."
-    });
-  }
-
-  try {
-    const placeholders = cleanIds.map(() => "?").join(",");
-
-    await db.promise().query("START TRANSACTION");
-
-    const [rows] = await db.promise().query(
-      `
-      SELECT
-        id,
-        package_name,
-        recipient_number,
-        payment_status
-      FROM payment_sessions
-      WHERE id IN (${placeholders})
-        AND LOWER(COALESCE(payment_status, '')) <> 'approved'
-        AND LOWER(COALESCE(payment_status, '')) <> 'downloaded'
-        AND LOWER(COALESCE(payment_status, '')) <> 'delivered'
-      ORDER BY id ASC
-      `,
-      cleanIds
-    );
-
-    if (!rows.length) {
-      await db.promise().query("ROLLBACK");
-      return res.status(400).json({
-        ok: false,
-        message: "No valid rows found to download."
-      });
-    }
-
-    const packageCode = makeDownloadPackageCode();
-
-    const [pkgInsert] = await db.promise().query(
-      `
-      INSERT INTO downloaded_payment_packages
-      (package_code, total_items, status)
-      VALUES (?, ?, 'downloaded')
-      `,
-      [packageCode, rows.length]
-    );
-
-    const packageRefId = pkgInsert.insertId;
-
-    for (const row of rows) {
-      await db.promise().query(
-        `
-        INSERT INTO downloaded_payment_package_items
-        (package_ref_id, payment_session_id, package_name, recipient_number, status)
-        VALUES (?, ?, ?, ?, 'downloaded')
-        `,
-        [
-          packageRefId,
-          row.id,
-          row.package_name || "",
-          row.recipient_number || ""
-        ]
-      );
-    }
-
-    const usedIds = rows.map(r => r.id);
-    const usedPlaceholders = usedIds.map(() => "?").join(",");
-
-    await db.promise().query(
-      `
-      UPDATE payment_sessions
-      SET payment_status='downloaded'
-      WHERE id IN (${usedPlaceholders})
-      `,
-      usedIds
-    );
-
-    await db.promise().query("COMMIT");
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Downloaded Package");
-
-    worksheet.columns = [
-      { header: "Package", key: "package_name", width: 30 },
-      { header: "Recipient Number", key: "recipient_number", width: 22 }
-    ];
-
-   function cleanPackageValue(value) {
-  const text = String(value || "").trim();
-
-  // remove GB, MB, spaces, and keep only the number part
-  const match = text.match(/[\d.]+/);
-  return match ? match[0] : text;
-}
-
-rows.forEach(row => {
-  worksheet.addRow({
-    package_name: cleanPackageValue(row.package_name),
-    recipient_number: row.recipient_number || ""
-  });
-});
-
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.views = [{ state: "frozen", ySplit: 1 }];
-
-    const buffer = await workbook.xlsx.writeBuffer();
-
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${packageCode}.xlsx"`
-    );
-    res.setHeader("Content-Length", buffer.length);
-
-    return res.send(buffer);
-
-  } catch (err) {
-    try {
-      await db.promise().query("ROLLBACK");
-    } catch (_) {}
-
-    console.error("download-package FULL error:", err);
-    console.error("download-package SQL/message:", err.sqlMessage || err.message);
-
-    return res.status(500).json({
-      ok: false,
-      message: "Could not create download package.",
-      error: err.sqlMessage || err.message
-    });
-  }
-});
-
-
-// =====================================================
-// GET /api/admin/payment-sessions/pending-list
-// Fetch all payment_sessions where payment_status != approved
-// Supports search by momo_number, recipient_number, client_ref, transaction_id
-// =====================================================
-app.get("/api/admin/payment-sessions/pending-list", async (req, res) => {
-  const search = String(req.query.search || "").trim();
-
-  try {
-    let sql = `
-      SELECT
-        id,
-        client_ref,
-        transaction_id,
-        vendor_id,
-        package_id,
-        package_name,
-        amount,
-        network,
-        payer_network,
-        momo_number,
-        recipient_number,
-        package_batch_id,
-        source_page,
-        init_status,
-        payment_status,
-        finalized,
-        updated_reference,
-        created_at,
-        updated_at
-      FROM payment_sessions
-      WHERE LOWER(COALESCE(payment_status, '')) <> 'approved'
-        AND LOWER(COALESCE(payment_status, '')) <> 'downloaded'
-        AND LOWER(COALESCE(payment_status, '')) <> 'delivered'
-    `;
-
-    const params = [];
-
-    if (search) {
-      sql += `
-        AND (
-          momo_number LIKE ?
-          OR recipient_number LIKE ?
-          OR client_ref LIKE ?
-          OR transaction_id LIKE ?
-          OR package_name LIKE ?
-        )
-      `;
-      const q = `%${search}%`;
-      params.push(q, q, q, q, q);
-    }
-
-    sql += ` ORDER BY id DESC`;
-
-    const [rows] = await db.promise().query(sql, params);
-
-    return res.json({
-      ok: true,
-      total: rows.length,
-      data: rows
-    });
-  } catch (err) {
-    console.error("pending-list error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Could not fetch payment sessions."
-    });
-  }
-});
-
-
-// =====================================================
-// GET /api/admin/payment-packages
-// Show all downloaded packages
-// =====================================================
-app.get("/api/admin/payment-packages", async (req, res) => {
-  try {
-    const [rows] = await db.promise().query(
-      `
-      SELECT
-        id,
-        package_code,
-        total_items,
-        status,
-        created_at
-      FROM downloaded_payment_packages
-      ORDER BY id DESC
-      `
-    );
-
-    return res.json({
-      ok: true,
-      data: rows
-    });
-  } catch (err) {
-    console.error("payment-packages error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Could not fetch downloaded packages."
-    });
-  }
-});
-
-
-// =====================================================
-// GET /api/admin/payment-packages/:id/items
-// Preview numbers inside one package
-// =====================================================
-app.get("/api/admin/payment-packages/:id/items", async (req, res) => {
-  const id = Number(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({
-      ok: false,
-      message: "Invalid package id."
-    });
-  }
-
-  try {
-    const [pkgRows] = await db.promise().query(
-      `
-      SELECT id, package_code, total_items, status, created_at
-      FROM downloaded_payment_packages
-      WHERE id=?
-      LIMIT 1
-      `,
-      [id]
-    );
-
-    if (!pkgRows.length) {
-      return res.status(404).json({
-        ok: false,
-        message: "Package not found."
-      });
-    }
-
-    const [itemRows] = await db.promise().query(
-      `
-      SELECT
-        id,
-        payment_session_id,
-        package_name,
-        recipient_number,
-        status,
-        created_at
-      FROM downloaded_payment_package_items
-      WHERE package_ref_id=?
-      ORDER BY id ASC
-      `,
-      [id]
-    );
-
-    return res.json({
-      ok: true,
-      package: pkgRows[0],
-      items: itemRows
-    });
-  } catch (err) {
-    console.error("payment-package items error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Could not fetch package items."
-    });
-  }
-});
-
-
-// =====================================================
-// POST /api/admin/payment-packages/:id/mark-delivered
-// Mark one package and all its rows delivered
-// =====================================================
-
-app.post("/api/admin/payment-packages/:id/mark-delivered", async (req, res) => {
-  const id = Number(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({
-      ok: false,
-      message: "Invalid package id."
-    });
-  }
-
-  try {
-    await db.promise().query("START TRANSACTION");
-
-    const [pkgRows] = await db.promise().query(
-      `
-      SELECT id
-      FROM downloaded_payment_packages
-      WHERE id=?
-      LIMIT 1
-      `,
-      [id]
-    );
-
-    if (!pkgRows.length) {
-      await db.promise().query("ROLLBACK");
-      return res.status(404).json({
-        ok: false,
-        message: "Package not found."
-      });
-    }
-
-    const [items] = await db.promise().query(
-      `
-      SELECT payment_session_id
-      FROM downloaded_payment_package_items
-      WHERE package_ref_id=?
-      `,
-      [id]
-    );
-
-    await db.promise().query(
-      `
-      UPDATE downloaded_payment_packages
-      SET status='delivered'
-      WHERE id=?
-      `,
-      [id]
-    );
-
-    await db.promise().query(
-      `
-      UPDATE downloaded_payment_package_items
-      SET status='delivered'
-      WHERE package_ref_id=?
-      `,
-      [id]
-    );
-
-    const sessionIds = items
-      .map(x => Number(x.payment_session_id))
-      .filter(v => Number.isInteger(v) && v > 0);
-
-    if (sessionIds.length) {
-      const placeholders = sessionIds.map(() => "?").join(",");
-
-      await db.promise().query(
-        `
-        UPDATE payment_sessions
-        SET payment_status='delivered'
-        WHERE id IN (${placeholders})
-        `,
-        sessionIds
-      );
-    }
-
-    await db.promise().query("COMMIT");
-
-    return res.json({
-      ok: true,
-      message: "Package marked as delivered successfully."
-    });
-
-  } catch (err) {
-    try {
-      await db.promise().query("ROLLBACK");
-    } catch (_) {}
-
-    console.error("mark-delivered package FULL error:", err);
-    console.error("mark-delivered package SQL/message:", err.sqlMessage || err.message);
-
-    return res.status(500).json({
-      ok: false,
-      message: "Could not mark package as delivered.",
-      error: err.sqlMessage || err.message
-    });
-  }
-});
-
-// =====================================================
-// DELETE /api/admin/payment-sessions/delete-selected
-// Deletes selected payment_sessions by ids
-// =====================================================
-app.delete("/api/admin/payment-sessions/delete-selected", async (req, res) => {
-  const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
-
-  if (!ids.length) {
-    return res.status(400).json({
-      ok: false,
-      message: "No rows selected."
-    });
-  }
-
-  try {
-    const cleanIds = ids
-      .map(id => Number(id))
-      .filter(id => Number.isInteger(id) && id > 0);
-
-    if (!cleanIds.length) {
-      return res.status(400).json({
-        ok: false,
-        message: "Invalid selected ids."
-      });
-    }
-
-    const placeholders = cleanIds.map(() => "?").join(",");
-
-    const [result] = await db.promise().query(
-      `DELETE FROM payment_sessions WHERE id IN (${placeholders})`,
-      cleanIds
-    );
-
-    return res.json({
-      ok: true,
-      deleted: result.affectedRows || 0,
-      message: "Selected payment sessions deleted successfully."
-    });
-  } catch (err) {
-    console.error("delete-selected payment sessions error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Could not delete selected sessions."
-    });
-  }
-});
-
-
-// =====================================================
-// POST /api/admin/payment-sessions/export
-// Export selected ids, or all filtered non-approved records, to Excel
-// =====================================================
-app.post("/api/admin/payment-sessions/export", async (req, res) => {
-  const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
-  const search = String(req.body.search || "").trim();
-
-  try {
-    let sql = `
-      SELECT
-        id,
-        client_ref,
-        transaction_id,
-        vendor_id,
-        package_id,
-        package_name,
-        amount,
-        network,
-        payer_network,
-        momo_number,
-        recipient_number,
-        package_batch_id,
-        source_page,
-        init_status,
-        payment_status,
-        finalized,
-        updated_reference,
-        created_at,
-        updated_at
-      FROM payment_sessions
-      WHERE LOWER(COALESCE(payment_status, '')) <> 'approved'
-    `;
-
-    const params = [];
-
-    const cleanIds = ids
-      .map(id => Number(id))
-      .filter(id => Number.isInteger(id) && id > 0);
-
-    if (cleanIds.length) {
-      const placeholders = cleanIds.map(() => "?").join(",");
-      sql += ` AND id IN (${placeholders})`;
-      params.push(...cleanIds);
-    } else if (search) {
-      sql += `
-        AND (
-          momo_number LIKE ?
-          OR recipient_number LIKE ?
-          OR client_ref LIKE ?
-          OR transaction_id LIKE ?
-          OR package_name LIKE ?
-        )
-      `;
-      const q = `%${search}%`;
-      params.push(q, q, q, q, q);
-    }
-
-    sql += ` ORDER BY id DESC`;
-
-    const [rows] = await db.promise().query(sql, params);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Payment Sessions");
-
-    worksheet.columns = [
-      { header: "ID", key: "id", width: 10 },
-      { header: "Client Ref", key: "client_ref", width: 24 },
-      { header: "Transaction ID", key: "transaction_id", width: 24 },
-      { header: "Vendor ID", key: "vendor_id", width: 12 },
-      { header: "Package ID", key: "package_id", width: 12 },
-      { header: "Package Name", key: "package_name", width: 22 },
-      { header: "Amount", key: "amount", width: 12 },
-      { header: "Network", key: "network", width: 14 },
-      { header: "Payer Network", key: "payer_network", width: 16 },
-      { header: "MoMo Number", key: "momo_number", width: 18 },
-      { header: "Recipient Number", key: "recipient_number", width: 18 },
-      { header: "Package Batch ID", key: "package_batch_id", width: 20 },
-      { header: "Source Page", key: "source_page", width: 18 },
-      { header: "Init Status", key: "init_status", width: 16 },
-      { header: "Payment Status", key: "payment_status", width: 16 },
-      { header: "Finalized", key: "finalized", width: 10 },
-      { header: "Updated Ref", key: "updated_reference", width: 24 },
-      { header: "Created At", key: "created_at", width: 22 },
-      { header: "Updated At", key: "updated_at", width: 22 }
-    ];
-
-    rows.forEach(row => worksheet.addRow(row));
-
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.views = [{ state: "frozen", ySplit: 1 }];
-
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=payment_sessions_non_approved.xlsx`
-    );
-
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (err) {
-    console.error("export payment sessions error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Could not export payment sessions."
-    });
-  }
-});
-
-
-///////////////////////////////////////ADMIN INSERT CODE 
-// ================================
-// ADMIN: VENDOR USSD CODES
-// ================================
-
-// Get all vendors for dropdown
-// ================================
-// ADMIN: UZO VENDOR USSD CODES
-// ================================
-
-
-
-app.post("/api/admin/vendor-ussd-code", (req, res) => {
-  const { vendor_id, code, expiry_date } = req.body;
-
-if (!vendor_id || !code || !expiry_date) {
-    return res.status(400).json({
-      success: false,
-     message: "Vendor, Uzo code and expiry date are required."
-    });
-  }
-
-  const cleanCode = String(code).replace(/[^\d]/g, "");
-
-  if (!cleanCode) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid Uzo code."
-    });
-  }
-
-  db.query(
-    "SELECT id FROM users WHERE id = ? AND role = 'vendor' LIMIT 1",
-    [vendor_id],
-    (err, vendorRows) => {
-      if (err) {
-        console.error("Vendor check error:", err);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to verify vendor."
-        });
-      }
-
-      if (!vendorRows.length) {
-        return res.status(404).json({
-          success: false,
-          message: "Vendor not found."
-        });
-      }
-
-   const sql = `
-  INSERT INTO uzo_vendor_codes (vendor_id, code, status, expiry_date)
-  VALUES (?, ?, 'active', ?)
-  ON DUPLICATE KEY UPDATE 
-    vendor_id = VALUES(vendor_id),
-    expiry_date = VALUES(expiry_date),
-    status = 'active',
-    updated_at = CURRENT_TIMESTAMP
-`;
-
-db.query(sql, [vendor_id, cleanCode, expiry_date], (err2) => {
-        if (err2) {
-          console.error("Insert Uzo vendor code error:", err2);
-          return res.status(500).json({
-            success: false,
-            message: "Failed to save Uzo code."
-          });
-        }
-
-        res.json({
-          success: true,
-          message: "Uzo vendor code saved successfully."
-        });
-      });
-    }
-  );
-});
-
-
-app.get("/api/admin/vendor-ussd-codes", (req, res) => {
   const sql = `
     SELECT 
-      uvc.id,
-      uvc.vendor_id,
-      uvc.code,
-      uvc.status,
-      uvc.expiry_date,
-      uvc.created_at,
-      uvc.updated_at,
-      u.username,
-      u.phone,
-      u.account_name
-    FROM uzo_vendor_codes uvc
-    JOIN users u ON u.id = uvc.vendor_id
-    ORDER BY uvc.id DESC
+      pp.*,
+      p.images,
+      p.product_color,
+      p.item_condition,
+      p.instructions,
+      p.description
+    FROM purchased_products pp
+    LEFT JOIN products p ON pp.product_id = p.id
+    WHERE pp.seller_id = ?
+    ORDER BY pp.id DESC
   `;
 
-  db.query(sql, (err, rows) => {
+  db.query(sql, [sellerId], (err, results) => {
     if (err) {
-      console.error("Fetch Uzo vendor codes error:", err);
+      console.error("Seller purchased products error:", err);
       return res.status(500).json({
         success: false,
-        message: "Failed to load Uzo codes."
+        message: "Failed to load purchased products."
       });
     }
 
     res.json({
       success: true,
-      codes: rows
+      products: results
     });
   });
 });
 
+app.get("/api/user/purchased-products/:id", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
 
-app.put("/api/admin/vendor-ussd-code/:id/status", (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+  const userId = req.session.user.id;
+  const purchaseId = req.params.id;
 
-  if (!["active", "inactive"].includes(status)) {
+  const sql = `
+    SELECT 
+      pp.*,
+      p.images,
+      p.product_color,
+      p.item_condition,
+      p.instructions,
+      p.description,
+      p.phone_number
+    FROM purchased_products pp
+    LEFT JOIN products p ON pp.product_id = p.id
+   WHERE pp.id = ? AND pp.seller_id = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [purchaseId, userId], (err, results) => {
+    if (err) {
+      console.error("Purchased detail error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load details."
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Purchase not found."
+      });
+    }
+
+    res.json({
+      success: true,
+      purchase: results[0]
+    });
+  });
+});
+
+app.put("/api/user/purchased-products/:id/status", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const sellerId = req.session.user.id;
+  const purchaseId = req.params.id;
+  const { order_status } = req.body;
+
+  const allowed = ["delivering", "delivered", "not available"];
+
+  if (!allowed.includes(order_status)) {
     return res.status(400).json({
       success: false,
       message: "Invalid status."
     });
   }
 
-  db.query(
-    `
-      UPDATE uzo_vendor_codes 
-      SET status = ?, updated_at = CURRENT_TIMESTAMP 
-      WHERE id = ?
-    `,
-    [status, id],
-    (err) => {
-      if (err) {
-        console.error("Update Uzo code status error:", err);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to update status."
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "Status updated successfully."
-      });
-    }
-  );
-});
-
-
-app.get("/api/admin/vendors-for-ussd", (req, res) => {
   const sql = `
-    SELECT 
-      id, 
-      username, 
-      phone, 
-      momo_number, 
-      account_name, 
-      status
-    FROM users
-    WHERE role = 'vendor'
-    ORDER BY username ASC
+    UPDATE purchased_products
+    SET order_status = ?
+    WHERE id = ? AND seller_id = ?
   `;
 
-  db.query(sql, (err, rows) => {
+  db.query(sql, [order_status, purchaseId, sellerId], (err, result) => {
     if (err) {
-      console.error("Fetch vendors error:", err);
+      console.error("Update purchase status error:", err);
       return res.status(500).json({
         success: false,
-        message: "Failed to load vendors."
+        message: "Failed to update status."
       });
     }
 
-    res.json({
-      success: true,
-      vendors: rows
-    });
-  });
-});
-
-
-app.delete("/api/admin/vendor-ussd-code/:id", (req, res) => {
-  const { id } = req.params;
-
-  db.query(
-    "DELETE FROM uzo_vendor_codes WHERE id = ?",
-    [id],
-    (err, result) => {
-      if (err) {
-        console.error("Delete Uzo code error:", err);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to delete Uzo code."
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "Uzo code deleted successfully."
-      });
-    }
-  );
-});
-
-
-app.get("/api/vendor/my-uzo-code/:vendor_id", (req, res) => {
-  const { vendor_id } = req.params;
-
-  const sql = `
-    SELECT code, status, expiry_date, created_at
-    FROM uzo_vendor_codes
-    WHERE vendor_id = ?
-    ORDER BY id DESC
-    LIMIT 1
-  `;
-
-  db.query(sql, [vendor_id], (err, rows) => {
-    if (err) {
-      console.error("Fetch vendor UZO code error:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to load UZO code."
-      });
-    }
-
-    if (!rows.length) {
-      return res.json({
-        success: false,
-        message: "No UZO code assigned yet."
-      });
-    }
-
-    res.json({
-      success: true,
-      code: rows[0]
-    });
-  });
-});
-
-
-
-
-app.post('/api/admin-packages-by-code', (req, res) => {
-  const { code } = req.body;
-
-  if (!code) return res.status(400).send("Missing code");
-
-  const sql = `
-    SELECT * FROM data_orders
-    WHERE code = ?
-      AND package_id IS NOT NULL
-      AND status IN ('processing', 'delivered')
-    ORDER BY package_id DESC
-  `;
-
-  db.query(sql, [code], (err, results) => {
-    if (err) {
-      console.error("❌ Fetch by code failed:", err);
-      return res.status(500).send("Server error fetching orders by code");
-    }
-
-    res.json(results);
-  });
-});
-
-
-
-//////
-function createVendorBatchId(network) {
-  const now = new Date();
-  const pad = n => String(n).padStart(2, "0");
-
-  return (
-    now.getFullYear() + "-" +
-    pad(now.getMonth() + 1) + "-" +
-    pad(now.getDate()) + " " +
-    pad(now.getHours()) + ":" +
-    pad(now.getMinutes())
-  );
-}
-
-app.get("/api/vendor-orders/pending-counts", (req, res) => {
-  const { vendor_id } = req.query;
-
-  if (!vendor_id) {
-    return res.status(400).json({ success: false, message: "Missing vendor_id" });
-  }
-
-  const sql = `
-    SELECT network, COUNT(*) AS total
-    FROM vendor_orders
-    WHERE vendor_id = ? AND status = 'pending'
-    GROUP BY network
-  `;
-
-  db.query(sql, [vendor_id], (err, rows) => {
-    if (err) {
-      console.error("Vendor pending count error:", err);
-      return res.status(500).json({ success: false, message: "Server error" });
-    }
-
-    const counts = { mtn: 0, airteltigo: 0, telecel: 0 };
-
-    rows.forEach(row => {
-      counts[String(row.network).toLowerCase()] = row.total;
-    });
-
-    res.json(counts);
-  });
-});
-
-app.get("/api/vendor-orders/download/:network", (req, res) => {
-  const { network } = req.params;
-  const { vendor_id } = req.query;
-
-  if (!vendor_id) {
-    return res.status(400).json({
-      success: false,
-      message: "Missing vendor_id"
-    });
-  }
-
-  const packageId = createVendorBatchId(network);
-
-  const sql = `
-    SELECT *
-    FROM vendor_orders
-    WHERE vendor_id = ?
-      AND LOWER(network) = LOWER(?)
-      AND status = 'pending'
-    ORDER BY sent_at ASC
-  `;
-
-  db.query(sql, [vendor_id, network], async (err, orders) => {
-
-    if (err) {
-      console.error("Fetch vendor orders error:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Server error"
-      });
-    }
-
-    if (!orders.length) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({
         success: false,
-        message: `No pending ${network} vendor orders found.`
+        message: "Purchase not found."
       });
     }
 
-    const ids = orders.map(o => o.id);
+    res.json({
+      success: true,
+      message: "Order status updated successfully."
+    });
+  });
+});
 
-    const updateSql = `
-      UPDATE vendor_orders
-      SET status = 'processing',
-          package_id = ?
-      WHERE id IN (?)
-    `;
 
-    db.query(updateSql, [packageId, ids], async (updateErr) => {
 
-      if (updateErr) {
-        console.error("Update vendor orders error:", updateErr);
+///// Report a problem route 
+app.get("/api/report/messages", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
 
+  const userId = req.session.user.id;
+
+  db.query(
+    `
+      SELECT *
+      FROM report_messages
+      WHERE user_id = ?
+      ORDER BY id ASC
+    `,
+    [userId],
+    (err, results) => {
+      if (err) {
         return res.status(500).json({
           success: false,
-          message: "Update failed"
+          message: "Failed to load messages."
         });
       }
 
-      const workbook = new ExcelJS.Workbook();
-      const sheet = workbook.addWorksheet(`${network} Orders`);
-
-      // ONLY TWO COLUMNS
-      sheet.columns = [
-        {
-          header: "Recipient Number",
-          key: "recipient_number",
-          width: 25
-        },
-        {
-          header: "Data Package",
-          key: "data_package",
-          width: 18
-        }
-      ];
-
-      orders.forEach(order => {
-
-        // REMOVE GB
-        const cleanedPackage = String(order.data_package || "")
-          .replace(/GB/gi, "")
-          .trim();
-
-       const recipient = String(order.recipient_number || "");
-
-let localNumber = recipient;
-
-if (recipient.startsWith("233")) {
-  localNumber = "0" + recipient.substring(3);
-}
-
-sheet.addRow({
-  recipient_number: localNumber,
-  data_package: cleanedPackage
-});
+      res.json({
+        success: true,
+        messages: results
       });
-
-      // HEADER STYLE
-      sheet.getRow(1).font = {
-        bold: true
-      };
-
-      sheet.getRow(1).alignment = {
-        vertical: "middle",
-        horizontal: "center"
-      };
-
-      res.setHeader(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      );
-
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename=${network}_vendor_orders.xlsx`
-      );
-
-      await workbook.xlsx.write(res);
-      res.end();
-    });
-  });
+    }
+  );
 });
-app.get("/api/vendor-orders/batches", (req, res) => {
-  const { vendor_id } = req.query;
 
-  if (!vendor_id) {
-    return res.status(400).json({ success: false, message: "Missing vendor_id" });
+
+app.post("/api/report/send", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
   }
 
-  const sql = `
-    SELECT *
-    FROM vendor_orders
-    WHERE vendor_id = ?
-      AND package_id IS NOT NULL
-      AND package_id != ''
-      AND status IN ('processing', 'delivered')
-    ORDER BY package_id DESC, sent_at DESC
-  `;
+  const userId = req.session.user.id;
+  const { message } = req.body;
 
-  db.query(sql, [vendor_id], (err, rows) => {
-    if (err) {
-      console.error("Vendor batches error:", err);
-      return res.status(500).json({ success: false, message: "Server error" });
-    }
-
-    const grouped = {};
-
-    rows.forEach(order => {
-      if (!grouped[order.package_id]) {
-        grouped[order.package_id] = {
-          package_id: order.package_id,
-          network: order.network,
-          total_orders: 0,
-          total_amount: 0,
-          orders: []
-        };
-      }
-
-      grouped[order.package_id].total_orders++;
-      grouped[order.package_id].total_amount += Number(order.amount || 0);
-      grouped[order.package_id].orders.push(order);
-    });
-
-    res.json({
-      success: true,
-      batches: Object.values(grouped)
-    });
-  });
-});
-
-app.post("/api/vendor-orders/mark-delivered", (req, res) => {
-  const { vendor_id, package_id } = req.body;
-
-  if (!vendor_id || !package_id) {
+  if (!message || message.trim() === "") {
     return res.status(400).json({
       success: false,
-      message: "Missing vendor_id or package_id"
+      message: "Message is required."
     });
   }
 
-  const sql = `
-    UPDATE vendor_orders
-    SET status = 'delivered'
-    WHERE vendor_id = ?
-      AND package_id = ?
-      AND status = 'processing'
-  `;
+  db.query(
+    `
+      INSERT INTO report_messages
+      (user_id, sender, message)
+      VALUES (?, 'user', ?)
+    `,
+    [userId, message.trim()],
+    (err) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send message."
+        });
+      }
 
-  db.query(sql, [vendor_id, package_id], (err, result) => {
-    if (err) {
-      console.error("Mark vendor delivered error:", err);
-      return res.status(500).json({ success: false, message: "Server error" });
+      res.json({
+        success: true,
+        message: "Message sent successfully."
+      });
     }
-
-    res.json({
-      success: true,
-      message: "Vendor batch marked as delivered.",
-      affectedRows: result.affectedRows
-    });
-  });
+  );
 });
 
 
 
 
+/////Admin reply message route 
+app.get("/api/admin/report-users", (req, res) => {
+  if (
+    !req.session.user ||
+    !["admin", "vendor"].includes(req.session.user.role)
+  ) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
 
-
-app.get("/api/admin/vendor-order-settings", (req, res) => {
   const sql = `
     SELECT 
-      u.id,
-      u.username,
-      u.phone,
-      u.momo_number,
-      u.account_name,
-      COALESCE(vos.order_destination, 'admin_orders') AS order_destination
-    FROM users u
-    LEFT JOIN vendor_order_settings vos ON vos.vendor_id = u.id
-    WHERE u.role = 'vendor'
-    ORDER BY u.username ASC
+      rm.user_id,
+      u.firstname,
+      u.lastname,
+      u.email,
+      u.telephone,
+
+      COUNT(rm.id) AS total_messages,
+
+      SUM(
+        CASE 
+          WHEN rm.sender = 'user'
+           AND rm.read_status = 'unread'
+          THEN 1
+          ELSE 0
+        END
+      ) AS unread_count,
+
+      MAX(rm.created_at) AS last_message_time
+
+    FROM report_messages rm
+    LEFT JOIN users u ON rm.user_id = u.id
+
+    GROUP BY 
+      rm.user_id,
+      u.firstname,
+      u.lastname,
+      u.email,
+      u.telephone
+
+    ORDER BY last_message_time DESC
   `;
 
-  db.query(sql, (err, rows) => {
+  db.query(sql, (err, results) => {
     if (err) {
-      console.error("Fetch vendor order settings error:", err);
+      console.error("Admin report users error:", err);
       return res.status(500).json({
         success: false,
-        message: "Failed to load vendors."
+        message: "Failed to load report users."
       });
     }
 
     res.json({
       success: true,
-      vendors: rows
+      users: results
     });
   });
 });
 
-app.post("/api/admin/vendor-order-settings", (req, res) => {
-  const { vendor_id, order_destination } = req.body;
 
-  if (!vendor_id || !order_destination) {
-    return res.status(400).json({
+app.get("/api/admin/report-messages/:userId", (req, res) => {
+  if (
+    !req.session.user ||
+    !["admin", "vendor"].includes(req.session.user.role)
+  ) {
+    return res.status(401).json({
       success: false,
-      message: "Missing vendor or order destination."
+      message: "Unauthorized"
     });
   }
 
-  if (!["admin_orders", "vendor_orders"].includes(order_destination)) {
+  db.query(
+    `
+      SELECT *
+      FROM report_messages
+      WHERE user_id = ?
+      ORDER BY id ASC
+    `,
+    [req.params.userId],
+    (err, results) => {
+      if (err) {
+        console.error("Admin report messages error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to load messages."
+        });
+      }
+
+      res.json({
+        success: true,
+        messages: results
+      });
+    }
+  );
+});
+
+app.post("/api/admin/report-reply", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  const { user_id, message } = req.body;
+
+  if (!user_id || !message || message.trim() === "") {
     return res.status(400).json({
       success: false,
-      message: "Invalid order destination."
+      message: "User and message are required."
+    });
+  }
+
+  db.query(
+    `
+      INSERT INTO report_messages
+      (user_id, sender, message)
+      VALUES (?, 'admin', ?)
+    `,
+    [user_id, message.trim()],
+    (err) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send reply."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Reply sent successfully."
+      });
+    }
+  );
+});
+
+
+
+
+///// Approve upon receipt 
+app.get("/api/buyer/purchases", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ success: false, message: "Please login first." });
+  }
+
+  const buyerId = req.session.user.id;
+
+  const sql = `
+    SELECT 
+      pp.*,
+      p.images,
+      p.product_color,
+      p.item_condition,
+      p.description,
+      p.instructions
+    FROM purchased_products pp
+    LEFT JOIN products p ON pp.product_id = p.id
+    WHERE pp.buyer_id = ?
+    ORDER BY pp.id DESC
+  `;
+
+  db.query(sql, [buyerId], (err, results) => {
+    if (err) {
+      console.error("Buyer purchases error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load your purchases."
+      });
+    }
+
+    res.json({ success: true, purchases: results });
+  });
+});
+
+
+app.put("/api/buyer/purchases/:id/confirm-status", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ success: false, message: "Please login first." });
+  }
+
+  const buyerId = req.session.user.id;
+  const purchaseId = req.params.id;
+  const { buyer_confirm_status, buyer_note } = req.body;
+
+  const allowed = ["waiting", "received", "delayed", "not received"];
+
+  if (!allowed.includes(buyer_confirm_status)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid confirmation status."
     });
   }
 
   const sql = `
-    INSERT INTO vendor_order_settings (vendor_id, order_destination)
-    VALUES (?, ?)
-    ON DUPLICATE KEY UPDATE order_destination = VALUES(order_destination)
+    UPDATE purchased_products
+    SET buyer_confirm_status = ?, buyer_note = ?
+    WHERE id = ? AND buyer_id = ?
   `;
 
-  db.query(sql, [vendor_id, order_destination], (err) => {
+  db.query(
+    sql,
+    [buyer_confirm_status, buyer_note || null, purchaseId, buyerId],
+    (err, result) => {
+      if (err) {
+        console.error("Buyer confirm update error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update confirmation."
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Purchase not found."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Purchase confirmation updated successfully."
+      });
+    }
+  );
+});
+
+
+
+
+///// Admin view Products 
+app.get("/api/admin/orders", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  const sql = `
+    SELECT 
+      pp.*,
+      p.images,
+      p.product_color,
+      p.item_condition,
+      u.firstname AS buyer_firstname,
+      u.lastname AS buyer_lastname,
+      u.email AS buyer_email,
+      u.telephone AS buyer_telephone
+    FROM purchased_products pp
+    LEFT JOIN products p ON pp.product_id = p.id
+    LEFT JOIN users u ON pp.buyer_id = u.id
+    ORDER BY pp.id DESC
+  `;
+
+  db.query(sql, (err, results) => {
     if (err) {
-      console.error("Save vendor order setting error:", err);
+      console.error("Admin orders error:", err);
       return res.status(500).json({
         success: false,
-        message: "Failed to save setting."
+        message: "Failed to load orders."
       });
     }
 
     res.json({
       success: true,
-      message: "Vendor order setting saved successfully."
+      orders: results
     });
   });
 });
 
-app.post("/api/send-withdrawal-whatsapp", async (req, res) => {
-  console.log("========== WITHDRAWAL GIANTSMS REQUEST START ==========");
 
-  try {
-    const { tel, network, amount, username, userId } = req.body;
 
-    if (!tel || !network || !amount || !username || !userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing withdrawal details."
-      });
+
+app.get("/api/product-message/conversation/:productId", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ success: false, message: "Please login first." });
+  }
+
+  const currentUserId = req.session.user.id;
+  const productId = req.params.productId;
+  const otherIdFromQuery = req.query.other_id;
+
+  db.query("SELECT * FROM products WHERE id = ? LIMIT 1", [productId], (err, productRows) => {
+    if (err || productRows.length === 0) {
+      return res.status(404).json({ success: false, message: "Product not found." });
     }
 
-    const withdrawAmount = Number(amount);
+    const product = productRows[0];
+    const ownerId = product.posted_by;
 
-    if (withdrawAmount < 50) {
-      return res.status(400).json({
-        success: false,
-        message: "Minimum withdrawal amount is GHS 50."
-      });
+    if (Number(currentUserId) !== Number(ownerId)) {
+      const otherUserId = ownerId;
+      return loadConversation(product, currentUserId, otherUserId, res);
     }
 
-    // ✅ Check vendor wallet balance
-    const balanceSql = `
-      SELECT COALESCE(SUM(amount), 0) AS balance
-      FROM wallet_loads
-      WHERE vendor_id = ?
+    if (otherIdFromQuery) {
+      return loadConversation(product, currentUserId, otherIdFromQuery, res);
+    }
+
+    const findOtherSql = `
+      SELECT 
+        CASE 
+          WHEN sender_id = ? THEN receiver_id 
+          ELSE sender_id 
+        END AS other_user_id
+      FROM product_messages
+      WHERE product_id = ?
+      AND (sender_id = ? OR receiver_id = ?)
+      ORDER BY id DESC
+      LIMIT 1
     `;
 
-    db.query(balanceSql, [userId], async (balanceErr, balanceRows) => {
-      if (balanceErr) {
-        console.error("Wallet balance check error:", balanceErr);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to check wallet balance."
+    db.query(findOtherSql, [currentUserId, productId, currentUserId, currentUserId], (findErr, found) => {
+      if (findErr || found.length === 0) {
+        return res.json({
+          success: true,
+          product,
+          otherUser: null,
+          messages: []
         });
       }
 
-      const currentBalance = Number(balanceRows[0].balance || 0);
+      loadConversation(product, currentUserId, found[0].other_user_id, res);
+    });
+  });
+});
 
-      if (currentBalance < withdrawAmount) {
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient wallet balance. Your balance is GHS ${currentBalance.toFixed(2)}`
-        });
+function loadConversation(product, currentUserId, otherUserId, res) {
+  const sql = `
+    SELECT pm.*, 
+      s.firstname AS sender_firstname,
+      s.lastname AS sender_lastname,
+      r.firstname AS receiver_firstname,
+      r.lastname AS receiver_lastname
+    FROM product_messages pm
+    LEFT JOIN users s ON pm.sender_id = s.id
+    LEFT JOIN users r ON pm.receiver_id = r.id
+    WHERE pm.product_id = ?
+    AND (
+      (pm.sender_id = ? AND pm.receiver_id = ?)
+      OR
+      (pm.sender_id = ? AND pm.receiver_id = ?)
+    )
+    ORDER BY pm.id ASC
+  `;
+
+  db.query(
+    sql,
+    [product.id, currentUserId, otherUserId, otherUserId, currentUserId],
+    (err, messages) => {
+      if (err) {
+        console.error("Conversation error:", err);
+        return res.status(500).json({ success: false, message: "Failed to load messages." });
       }
 
-      const adminPhone = "233559126985";
+      db.query(
+        "SELECT id, firstname, lastname, email, telephone FROM users WHERE id = ? LIMIT 1",
+        [otherUserId],
+        (userErr, userRows) => {
+          if (userErr) {
+            return res.status(500).json({ success: false, message: "Failed to load user." });
+          }
 
-      const message = `New Sandypay Withdrawal Request
-Name: ${username}
-User ID: ${userId}
-Receiving Number: ${tel}
-Network: ${network}
-Amount: GHS ${withdrawAmount}
-
-Please process this withdrawal.`;
-
-      const GIANTSMS_TOKEN = "MjY5ODVfZWR5Z3h0OmlXWmpPbWdOaEpIZQ==";
-      const GIANTSMS_SENDER_ID = "SANDYPAY";
-      const GIANTSMS_URL = "https://api.giantsms.com/api/v1/send";
-
-      const formData = new URLSearchParams();
-      formData.append("from", GIANTSMS_SENDER_ID);
-      formData.append("to", adminPhone);
-      formData.append("msg", message);
-
-      try {
-        const response = await axios.post(GIANTSMS_URL, formData, {
-          headers: {
-            Authorization: `Basic ${GIANTSMS_TOKEN}`,
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          timeout: 20000
-        });
-
-        console.log("GiantSMS response:", response.data);
-
-        if (response.data.status === false) {
-          return res.status(400).json({
-            success: false,
-            message: response.data.message || "SMS failed."
+          res.json({
+            success: true,
+            product,
+            otherUser: userRows[0] || null,
+            messages
           });
         }
+      );
+    }
+  );
+}
 
-        // ✅ Deduct withdrawal amount from wallet_loads
-        const deductSql = `
-          INSERT INTO wallet_loads
-          (vendor_id, momo, amount, date_loaded)
-          VALUES (?, ?, ?, NOW())
-        `;
 
-        db.query(
-          deductSql,
-          [
-            userId,
-            tel,
-            -withdrawAmount
-          ],
-          (deductErr) => {
-            if (deductErr) {
-              console.error("Wallet deduction error:", deductErr);
-
-              return res.status(500).json({
-                success: false,
-                message: "SMS sent but wallet deduction failed."
-              });
-            }
-
-            return res.json({
-              success: true,
-              message: "Withdrawal request sent successfully and wallet deducted.",
-              old_balance: currentBalance,
-              withdrawn: withdrawAmount,
-              new_balance: currentBalance - withdrawAmount,
-              sms_response: response.data
-            });
-          }
-        );
-
-      } catch (smsError) {
-        console.error("GiantSMS Error:", smsError.response?.data || smsError.message);
-
-        return res.status(500).json({
-          success: false,
-          message: "Failed to send SMS withdrawal request.",
-          error: smsError.response?.data || smsError.message
-        });
-      }
-    });
-
-  } catch (error) {
-    console.error("Withdrawal route error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error.",
-      error: error.message
-    });
+app.post("/api/product-message/send", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ success: false, message: "Please login first." });
   }
-});
 
+  const senderId = req.session.user.id;
+  const { product_id, receiver_id, message } = req.body;
 
-/////Pending orders 
-app.get("/api/vendor-orders/pending-countss", (req, res) => {
-  const { vendor_id } = req.query;
-
-  if (!vendor_id) {
+  if (!product_id || !message || message.trim() === "") {
     return res.status(400).json({
       success: false,
-      message: "Missing vendor_id"
+      message: "Product and message are required."
     });
   }
 
-  const sql = `
-    SELECT 
-      LOWER(network) AS network,
-      COUNT(*) AS total
-    FROM vendor_orders
-    WHERE vendor_id = ?
-      AND status = 'pending'
-    GROUP BY LOWER(network)
-  `;
-
-  db.query(sql, [vendor_id], (err, rows) => {
-    if (err) {
-      console.error("Pending vendor order counts error:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Server error"
-      });
+  db.query("SELECT posted_by FROM products WHERE id = ? LIMIT 1", [product_id], (err, rows) => {
+    if (err || rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Product not found." });
     }
 
-    const counts = {
-      mtn: 0,
-      airteltigo: 0,
-      telecel: 0
-    };
+    const productOwnerId = rows[0].posted_by;
+    let finalReceiverId = receiver_id;
 
-    rows.forEach(row => {
-      const network = row.network;
-
-      if (network === "mtn") counts.mtn = row.total;
-      if (
-        network === "at" ||
-        network === "airteltigo" ||
-        network === "airtel tigo"
-      ) counts.airteltigo = row.total;
-      if (
-        network === "telecel" ||
-        network === "vodafone"
-      ) counts.telecel = row.total;
-    });
-
-    res.json({
-      success: true,
-      counts
-    });
-  });
-});
-
-
-/////Lock Account Route
-// GET all vendors for USSD lock page
-app.get("/api/admin/ussd-lock-users", (req, res) => {
-  const sql = `
-    SELECT id, username, phone, ussd_code, ussd_locked
-    FROM users
-    WHERE role = 'vendor'
-    ORDER BY id DESC
-  `;
-
-  db.query(sql, (err, rows) => {
-    if (err) {
-      console.error("Fetch USSD lock users error:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to load vendors"
-      });
+    if (!finalReceiverId) {
+      finalReceiverId = productOwnerId;
     }
 
-    res.json({
-      success: true,
-      users: rows
-    });
-  });
-});
-
-
-// Lock or unlock vendor USSD code
-app.post("/api/admin/ussd-lock-user", (req, res) => {
-  const { user_id, ussd_locked } = req.body;
-
-  if (!user_id) {
-    return res.status(400).json({
-      success: false,
-      message: "Missing user ID"
-    });
-  }
-
-  const sql = `
-    UPDATE users
-    SET ussd_locked = ?
-    WHERE id = ? AND role = 'vendor'
-  `;
-
-  db.query(sql, [ussd_locked ? 1 : 0, user_id], (err, result) => {
-    if (err) {
-      console.error("Update USSD lock error:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to update lock status"
-      });
-    }
-
-    res.json({
-      success: true,
-      message: ussd_locked ? "Vendor USSD code locked" : "Vendor USSD code unlocked"
-    });
-  });
-});
-
-
-
-
-/////Vendors excel download 
-app.get("/api/vendor/customers/download", async (req, res) => {
-  try {
-    const { vendor_id } = req.query;
-
-    if (!vendor_id) {
+    if (Number(finalReceiverId) === Number(senderId)) {
       return res.status(400).json({
         success: false,
-        message: "Missing vendor_id"
+        message: "You cannot send a message to yourself."
       });
     }
 
     const sql = `
-      SELECT 
-        customer_number,
-        source,
-        created_at
-      FROM vendor_customers
-      WHERE vendor_id = ?
-      ORDER BY created_at DESC
+      INSERT INTO product_messages
+      (product_id, sender_id, receiver_id, message)
+      VALUES (?, ?, ?, ?)
     `;
 
-    db.query(sql, [vendor_id], async (err, rows) => {
-      if (err) {
-        console.error("Download vendor customers error:", err);
+    db.query(sql, [product_id, senderId, finalReceiverId, message.trim()], (insertErr) => {
+      if (insertErr) {
+        console.error("Product message error:", insertErr);
         return res.status(500).json({
           success: false,
-          message: "Failed to load customer numbers"
+          message: "Failed to send message."
         });
       }
 
-      if (!rows.length) {
+      res.json({
+        success: true,
+        message: "Message sent successfully."
+      });
+    });
+  });
+});
+
+
+
+app.get("/api/product-message/inbox", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const sql = `
+    SELECT 
+      pm.product_id,
+      p.product_name,
+      p.images,
+
+      CASE 
+        WHEN pm.sender_id = ? THEN pm.receiver_id
+        ELSE pm.sender_id
+      END AS other_user_id,
+
+      u.firstname,
+      u.lastname,
+      u.telephone,
+
+      MAX(pm.created_at) AS last_message_time,
+      COUNT(pm.id) AS total_messages,
+
+      SUM(
+        CASE 
+          WHEN pm.receiver_id = ?
+           AND pm.read_status = 'unread'
+          THEN 1 
+          ELSE 0 
+        END
+      ) AS unread_messages
+
+    FROM product_messages pm
+
+    LEFT JOIN products p ON pm.product_id = p.id
+
+    LEFT JOIN users u ON u.id = CASE 
+      WHEN pm.sender_id = ? THEN pm.receiver_id
+      ELSE pm.sender_id
+    END
+
+    WHERE pm.sender_id = ? OR pm.receiver_id = ?
+
+    GROUP BY 
+      pm.product_id,
+      other_user_id,
+      p.product_name,
+      p.images,
+      u.firstname,
+      u.lastname,
+      u.telephone
+
+    ORDER BY last_message_time DESC
+  `;
+
+  db.query(sql, [userId, userId, userId, userId, userId], (err, results) => {
+    if (err) {
+      console.error("Product inbox error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load inbox."
+      });
+    }
+
+    res.json({
+      success: true,
+      inbox: results
+    });
+  });
+});
+
+app.get("/api/user/wallet", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const walletSql = `
+    SELECT balance 
+    FROM user_wallets 
+    WHERE user_id = ?
+    LIMIT 1
+  `;
+
+  db.query(walletSql, [userId], (err, walletRows) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load wallet."
+      });
+    }
+
+    if (walletRows.length === 0) {
+      db.query(
+        "INSERT INTO user_wallets (user_id, balance) VALUES (?, 0.00)",
+        [userId],
+        (insertErr) => {
+          if (insertErr) {
+            return res.status(500).json({
+              success: false,
+              message: "Failed to create wallet."
+            });
+          }
+
+          return res.json({
+            success: true,
+            balance: 0.00,
+            transactions: []
+          });
+        }
+      );
+
+      return;
+    }
+
+    db.query(
+      `
+        SELECT *
+        FROM wallet_transactions
+        WHERE user_id = ?
+        ORDER BY id DESC
+        LIMIT 20
+      `,
+      [userId],
+      (txErr, txRows) => {
+        if (txErr) {
+          return res.status(500).json({
+            success: false,
+            message: "Failed to load transactions."
+          });
+        }
+
+        res.json({
+          success: true,
+          balance: walletRows[0].balance,
+          transactions: txRows
+        });
+      }
+    );
+  });
+});
+
+
+
+
+app.get("/api/admin/sales-records", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const sql = `
+    SELECT 
+      asr.*,
+      u.firstname,
+      u.lastname,
+      u.telephone,
+      u.email,
+
+      p.product_name,
+      p.product_type,
+      p.category,
+      p.product_color,
+      p.images,
+      p.description,
+      p.instructions,
+      p.item_condition,
+      p.phone_number AS product_phone_number
+
+    FROM admin_sales_records asr
+
+    LEFT JOIN users u 
+      ON asr.seller_id = u.id
+
+    LEFT JOIN products p 
+      ON asr.product_id = p.id
+
+    ORDER BY asr.id DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Sales records error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load sales records."
+      });
+    }
+
+    res.json({ success: true, records: results });
+  });
+});
+
+app.post("/api/admin/release-money/:id", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const recordId = req.params.id;
+
+  db.beginTransaction((txErr) => {
+    if (txErr) {
+      return res.status(500).json({ success: false, message: "Transaction failed." });
+    }
+
+    db.query(
+      `
+      SELECT * 
+      FROM admin_sales_records 
+      WHERE id = ? 
+      FOR UPDATE
+      `,
+      [recordId],
+      (err, rows) => {
+        if (err || rows.length === 0) {
+          return db.rollback(() => {
+            res.status(404).json({
+              success: false,
+              message: "Sales record not found."
+            });
+          });
+        }
+
+        const record = rows[0];
+
+        if (record.release_status === "released") {
+          return db.rollback(() => {
+            res.status(400).json({
+              success: false,
+              message: "Money has already been released."
+            });
+          });
+        }
+
+        if (record.release_status === "reversed") {
+          return db.rollback(() => {
+            res.status(400).json({
+              success: false,
+              message: "This money has already been reversed to buyer."
+            });
+          });
+        }
+
+        const amount = Number(record.balance_amount || record.total_amount);
+        const sellerId = record.seller_id;
+
+        if (amount <= 0) {
+          return db.rollback(() => {
+            res.status(400).json({
+              success: false,
+              message: "No amount available to release."
+            });
+          });
+        }
+
+        db.query(
+          `
+          UPDATE admin_account
+          SET balance = balance - ?,
+              updated_at = NOW()
+          WHERE id = 1 AND balance >= ?
+          `,
+          [amount, amount],
+          (adminErr, adminResult) => {
+            if (adminErr) {
+              return db.rollback(() => {
+                console.error("Admin deduction error:", adminErr);
+                res.status(500).json({
+                  success: false,
+                  message: "Failed to deduct admin account."
+                });
+              });
+            }
+
+            if (adminResult.affectedRows === 0) {
+              return db.rollback(() => {
+                res.status(400).json({
+                  success: false,
+                  message: "Admin escrow balance is not enough."
+                });
+              });
+            }
+
+            db.query(
+              `
+              INSERT INTO user_wallets (user_id, balance)
+              VALUES (?, ?)
+              ON DUPLICATE KEY UPDATE 
+                balance = balance + VALUES(balance),
+                updated_at = NOW()
+              `,
+              [sellerId, amount],
+              (walletErr) => {
+                if (walletErr) {
+                  return db.rollback(() => {
+                    res.status(500).json({
+                      success: false,
+                      message: "Failed to credit seller wallet."
+                    });
+                  });
+                }
+
+                db.query(
+                  `
+                  INSERT INTO wallet_transactions
+                  (user_id, type, amount, description)
+                  VALUES (?, 'credit', ?, ?)
+                  `,
+                  [
+                    sellerId,
+                    amount,
+                    `Payment released for ${record.product_name}`
+                  ],
+                  (txInsertErr) => {
+                    if (txInsertErr) {
+                      return db.rollback(() => {
+                        res.status(500).json({
+                          success: false,
+                          message: "Failed to save wallet transaction."
+                        });
+                      });
+                    }
+
+                    db.query(
+                      `
+                      UPDATE admin_sales_records
+                      SET 
+                        release_status = 'released',
+                        released_amount = ?,
+                        balance_amount = 0.00,
+                        total_amount = 0.00,
+                        released_at = NOW()
+                      WHERE id = ?
+                      `,
+                      [amount, recordId],
+                      (updateErr) => {
+                        if (updateErr) {
+                          return db.rollback(() => {
+                            res.status(500).json({
+                              success: false,
+                              message: "Failed to update admin sales record."
+                            });
+                          });
+                        }
+
+                        db.commit((commitErr) => {
+                          if (commitErr) {
+                            return db.rollback(() => {
+                              res.status(500).json({
+                                success: false,
+                                message: "Failed to complete release."
+                              });
+                            });
+                          }
+
+                          res.json({
+                            success: true,
+                            message: `GH₵${amount.toFixed(2)} released to seller successfully.`
+                          });
+                        });
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          }
+        );
+      }
+    );
+  });
+});
+
+
+
+app.post("/api/admin/reverse-money/:id", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const recordId = req.params.id;
+
+  db.query(
+    "SELECT * FROM admin_sales_records WHERE id = ? LIMIT 1",
+    [recordId],
+    (err, rows) => {
+      if (err) {
+        console.error("Reverse fetch error:", err);
+        return res.status(500).json({ success: false, message: "Database error." });
+      }
+
+      if (rows.length === 0) {
+        return res.status(404).json({ success: false, message: "Sales record not found." });
+      }
+
+      const record = rows[0];
+
+      if (!record.buyer_id) {
+        return res.json({
+          success: false,
+          message: "Buyer ID is missing for this sales record."
+        });
+      }
+
+      if (record.release_status === "released") {
+        return res.json({
+          success: false,
+          message: "Money has already been released to seller. You cannot reverse it."
+        });
+      }
+
+      if (record.release_status === "reversed") {
+        return res.json({
+          success: false,
+          message: "Money has already been reversed to buyer."
+        });
+      }
+
+      const amount = Number(
+        Number(record.balance_amount) > 0
+          ? record.balance_amount
+          : record.total_amount
+      );
+
+      if (!amount || amount <= 0) {
+        return res.json({
+          success: false,
+          message: "Invalid amount to reverse."
+        });
+      }
+
+      db.beginTransaction((txErr) => {
+        if (txErr) {
+          return res.status(500).json({
+            success: false,
+            message: "Transaction failed."
+          });
+        }
+
+        db.query(
+          "UPDATE user_wallets SET balance = balance + ? WHERE user_id = ?",
+          [amount, record.buyer_id],
+          (walletErr) => {
+            if (walletErr) {
+              return db.rollback(() => {
+                console.error("Buyer refund error:", walletErr);
+                res.status(500).json({
+                  success: false,
+                  message: "Failed to refund buyer."
+                });
+              });
+            }
+
+            db.query(
+              "UPDATE admin_account SET balance = balance - ? WHERE id = 1",
+              [amount],
+              (adminErr) => {
+                if (adminErr) {
+                  return db.rollback(() => {
+                    console.error("Admin balance deduction error:", adminErr);
+                    res.status(500).json({
+                      success: false,
+                      message: "Failed to deduct admin balance."
+                    });
+                  });
+                }
+
+                db.query(
+                  `
+                  INSERT INTO wallet_transactions
+                  (user_id, type, amount, description)
+                  VALUES (?, 'credit', ?, ?)
+                  `,
+                  [
+                    record.buyer_id,
+                    amount,
+                    `Money reversed to buyer for ${record.product_name}`
+                  ],
+                  (transErr) => {
+                    if (transErr) {
+                      return db.rollback(() => {
+                        console.error("Wallet transaction error:", transErr);
+                        res.status(500).json({
+                          success: false,
+                          message: "Failed to save wallet transaction."
+                        });
+                      });
+                    }
+
+                    db.query(
+                      `
+                     UPDATE admin_sales_records 
+SET 
+  release_status = 'reversed',
+  reversed_amount = ?,
+  reversed_at = NOW(),
+  released_amount = 0.00,
+  balance_amount = 0.00,
+  total_amount = 0.00
+WHERE id = ?
+                      `,
+                      [amount, recordId],
+                      (updateErr) => {
+                        if (updateErr) {
+                          return db.rollback(() => {
+                            console.error("Reverse status error:", updateErr);
+                            res.status(500).json({
+                              success: false,
+                              message: "Failed to update record."
+                            });
+                          });
+                        }
+
+                        db.commit((commitErr) => {
+                          if (commitErr) {
+                            return db.rollback(() => {
+                              res.status(500).json({
+                                success: false,
+                                message: "Failed to complete reversal."
+                              });
+                            });
+                          }
+
+                          res.json({
+                            success: true,
+                            message: `GH₵${amount.toFixed(2)} reversed to buyer successfully.`
+                          });
+                        });
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          }
+        );
+      });
+    }
+  );
+});
+
+app.get("/api/admin/disputes", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const sql = `
+    SELECT 
+      pp.id,
+      pp.id AS purchase_id,
+      pp.product_id,
+      pp.buyer_id,
+      pp.seller_id,
+      pp.product_name,
+      pp.buyer_name,
+      pp.buyer_phone,
+      pp.total_amount,
+      pp.payment_status,
+      pp.order_status,
+      pp.buyer_confirm_status,
+      pp.buyer_note,
+      pp.created_at,
+      p.images
+    FROM purchased_products pp
+    LEFT JOIN products p ON pp.product_id = p.id
+    WHERE pp.buyer_confirm_status IN ('delayed', 'not received')
+    ORDER BY pp.id DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Dispute fetch error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load disputes."
+      });
+    }
+
+    const disputes = results.map(row => ({
+      ...row,
+      reason: row.buyer_note || row.buyer_confirm_status,
+      status: row.buyer_confirm_status === "delayed" ? "reviewing" : "open",
+      admin_note: ""
+    }));
+
+    res.json({ success: true, disputes });
+  });
+});
+
+
+app.put("/api/admin/disputes/:id/status", (req, res) => {
+ if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const purchaseId = req.params.id;
+  const { status, admin_note } = req.body;
+
+  const allowed = ["open", "reviewing", "resolved", "rejected"];
+
+  if (!allowed.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid dispute status."
+    });
+  }
+
+  let buyerConfirmStatus = "delayed";
+
+  if (status === "resolved") {
+    buyerConfirmStatus = "received";
+  }
+
+  if (status === "rejected") {
+    buyerConfirmStatus = "waiting";
+  }
+
+  if (status === "open") {
+    buyerConfirmStatus = "not received";
+  }
+
+  if (status === "reviewing") {
+    buyerConfirmStatus = "delayed";
+  }
+
+  const note = admin_note || null;
+
+  db.query(
+    `
+    UPDATE purchased_products
+    SET buyer_confirm_status = ?, buyer_note = ?
+    WHERE id = ?
+    `,
+    [buyerConfirmStatus, note, purchaseId],
+    (err) => {
+      if (err) {
+        console.error("Dispute update error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update dispute."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Dispute updated successfully."
+      });
+    }
+  );
+});
+
+
+
+app.get("/api/admin/payments-overview", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const accountSql = "SELECT * FROM admin_account WHERE id = 1 LIMIT 1";
+
+  const recordsSql = `
+    SELECT 
+      asr.*,
+      u.firstname,
+      u.lastname,
+      u.telephone,
+      u.email
+    FROM admin_sales_records asr
+    LEFT JOIN users u ON asr.seller_id = u.id
+    ORDER BY asr.id DESC
+  `;
+
+  db.query(accountSql, (accountErr, accountRows) => {
+    if (accountErr) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load admin account."
+      });
+    }
+
+    db.query(recordsSql, (recordsErr, records) => {
+      if (recordsErr) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to load payment records."
+        });
+      }
+
+      res.json({
+        success: true,
+        account: accountRows[0] || { balance: 0 },
+        records
+      });
+    });
+  });
+});
+
+
+app.get("/api/product-details/:id", (req, res) => {
+  const productId = req.params.id;
+
+  db.query(
+    "SELECT * FROM products WHERE id = ? LIMIT 1",
+    [productId],
+    (err, results) => {
+      if (err) {
+        console.error("Fetch product error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Database error"
+        });
+      }
+
+      console.log("PRODUCT ID:", productId);
+      console.log("PRODUCT RESULT:", results);
+
+      if (results.length === 0) {
         return res.status(404).json({
           success: false,
-          message: "No customer numbers found"
+          message: "Product not found"
         });
       }
 
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Customer Numbers");
+      let product = results[0];
 
-      worksheet.columns = [
-        
-        { header: "Customer Number", key: "customer_number", width: 25 },
-      
-      ];
+      try {
+        product.images = product.images ? JSON.parse(product.images) : [];
+      } catch {
+        product.images = [];
+      }
 
-      rows.forEach((row, index) => {
-        worksheet.addRow({
-          no: index + 1,
-          customer_number: row.customer_number,
-          source: row.source,
-          created_at: row.created_at
-        });
+      res.json({
+        success: true,
+        product
       });
+    }
+  );
+});
 
-      worksheet.getRow(1).font = { bold: true };
+app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
+  const productId = req.params.id;
 
-      res.setHeader(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      );
+  const {
+    category,
+    product_name,
+    product_type,
+    price,
+    product_color,
+    quantity_in_stock,
+    phone_number,
+    instructions,
+    description,
+    item_condition,
+    old_images
+  } = req.body;
 
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename=vendor-customers-${vendor_id}.xlsx`
-      );
+  let existingImages = [];
 
-      await workbook.xlsx.write(res);
-      res.end();
+  try {
+    existingImages = old_images ? JSON.parse(old_images) : [];
+  } catch {
+    existingImages = [];
+  }
+
+  const newImages = req.files.map(file => {
+    return `/uploads/products/${file.filename}`;
+  });
+
+  const finalImages = [...existingImages, ...newImages];
+
+  const sql = `
+    UPDATE products SET
+      category = ?,
+      product_name = ?,
+      product_type = ?,
+      price = ?,
+      product_color = ?,
+      quantity_in_stock = ?,
+      phone_number = ?,
+      instructions = ?,
+      description = ?,
+      item_condition = ?,
+      images = ?
+    WHERE id = ?
+  `;
+
+  db.query(
+    sql,
+    [
+      category,
+      product_name,
+      product_type,
+      price,
+      product_color,
+      quantity_in_stock,
+      phone_number,
+      instructions,
+      description,
+      item_condition,
+      JSON.stringify(finalImages),
+      productId
+    ],
+    (err) => {
+      if (err) {
+        console.error("Update product error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update product."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Product updated successfully."
+      });
+    }
+  );
+});
+
+
+app.post("/api/wallet/load", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
     });
-  } catch (error) {
-    console.error("Vendor customer download error:", error);
+  }
+
+  const userId = req.session.user.id;
+  const { amount, momo_number } = req.body;
+
+  if (!amount || Number(amount) <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Enter a valid amount."
+    });
+  }
+
+  if (!momo_number) {
+    return res.status(400).json({
+      success: false,
+      message: "Enter the number to deduct from."
+    });
+  }
+
+  const loadAmount = Number(amount);
+
+  db.beginTransaction((err) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Transaction failed."
+      });
+    }
+
+    const walletSql = `
+      INSERT INTO user_wallets (user_id, balance)
+      VALUES (?, ?)
+      ON DUPLICATE KEY UPDATE 
+      balance = balance + VALUES(balance),
+      updated_at = CURRENT_TIMESTAMP
+    `;
+
+    db.query(walletSql, [userId, loadAmount], (walletErr) => {
+      if (walletErr) {
+        return db.rollback(() => {
+          console.error("Load wallet error:", walletErr);
+          res.status(500).json({
+            success: false,
+            message: "Failed to load wallet."
+          });
+        });
+      }
+
+      const transSql = `
+        INSERT INTO wallet_transactions
+        (user_id, type, amount, description)
+        VALUES (?, 'credit', ?, ?)
+      `;
+
+      db.query(
+        transSql,
+        [
+          userId,
+          loadAmount,
+          `Wallet loaded from ${momo_number}`
+        ],
+        (transErr) => {
+          if (transErr) {
+            return db.rollback(() => {
+              console.error("Wallet transaction error:", transErr);
+              res.status(500).json({
+                success: false,
+                message: "Failed to save transaction."
+              });
+            });
+          }
+
+          db.commit((commitErr) => {
+            if (commitErr) {
+              return db.rollback(() => {
+                res.status(500).json({
+                  success: false,
+                  message: "Failed to complete wallet loading."
+                });
+              });
+            }
+
+            res.json({
+              success: true,
+              message: `GH₵${loadAmount.toFixed(2)} loaded successfully.`
+            });
+          });
+        }
+      );
+    });
+  });
+});
+
+
+
+
+app.post("/api/vendor/request", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const user = req.session.user;
+  const userId = user.id;
+  const fullname = `${user.firstname || ""} ${user.lastname || ""}`.trim();
+  const telephone = user.telephone || "";
+  const email = user.email || "";
+  const { message } = req.body;
+
+  db.query(
+    "SELECT id FROM vendor_requests WHERE user_id = ? AND status = 'pending' LIMIT 1",
+    [userId],
+    (checkErr, rows) => {
+      if (checkErr) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to check request."
+        });
+      }
+
+      if (rows.length > 0) {
+        return res.json({
+          success: false,
+          message: "You already have a pending vendor request."
+        });
+      }
+
+      db.query(
+        `
+        INSERT INTO vendor_requests
+        (user_id, fullname, telephone, email, message)
+        VALUES (?, ?, ?, ?, ?)
+        `,
+        [
+          userId,
+          fullname,
+          telephone,
+          email,
+          message || "I want to become a vendor on DIDWAPA."
+        ],
+        (insertErr) => {
+          if (insertErr) {
+            console.error("Vendor request error:", insertErr);
+            return res.status(500).json({
+              success: false,
+              message: "Failed to send vendor request."
+            });
+          }
+
+          res.json({
+            success: true,
+            message: "Your vendor request has been sent successfully."
+          });
+        }
+      );
+    }
+  );
+});
+
+app.get("/api/admin/vendor-requests", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  const sql = `
+    SELECT 
+      vr.*,
+      u.firstname,
+      u.lastname,
+      u.telephone,
+      u.email,
+      u.verification_status
+    FROM vendor_requests vr
+    LEFT JOIN users u ON vr.user_id = u.id
+    ORDER BY vr.id DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Vendor requests error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load vendor requests."
+      });
+    }
+
+    res.json({
+      success: true,
+      requests: results
+    });
+  });
+});
+
+
+app.post("/api/admin/vendor-requests/approve/:id", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  const requestId = req.params.id;
+
+  db.query(
+    "SELECT * FROM vendor_requests WHERE id = ? LIMIT 1",
+    [requestId],
+    (err, rows) => {
+      if (err) {
+        console.error("Find vendor request error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Database error."
+        });
+      }
+
+      if (rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor request not found."
+        });
+      }
+
+      const request = rows[0];
+
+      db.beginTransaction((txErr) => {
+        if (txErr) {
+          return res.status(500).json({
+            success: false,
+            message: "Transaction failed."
+          });
+        }
+
+        db.query(
+          `
+          UPDATE users 
+          SET 
+            verification_status = 'approved',
+            role = 'vendor'
+          WHERE id = ?
+          `,
+          [request.user_id],
+          (userErr) => {
+            if (userErr) {
+              return db.rollback(() => {
+                console.error("Approve user error:", userErr);
+                res.status(500).json({
+                  success: false,
+                  message: "Failed to approve user."
+                });
+              });
+            }
+
+            db.query(
+              "UPDATE vendor_requests SET status = 'approved' WHERE id = ?",
+              [requestId],
+              (requestErr) => {
+                if (requestErr) {
+                  return db.rollback(() => {
+                    console.error("Approve request error:", requestErr);
+                    res.status(500).json({
+                      success: false,
+                      message: "Failed to update request."
+                    });
+                  });
+                }
+
+                db.commit((commitErr) => {
+                  if (commitErr) {
+                    return db.rollback(() => {
+                      res.status(500).json({
+                        success: false,
+                        message: "Failed to complete approval."
+                      });
+                    });
+                  }
+
+                  res.json({
+                    success: true,
+                    message: "Vendor approved successfully."
+                  });
+                });
+              }
+            );
+          }
+        );
+      });
+    }
+  );
+});
+
+
+app.post("/api/admin/vendor-requests/reject/:id", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  const requestId = req.params.id;
+
+  db.query(
+    "SELECT * FROM vendor_requests WHERE id = ? LIMIT 1",
+    [requestId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: "Database error."
+        });
+      }
+
+      if (rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor request not found."
+        });
+      }
+
+      const request = rows[0];
+
+      db.beginTransaction((txErr) => {
+        if (txErr) {
+          return res.status(500).json({
+            success: false,
+            message: "Transaction failed."
+          });
+        }
+
+        db.query(
+          `
+          UPDATE users 
+          SET verification_status = 'rejected'
+          WHERE id = ?
+          `,
+          [request.user_id],
+          (userErr) => {
+            if (userErr) {
+              return db.rollback(() => {
+                res.status(500).json({
+                  success: false,
+                  message: "Failed to reject user."
+                });
+              });
+            }
+
+            db.query(
+              "UPDATE vendor_requests SET status = 'rejected' WHERE id = ?",
+              [requestId],
+              (requestErr) => {
+                if (requestErr) {
+                  return db.rollback(() => {
+                    res.status(500).json({
+                      success: false,
+                      message: "Failed to update request."
+                    });
+                  });
+                }
+
+                db.commit((commitErr) => {
+                  if (commitErr) {
+                    return db.rollback(() => {
+                      res.status(500).json({
+                        success: false,
+                        message: "Failed to complete rejection."
+                      });
+                    });
+                  }
+
+                  res.json({
+                    success: true,
+                    message: "Vendor request rejected."
+                  });
+                });
+              }
+            );
+          }
+        );
+      });
+    }
+  );
+});
+
+
+app.get("/api/vendor/request/status", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  db.query(
+    `
+    SELECT *
+    FROM vendor_requests
+    WHERE user_id = ?
+    ORDER BY id DESC
+    LIMIT 1
+    `,
+    [userId],
+    (err, rows) => {
+      if (err) {
+        console.error("Vendor request status error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to load request status."
+        });
+      }
+
+      res.json({
+        success: true,
+        request: rows.length ? rows[0] : null
+      });
+    }
+  );
+});
+
+
+app.delete("/api/vendor/request/delete/:id", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+  const requestId = req.params.id;
+
+  db.query(
+    "DELETE FROM vendor_requests WHERE id = ? AND user_id = ?",
+    [requestId, userId],
+    (err, result) => {
+      if (err) {
+        console.error("Delete vendor request error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to delete request."
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.json({
+          success: false,
+          message: "Request not found."
+        });
+      }
+
+      res.json({ 
+        success: true,
+        message: "Vendor request deleted successfully."
+      });
+    }
+  );
+});
+
+
+
+
+///// Security route 
+app.get("/api/admin/security-logs", (req, res) => {
+  if (
+  !req.session.user ||
+  !["admin", "vendor"].includes(req.session.user.role)
+) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  const sql = `
+    SELECT 
+      sl.*,
+      u.firstname,
+      u.lastname,
+      u.email
+    FROM security_logs sl
+    LEFT JOIN users u ON sl.user_id = u.id
+    ORDER BY sl.id DESC
+    LIMIT 100
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Security logs error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load security logs."
+      });
+    }
+
+    res.json({
+      success: true,
+      logs: results
+    });
+  });
+});
+
+
+/////Back Code
+app.get("/api/user/me", (req, res) => {
+  if (!req.session.user) {
+    return res.json({
+      success: false,
+      message: "Not logged in"
+    });
+  }
+
+  db.query(
+    "SELECT id, firstname, lastname, email, role FROM users WHERE id = ? LIMIT 1",
+    [req.session.user.id],
+    (err, rows) => {
+      if (err) {
+        console.error("User fetch error:", err);
+
+        return res.status(500).json({
+          success: false,
+          message: "Database error"
+        });
+      }
+
+      if (rows.length === 0) {
+        return res.json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      res.json({
+        success: true,
+        user: rows[0]
+      });
+    }
+  );
+});
+
+
+
+
+/////ADMIN APPROVES 
+app.get("/api/admin/vendor-permissions", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const sql = `
+    SELECT 
+      u.id,
+      u.firstname,
+      u.lastname,
+      u.email,
+      u.telephone,
+      u.role,
+      COALESCE(vp.verify_vendor, 0) AS verify_vendor,
+      COALESCE(vp.verify_products, 0) AS verify_products,
+      COALESCE(vp.resolve_disputes, 0) AS resolve_disputes,
+      COALESCE(vp.message_response, 0) AS message_response,
+      COALESCE(vp.check_transactions, 0) AS check_transactions,
+      COALESCE(vp.all_access, 0) AS all_access,
+      COALESCE(vp.access_disabled, 0) AS access_disabled
+    FROM users u
+    LEFT JOIN vendor_permissions vp ON u.id = vp.vendor_id
+    WHERE u.role = 'vendor'
+    ORDER BY u.id DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Load vendor permissions error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load vendors."
+      });
+    }
+
+    res.json({
+      success: true,
+      vendors: results
+    });
+  });
+});
+
+app.post("/api/admin/vendor-permissions/save", (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const {
+    vendor_id,
+    verify_vendor,
+    verify_products,
+    resolve_disputes,
+    message_response,
+    check_transactions,
+    all_access,
+    normal_control,
+    access_disabled
+  } = req.body;
+
+  if (!vendor_id) {
+    return res.status(400).json({
+      success: false,
+      message: "Vendor ID is required."
+    });
+  }
+
+  const disabled = access_disabled ? 1 : 0;
+  const normal = disabled ? 0 : (normal_control ? 1 : 0);
+  const all = disabled || normal ? 0 : (all_access ? 1 : 0);
+
+  const data = {
+    verify_vendor: disabled || normal ? 0 : (all ? 1 : verify_vendor ? 1 : 0),
+    verify_products: disabled || normal ? 0 : (all ? 1 : verify_products ? 1 : 0),
+    resolve_disputes: disabled || normal ? 0 : (all ? 1 : resolve_disputes ? 1 : 0),
+    message_response: disabled || normal ? 0 : (all ? 1 : message_response ? 1 : 0),
+    check_transactions: disabled || normal ? 0 : (all ? 1 : check_transactions ? 1 : 0),
+    all_access: all,
+    normal_control: normal,
+    access_disabled: disabled
+  };
+
+  const sql = `
+    INSERT INTO vendor_permissions
+    (
+      vendor_id,
+      verify_vendor,
+      verify_products,
+      resolve_disputes,
+      message_response,
+      check_transactions,
+      all_access,
+      normal_control,
+      access_disabled
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      verify_vendor = VALUES(verify_vendor),
+      verify_products = VALUES(verify_products),
+      resolve_disputes = VALUES(resolve_disputes),
+      message_response = VALUES(message_response),
+      check_transactions = VALUES(check_transactions),
+      all_access = VALUES(all_access),
+      normal_control = VALUES(normal_control),
+      access_disabled = VALUES(access_disabled),
+      updated_at = NOW()
+  `;
+
+  db.query(
+    sql,
+    [
+      vendor_id,
+      data.verify_vendor,
+      data.verify_products,
+      data.resolve_disputes,
+      data.message_response,
+      data.check_transactions,
+      data.all_access,
+      data.normal_control,
+      data.access_disabled
+    ],
+    (err) => {
+      if (err) {
+        console.error("Save permissions error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to save permissions."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Vendor permissions saved successfully."
+      });
+    }
+  );
+});
+
+
+
+/////product conversation for admin 
+// GET PRODUCT CHAT CONVERSATIONS
+app.get("/api/admin/product-conversations", (req, res) => {
+  if (
+    !req.session.user ||
+    !["admin", "vendor"].includes(req.session.user.role)
+  ) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized."
+    });
+  }
+
+  const sql = `
+    SELECT 
+      pm.product_id,
+      p.product_name,
+      p.images,
+      MAX(pm.created_at) AS last_message_time,
+      COUNT(pm.id) AS total_messages,
+
+      buyer.id AS buyer_id,
+      buyer.firstname AS buyer_firstname,
+      buyer.lastname AS buyer_lastname,
+      buyer.telephone AS buyer_phone,
+
+      seller.id AS seller_id,
+      seller.firstname AS seller_firstname,
+      seller.lastname AS seller_lastname,
+      seller.telephone AS seller_phone,
+
+      (
+        SELECT message 
+        FROM product_messages 
+        WHERE product_id = pm.product_id
+        ORDER BY created_at DESC 
+        LIMIT 1
+      ) AS last_message
+
+    FROM product_messages pm
+    LEFT JOIN products p ON pm.product_id = p.id
+    LEFT JOIN users buyer ON pm.sender_id = buyer.id
+    LEFT JOIN users seller ON pm.receiver_id = seller.id
+
+    GROUP BY pm.product_id
+    ORDER BY last_message_time DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Product conversations error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load conversations."
+      });
+    }
+
+    res.json({
+      success: true,
+      conversations: results
+    });
+  });
+});
+
+
+// GET ONE PRODUCT CHAT THREAD
+app.get("/api/admin/product-conversations/:productId", (req, res) => {
+  if (
+    !req.session.user ||
+    !["admin", "vendor"].includes(req.session.user.role)
+  ) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized."
+    });
+  }
+
+  const productId = req.params.productId;
+
+  const sql = `
+    SELECT 
+      pm.*,
+      p.product_name,
+
+      sender.firstname AS sender_firstname,
+      sender.lastname AS sender_lastname,
+      sender.role AS sender_role,
+
+      receiver.firstname AS receiver_firstname,
+      receiver.lastname AS receiver_lastname,
+      receiver.role AS receiver_role
+
+    FROM product_messages pm
+    LEFT JOIN products p ON pm.product_id = p.id
+    LEFT JOIN users sender ON pm.sender_id = sender.id
+    LEFT JOIN users receiver ON pm.receiver_id = receiver.id
+
+    WHERE pm.product_id = ?
+    ORDER BY pm.created_at ASC
+  `;
+
+  db.query(sql, [productId], (err, results) => {
+    if (err) {
+      console.error("Product thread error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load conversation."
+      });
+    }
+
+    res.json({
+      success: true,
+      messages: results
+    });
+  });
+});
+
+
+
+
+
+
+/////Settings 
+app.get("/api/auth/me", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Not logged in"
+    });
+  }
+
+  res.json({
+    success: true,
+    user: {
+      id: req.session.user.id,
+      firstname: req.session.user.firstname,
+      lastname: req.session.user.lastname,
+      email: req.session.user.email,
+      role: req.session.user.role
+    }
+  });
+});
+
+app.get("/api/vendor/my-permissions", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Not logged in"
+    });
+  }
+
+  const user = req.session.user;
+
+  if (user.role === "admin") {
+    return res.json({
+      success: true,
+      role: "admin",
+      permissions: {
+        all_access: 1,
+        access_disabled: 0
+      }
+    });
+  }
+
+  if (user.role !== "vendor") {
+    return res.status(403).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  const sql = `
+    SELECT *
+    FROM vendor_permissions
+    WHERE vendor_id = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [user.id], (err, rows) => {
+    if (err) {
+      console.error("Permission fetch error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load permissions"
+      });
+    }
+
+    const permissions = rows[0] || {
+      verify_vendor: 0,
+      verify_products: 0,
+      resolve_disputes: 0,
+      message_response: 0,
+      check_transactions: 0,
+      all_access: 0,
+      access_disabled: 0
+    };
+
+    res.json({
+      success: true,
+      role: user.role,
+      permissions
+    });
+  });
+});
+
+
+
+
+///// Wallet Top Up Payment Codes
+///// Wallet Top Up Payment Codes
+const crypto = require("crypto");
+const axios = require("axios");
+
+const THETELLER_MERCHANT_ID = "TTM-00009388";
+const THETELLER_API_USER = "louis66a20ac942e74";
+const THETELLER_API_KEY = "ZmVjZWZlZDc2MzA4OWU0YmZhOTk5MDBmMDAxNDhmOWY=";
+
+const THETELLER_PROCESS_URL = "https://prod.theteller.net/v1.1/transaction/process";
+const THETELLER_STATUS_URL = "https://prod.theteller.net/v1.1/users/transactions";
+
+function generateReference() {
+  return "DWTP" + Date.now() + Math.floor(Math.random() * 10000);
+}
+
+function logLine(title, data = "") {
+  console.log("\n==============================");
+  console.log(title);
+  if (data) console.log(data);
+  console.log("==============================\n");
+}
+
+function tellerAuthHeader() {
+  return `Basic ${Buffer.from(`${THETELLER_API_USER}:${THETELLER_API_KEY}`).toString("base64")}`;
+}
+
+function getNetworkSwitch(phone) {
+  const p = String(phone).replace(/\D/g, "");
+
+  if (p.startsWith("024") || p.startsWith("025") || p.startsWith("054") || p.startsWith("055") || p.startsWith("059")) {
+    return "MTN";
+  }
+
+  if (p.startsWith("020") || p.startsWith("050")) {
+    return "VODAFONE";
+  }
+
+  if (p.startsWith("026") || p.startsWith("027") || p.startsWith("056") || p.startsWith("057")) {
+    return "AIRTELTIGO";
+  }
+
+  return "MTN";
+}
+
+function formatTellerAmount(amount) {
+  const amountPesewas = Math.round(Number(amount) * 100);
+  return String(amountPesewas).padStart(12, "0");
+}
+
+function isPaymentSuccessful(result) {
+  return (
+    result?.code === "000" ||
+    result?.code === "00" ||
+    result?.status === "successful" ||
+    result?.status === "approved" ||
+    result?.status === "paid" ||
+    result?.status === "success"
+  );
+}
+
+app.post("/api/wallet/topup/initiate", (req, res) => {
+  logLine("WALLET TOPUP INITIATE REQUEST", {
+    sessionUser: req.session.user,
+    body: req.body
+  });
+
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+  const { amount, momo_number } = req.body;
+
+  if (!amount || Number(amount) <= 0 || !momo_number) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid top up details."
+    });
+  }
+
+  const reference = generateReference();
+  const tellerAmount = formatTellerAmount(amount);
+  const rSwitch = getNetworkSwitch(momo_number);
+
+  db.query(
+    `INSERT INTO wallet_topups (user_id, amount, momo_number, reference, status)
+     VALUES (?, ?, ?, ?, 'pending')`,
+    [userId, amount, momo_number, reference],
+    async (err) => {
+      if (err) {
+        console.error("TOPUP DB INSERT ERROR:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to create top up."
+        });
+      }
+
+      try {
+        const payload = {
+          merchant_id: THETELLER_MERCHANT_ID,
+          transaction_id: reference,
+          processing_code: "000200",
+          amount: tellerAmount,
+          currency: "GHS",
+          desc: "DIDWAPA Wallet Top Up",
+          "r-switch": rSwitch,
+          subscriber_number: momo_number
+        };
+
+        logLine("SENDING REQUEST TO THETELLER", {
+          url: THETELLER_PROCESS_URL,
+          payload
+        });
+
+        const response = await axios.post(THETELLER_PROCESS_URL, payload, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: tellerAuthHeader()
+          },
+          timeout: 30000
+        });
+
+        logLine("THETELLER INITIATE RESPONSE", response.data);
+
+        db.query(
+          `UPDATE wallet_topups SET provider_response = ? WHERE reference = ?`,
+          [JSON.stringify(response.data), reference],
+          (updateErr) => {
+            if (updateErr) console.error("SAVE PROVIDER RESPONSE ERROR:", updateErr);
+          }
+        );
+
+        return res.json({
+          success: true,
+          message: "Payment prompt sent. Please approve on your phone.",
+          reference
+        });
+
+      } catch (error) {
+        console.error("THETELLER INITIATE ERROR:");
+        console.error("Message:", error.message);
+        console.error("Status:", error.response?.status);
+        console.error("Data:", error.response?.data);
+
+        db.query(
+          `UPDATE wallet_topups SET status='failed', provider_response=? WHERE reference=?`,
+          [JSON.stringify(error.response?.data || error.message), reference]
+        );
+
+        return res.status(500).json({
+          success: false,
+          message: "Could not send payment prompt."
+        });
+      }
+    }
+  );
+});
+
+app.get("/api/wallet/topup/check/:reference", (req, res) => {
+
+  console.log("=================================");
+  console.log("CHECK TOPUP STATUS ROUTE HIT");
+  console.log("Reference:", req.params.reference);
+  console.log("=================================");
+
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+  const reference = req.params.reference;
+
+  db.query(
+    `SELECT * FROM wallet_topups
+     WHERE reference = ? AND user_id = ?
+     LIMIT 1`,
+    [reference, userId],
+    async (err, rows) => {
+
+      if (err) {
+        console.error("TOPUP FETCH ERROR:", err);
+
+        return res.status(500).json({
+          success: false,
+          message: "Failed to check payment."
+        });
+      }
+
+      if (rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Topup record not found."
+        });
+      }
+
+      const topup = rows[0];
+
+      console.log("TOPUP RECORD:", topup);
+
+      if (topup.status === "paid") {
+
+        console.log("PAYMENT ALREADY CONFIRMED");
+
+        return res.json({
+          success: true,
+          paid: true,
+          message: "Payment already confirmed."
+        });
+      }
+
+      try {
+
+        const statusUrl =
+          `${THETELLER_STATUS_URL}/${reference}/status`;
+
+        console.log("=================================");
+        console.log("CHECKING THETELLER STATUS URL");
+        console.log(statusUrl);
+        console.log("=================================");
+
+        const statusResponse = await axios.get(statusUrl, {
+          headers: {
+            "Content-Type": "application/json",
+            "Merchant-Id": THETELLER_MERCHANT_ID,
+            "Cache-Control": "no-cache"
+          }
+        });
+
+        const result = statusResponse.data;
+
+        console.log("=================================");
+        console.log("THETELLER STATUS RESPONSE");
+        console.log(result);
+        console.log("=================================");
+
+        db.query(
+          `UPDATE wallet_topups
+           SET provider_response = ?
+           WHERE reference = ?`,
+          [JSON.stringify(result), reference]
+        );
+
+        const paymentApproved =
+          result.code === "000" ||
+          result.code === "00" ||
+          result.status === "approved" ||
+          result.status === "success" ||
+          result.status === "successful" ||
+          result.reason === "Transaction Successful";
+
+        console.log("Payment confirmed status:", paymentApproved);
+
+        if (!paymentApproved) {
+
+          return res.json({
+            success: true,
+            paid: false,
+            message:
+              result.reason ||
+              "Payment not confirmed yet."
+          });
+        }
+
+        db.beginTransaction((txErr) => {
+
+          if (txErr) {
+            console.error("TRANSACTION START ERROR:", txErr);
+
+            return res.status(500).json({
+              success: false,
+              message: "Transaction failed."
+            });
+          }
+
+          db.query(
+            `UPDATE wallet_topups
+             SET status='paid'
+             WHERE reference=? AND status='pending'`,
+            [reference],
+            (updateErr, updateResult) => {
+
+              if (updateErr) {
+
+                console.error("TOPUP UPDATE ERROR:", updateErr);
+
+                return db.rollback(() => {
+                  res.status(500).json({
+                    success: false,
+                    message: "Failed to update topup."
+                  });
+                });
+              }
+
+              console.log("TOPUP UPDATE RESULT:", updateResult);
+
+              db.query(
+                `INSERT INTO user_wallets (user_id, balance)
+                 VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE
+                 balance = balance + VALUES(balance),
+                 updated_at = NOW()`,
+                [userId, topup.amount],
+                (walletErr, walletResult) => {
+
+                  if (walletErr) {
+
+                    console.error(
+                      "USER_WALLETS UPDATE ERROR:",
+                      walletErr
+                    );
+
+                    return db.rollback(() => {
+                      res.status(500).json({
+                        success: false,
+                        message: "Failed to update wallet."
+                      });
+                    });
+                  }
+
+                  console.log(
+                    "USER_WALLETS UPDATED:",
+                    walletResult
+                  );
+
+                  db.query(
+                    `INSERT INTO wallet_transactions
+                     (user_id, type, amount, description)
+                     VALUES (?, ?, ?, ?)`,
+                    [
+                      userId,
+                      "credit",
+                      topup.amount,
+                      `Wallet loaded from ${topup.momo_number}`
+                    ],
+                    (transErr, transResult) => {
+
+                      if (transErr) {
+
+                        console.error(
+                          "WALLET_TRANSACTIONS INSERT ERROR:",
+                          transErr
+                        );
+
+                        return db.rollback(() => {
+                          res.status(500).json({
+                            success: false,
+                            message:
+                              "Failed to save wallet transaction."
+                          });
+                        });
+                      }
+
+                      console.log(
+                        "WALLET_TRANSACTIONS INSERTED:",
+                        transResult
+                      );
+
+                      db.commit((commitErr) => {
+
+                        if (commitErr) {
+
+                          console.error(
+                            "COMMIT ERROR:",
+                            commitErr
+                          );
+
+                          return db.rollback(() => {
+                            res.status(500).json({
+                              success: false,
+                              message:
+                                "Failed to complete payment."
+                            });
+                          });
+                        }
+
+                        console.log("=================================");
+                        console.log("PAYMENT SUCCESSFULLY COMPLETED");
+                        console.log("=================================");
+
+                        return res.json({
+                          success: true,
+                          paid: true,
+                          message:
+                            "Payment confirmed and wallet updated."
+                        });
+
+                      });
+                    }
+                  );
+                }
+              );
+            }
+          );
+        });
+
+      } catch (error) {
+
+        console.log("=================================");
+        console.log("THETELLER STATUS CHECK ERROR");
+        console.log("Message:", error.message);
+        console.log("Status:", error.response?.status);
+        console.log("Data:", error.response?.data);
+        console.log("=================================");
+
+        return res.json({
+          success: true,
+          paid: false,
+          message:
+            "Payment not confirmed yet. Click check again."
+        });
+      }
+    }
+  );
+});
+
+
+
+
+app.post("/api/product/momo/initiate", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ success: false, message: "Please login first." });
+  }
+
+  const buyerId = req.session.user.id;
+  const { product_id, quantity, momo_number, network, account_name } = req.body;
+
+  if (!product_id || !quantity || !momo_number || !network) {
+    return res.status(400).json({ success: false, message: "Missing MoMo payment details." });
+  }
+
+  db.query("SELECT * FROM products WHERE id = ? LIMIT 1", [product_id], async (err, rows) => {
+    if (err) return res.status(500).json({ success: false, message: "Failed to load product." });
+    if (!rows.length) return res.status(404).json({ success: false, message: "Product not found." });
+
+    const product = rows[0];
+    const qty = Number(quantity);
+    const stock = Number(product.quantity_in_stock);
+    const totalAmount = Number(product.price) * qty;
+
+    if (qty <= 0) return res.status(400).json({ success: false, message: "Invalid quantity." });
+    if (stock <= 0) return res.status(400).json({ success: false, message: "This product is out of stock." });
+    if (qty > stock) return res.status(400).json({ success: false, message: `Only ${stock} item(s) available.` });
+
+    const reference = "DWP" + Date.now() + Math.floor(Math.random() * 10000);
+    const amountPesewas = Math.round(totalAmount * 100);
+    const tellerAmount = String(amountPesewas).padStart(12, "0");
+
+    const rSwitch =
+      network === "MTN" ? "MTN" :
+      network === "Telecel" ? "VODAFONE" :
+      "AIRTELTIGO";
+
+    db.query(
+      `INSERT INTO product_momo_payments 
+       (buyer_id, product_id, quantity, momo_number, network, account_name, reference, amount, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [buyerId, product_id, qty, momo_number, network, account_name, reference, totalAmount],
+      async (insertErr) => {
+        if (insertErr) {
+          console.error("PRODUCT MOMO INSERT ERROR:", insertErr);
+          return res.status(500).json({ success: false, message: "Failed to start payment." });
+        }
+
+        try {
+          const payload = {
+            merchant_id: THETELLER_MERCHANT_ID,
+            transaction_id: reference,
+            processing_code: "000200",
+            amount: tellerAmount,
+            currency: "GHS",
+            desc: `DIDWAPA Product Payment - ${product.product_name}`,
+            "r-switch": rSwitch,
+            subscriber_number: momo_number
+          };
+
+          console.log("PRODUCT MOMO THETELLER PAYLOAD:", payload);
+
+          const response = await axios.post(THETELLER_PROCESS_URL, payload, {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: tellerAuthHeader()
+            }
+          });
+
+          console.log("PRODUCT MOMO THETELLER RESPONSE:", response.data);
+
+          db.query(
+            `UPDATE product_momo_payments SET provider_response=? WHERE reference=?`,
+            [JSON.stringify(response.data), reference]
+          );
+
+          res.json({
+            success: true,
+            message: "Payment prompt sent. Approve on your phone.",
+            reference
+          });
+
+        } catch (error) {
+          console.error("PRODUCT MOMO INITIATE ERROR:", error.response?.data || error.message);
+
+          db.query(
+            `UPDATE product_momo_payments SET status='failed', provider_response=? WHERE reference=?`,
+            [JSON.stringify(error.response?.data || error.message), reference]
+          );
+
+          res.status(500).json({
+            success: false,
+            message: "Could not send payment prompt."
+          });
+        }
+      }
+    );
+  });
+});
+
+
+
+app.get("/api/test-space", async (req, res) => {
+  try {
+    await spacesClient.send(
+      new PutObjectCommand({
+        Bucket: SPACES_BUCKET,
+        Key: "test.txt",
+        Body: "DIDWAPA Spaces Test",
+        ACL: "public-read",
+        ContentType: "text/plain"
+      })
+    );
+
+    res.json({
+      success: true,
+      url: `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/test.txt`
+    });
+
+  } catch (err) {
+    console.error(err);
+
     res.status(500).json({
       success: false,
-      message: "Server error"
+      error: err.message
     });
   }
 });
@@ -7960,30 +5545,1080 @@ app.get("/api/vendor/customers/download", async (req, res) => {
 
 
 
+app.get("/api/product/momo/check/:reference", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ success: false, message: "Please login first." });
+  }
 
-// ✅ BASIC HEALTH ENDPOINTS FOR DEPLOYMENT
+  const buyerId = req.session.user.id;
+  const reference = req.params.reference;
+
+  db.query(
+    `SELECT * FROM product_momo_payments WHERE reference=? AND buyer_id=? LIMIT 1`,
+    [reference, buyerId],
+    async (err, payRows) => {
+      if (err) return res.status(500).json({ success: false, message: "Failed to check payment." });
+      if (!payRows.length) return res.status(404).json({ success: false, message: "Payment record not found." });
+
+      const payment = payRows[0];
+
+      if (payment.status === "paid") {
+        return res.json({ success: true, paid: true, message: "Payment already confirmed." });
+      }
+
+      try {
+        const statusUrl = `${THETELLER_STATUS_URL}/${reference}/status`;
+
+        const statusResponse = await axios.get(statusUrl, {
+          headers: {
+            "Content-Type": "application/json",
+            "Merchant-Id": THETELLER_MERCHANT_ID,
+            "Cache-Control": "no-cache"
+          }
+        });
+
+        const result = statusResponse.data;
+        console.log("PRODUCT MOMO STATUS RESPONSE:", result);
+
+        db.query(
+          `UPDATE product_momo_payments SET provider_response=? WHERE reference=?`,
+          [JSON.stringify(result), reference]
+        );
+
+        const isPaid =
+          result.code === "000" ||
+          result.code === "00" ||
+          result.status === "approved" ||
+          result.status === "successful" ||
+          result.reason === "Transaction Successful";
+
+        if (!isPaid) {
+          return res.json({
+            success: true,
+            paid: false,
+            message: result.reason || "Payment not confirmed yet."
+          });
+        }
+
+        db.query("SELECT * FROM products WHERE id=? LIMIT 1", [payment.product_id], (productErr, productRows) => {
+          if (productErr) return res.status(500).json({ success: false, message: "Failed to load product." });
+          if (!productRows.length) return res.status(404).json({ success: false, message: "Product not found." });
+
+          const product = productRows[0];
+          const qty = Number(payment.quantity);
+          const stock = Number(product.quantity_in_stock);
+          const unitPrice = Number(product.price);
+          const totalAmount = unitPrice * qty;
+          const sellerId = product.posted_by;
+
+          if (qty > stock) {
+            return res.status(400).json({ success: false, message: "Not enough stock available." });
+          }
+
+          const buyerName = `${req.session.user.firstname || ""} ${req.session.user.lastname || ""}`.trim();
+          const buyerPhone = req.session.user.telephone || "";
+
+          db.beginTransaction((txErr) => {
+            if (txErr) return res.status(500).json({ success: false, message: "Transaction failed." });
+
+            db.query(
+              `INSERT INTO purchased_products
+               (
+                 product_id, buyer_id, seller_id, buyer_name, buyer_phone,
+                 product_name, quantity, unit_price, total_amount,
+                 payment_status, order_status
+               )
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'pending')`,
+              [
+                product.id,
+                buyerId,
+                sellerId,
+                buyerName,
+                buyerPhone,
+                product.product_name,
+                qty,
+                unitPrice,
+                totalAmount
+              ],
+              (purchaseErr, purchaseResult) => {
+                if (purchaseErr) {
+                  return db.rollback(() => res.status(500).json({ success: false, message: "Failed to save purchase." }));
+                }
+
+                const purchaseId = purchaseResult.insertId;
+
+                db.query(
+                  `INSERT INTO admin_sales_records
+                   (
+                     purchase_id, product_id, seller_id, buyer_id,
+                     product_name, quantity, unit_price, total_amount,
+                     balance_amount, payment_status
+                   )
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid')`,
+                  [
+                    purchaseId,
+                    product.id,
+                    sellerId,
+                    buyerId,
+                    product.product_name,
+                    qty,
+                    unitPrice,
+                    totalAmount,
+                    totalAmount
+                  ],
+                  (adminErr) => {
+                    if (adminErr) {
+                      return db.rollback(() => res.status(500).json({ success: false, message: "Failed to save admin sales record." }));
+                    }
+
+                    db.query("UPDATE admin_account SET balance = balance + ? WHERE id = 1", [totalAmount], (adminAccountErr) => {
+                      if (adminAccountErr) {
+                        return db.rollback(() => res.status(500).json({ success: false, message: "Failed to update admin account." }));
+                      }
+
+                      db.query("UPDATE products SET quantity_in_stock = quantity_in_stock - ? WHERE id = ?", [qty, product.id], (stockErr) => {
+                        if (stockErr) {
+                          return db.rollback(() => res.status(500).json({ success: false, message: "Failed to update stock." }));
+                        }
+
+                        db.query(
+                          `UPDATE product_momo_payments SET status='paid' WHERE reference=?`,
+                          [reference],
+                          (payUpdateErr) => {
+                            if (payUpdateErr) {
+                              return db.rollback(() => res.status(500).json({ success: false, message: "Failed to update payment record." }));
+                            }
+
+                            db.commit((commitErr) => {
+                              if (commitErr) {
+                                return db.rollback(() => res.status(500).json({ success: false, message: "Failed to complete purchase." }));
+                              }
+
+                              res.json({
+                                success: true,
+                                paid: true,
+                                message: "Payment confirmed. Product purchased successfully."
+                              });
+                            });
+                          }
+                        );
+                      });
+                    });
+                  }
+                );
+              }
+            );
+          });
+        });
+
+      } catch (error) {
+        console.error("PRODUCT MOMO STATUS ERROR:", error.response?.data || error.message);
+
+        res.json({
+          success: true,
+          paid: false,
+          message: "Payment not confirmed yet. Try again."
+        });
+      }
+    }
+  );
+});
+
+
+
+
+/////Cart payments 
+app.post("/api/cart/momo/initiate", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ success:false, message:"Please login first." });
+  }
+
+  const buyerId = req.session.user.id;
+  const { momo_number, network, account_name } = req.body;
+
+  if (!momo_number || !network || !account_name) {
+    return res.status(400).json({ success:false, message:"Missing payment details." });
+  }
+
+  db.query(
+    `SELECT c.id AS cart_id, c.product_id, c.quantity, p.*
+     FROM carts c
+     JOIN products p ON p.id = c.product_id
+     WHERE c.user_id = ?`,
+    [buyerId],
+    async (err, items) => {
+      if (err) return res.status(500).json({ success:false, message:"Failed to load cart." });
+      if (!items.length) return res.status(400).json({ success:false, message:"Your cart is empty." });
+
+      let totalAmount = 0;
+
+      for (const item of items) {
+        const qty = Number(item.quantity);
+        const stock = Number(item.quantity_in_stock);
+
+        if (qty > stock) {
+          return res.status(400).json({
+            success:false,
+            message:`${item.product_name} has only ${stock} item(s) in stock.`
+          });
+        }
+
+        totalAmount += Number(item.price) * qty;
+      }
+
+      const reference = "DWCART" + Date.now() + Math.floor(Math.random() * 10000);
+      const tellerAmount = String(Math.round(totalAmount * 100)).padStart(12, "0");
+
+      const rSwitch =
+        network === "MTN" ? "MTN" :
+        network === "Telecel" ? "VODAFONE" :
+        "AIRTELTIGO";
+
+      db.query(
+        `INSERT INTO cart_momo_payments
+         (buyer_id, reference, momo_number, network, account_name, amount, status)
+         VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
+        [buyerId, reference, momo_number, network, account_name, totalAmount],
+        async (insertErr) => {
+          if (insertErr) {
+            console.error("CART MOMO INSERT ERROR:", insertErr);
+            return res.status(500).json({ success:false, message:"Failed to start payment." });
+          }
+
+          try {
+            const payload = {
+              merchant_id: THETELLER_MERCHANT_ID,
+              transaction_id: reference,
+              processing_code: "000200",
+              amount: tellerAmount,
+              currency: "GHS",
+              desc: "DIDWAPA Cart Payment",
+              "r-switch": rSwitch,
+              subscriber_number: momo_number
+            };
+
+            console.log("CART MOMO PAYLOAD:", payload);
+
+            const response = await axios.post(THETELLER_PROCESS_URL, payload, {
+              headers:{
+                "Content-Type":"application/json",
+                Authorization:tellerAuthHeader()
+              }
+            });
+
+            console.log("CART MOMO RESPONSE:", response.data);
+
+            db.query(
+              `UPDATE cart_momo_payments SET provider_response=? WHERE reference=?`,
+              [JSON.stringify(response.data), reference]
+            );
+
+            res.json({
+              success:true,
+              message:"Payment prompt sent. Approve on your phone.",
+              reference
+            });
+
+          } catch (error) {
+            console.error("CART MOMO INITIATE ERROR:", error.response?.data || error.message);
+
+            db.query(
+              `UPDATE cart_momo_payments SET status='failed', provider_response=? WHERE reference=?`,
+              [JSON.stringify(error.response?.data || error.message), reference]
+            );
+
+            res.status(500).json({ success:false, message:"Could not send payment prompt." });
+          }
+        }
+      );
+    }
+  );
+});
+
+
+
+app.get("/api/cart/momo/check/:reference", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ success:false, message:"Please login first." });
+  }
+
+  const buyerId = req.session.user.id;
+  const reference = req.params.reference;
+
+  db.query(
+    `SELECT * FROM cart_momo_payments WHERE reference=? AND buyer_id=? LIMIT 1`,
+    [reference, buyerId],
+    async (err, payRows) => {
+      if (err) return res.status(500).json({ success:false, message:"Failed to check payment." });
+      if (!payRows.length) return res.status(404).json({ success:false, message:"Payment record not found." });
+
+      const payment = payRows[0];
+
+      if (payment.status === "paid") {
+        return res.json({ success:true, paid:true, message:"Payment already confirmed." });
+      }
+
+      try {
+        const statusUrl = `${THETELLER_STATUS_URL}/${reference}/status`;
+
+        const statusResponse = await axios.get(statusUrl, {
+          headers:{
+            "Content-Type":"application/json",
+            "Merchant-Id":THETELLER_MERCHANT_ID,
+            "Cache-Control":"no-cache"
+          }
+        });
+
+        const result = statusResponse.data;
+
+        db.query(
+          `UPDATE cart_momo_payments SET provider_response=? WHERE reference=?`,
+          [JSON.stringify(result), reference]
+        );
+
+        const isPaid =
+          result.code === "000" ||
+          result.code === "00" ||
+          result.status === "approved" ||
+          result.status === "successful" ||
+          result.reason === "Transaction Successful";
+
+        if (!isPaid) {
+          return res.json({
+            success:true,
+            paid:false,
+            message:result.reason || "Payment not confirmed yet."
+          });
+        }
+
+        db.query(
+          `SELECT c.id AS cart_id, c.product_id, c.quantity, p.*
+           FROM carts c
+           JOIN products p ON p.id = c.product_id
+           WHERE c.user_id = ?`,
+          [buyerId],
+          (cartErr, items) => {
+            if (cartErr) return res.status(500).json({ success:false, message:"Failed to load cart." });
+            if (!items.length) return res.status(400).json({ success:false, message:"Cart is empty." });
+
+            const buyerName = `${req.session.user.firstname || ""} ${req.session.user.lastname || ""}`.trim();
+            const buyerPhone = req.session.user.telephone || "";
+
+            db.beginTransaction((txErr) => {
+              if (txErr) return res.status(500).json({ success:false, message:"Transaction failed." });
+
+              let index = 0;
+
+              function processNextItem() {
+                if (index >= items.length) {
+                  return db.query(
+                    `UPDATE cart_momo_payments SET status='paid' WHERE reference=?`,
+                    [reference],
+                    (payErr) => {
+                      if (payErr) return db.rollback(() => res.status(500).json({ success:false, message:"Failed to update payment." }));
+
+                      db.query(`DELETE FROM carts WHERE user_id=?`, [buyerId], (clearErr) => {
+                        if (clearErr) return db.rollback(() => res.status(500).json({ success:false, message:"Failed to clear cart." }));
+
+                        db.commit((commitErr) => {
+                          if (commitErr) return db.rollback(() => res.status(500).json({ success:false, message:"Failed to complete checkout." }));
+
+                          return res.json({
+                            success:true,
+                            paid:true,
+                            message:"Payment confirmed. Cart checkout completed successfully."
+                          });
+                        });
+                      });
+                    }
+                  );
+                }
+
+                const item = items[index];
+                const qty = Number(item.quantity);
+                const stock = Number(item.quantity_in_stock);
+                const unitPrice = Number(item.price);
+                const totalAmount = unitPrice * qty;
+                const sellerId = item.posted_by;
+
+                if (qty > stock) {
+                  return db.rollback(() => {
+                    res.status(400).json({
+                      success:false,
+                      message:`${item.product_name} has only ${stock} item(s) in stock.`
+                    });
+                  });
+                }
+
+                db.query(
+                  `INSERT INTO purchased_products
+                   (
+                     product_id, buyer_id, seller_id, buyer_name, buyer_phone,
+                     product_name, quantity, unit_price, total_amount,
+                     payment_status, order_status
+                   )
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'pending')`,
+                  [
+                    item.product_id,
+                    buyerId,
+                    sellerId,
+                    buyerName,
+                    buyerPhone,
+                    item.product_name,
+                    qty,
+                    unitPrice,
+                    totalAmount
+                  ],
+                  (purchaseErr, purchaseResult) => {
+                    if (purchaseErr) return db.rollback(() => res.status(500).json({ success:false, message:"Failed to save purchase." }));
+
+                    const purchaseId = purchaseResult.insertId;
+
+                    db.query(
+                      `INSERT INTO admin_sales_records
+                       (
+                         purchase_id, product_id, seller_id, buyer_id,
+                         product_name, quantity, unit_price, total_amount,
+                         balance_amount, payment_status
+                       )
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid')`,
+                      [
+                        purchaseId,
+                        item.product_id,
+                        sellerId,
+                        buyerId,
+                        item.product_name,
+                        qty,
+                        unitPrice,
+                        totalAmount,
+                        totalAmount
+                      ],
+                      (adminErr) => {
+                        if (adminErr) return db.rollback(() => res.status(500).json({ success:false, message:"Failed to save admin record." }));
+
+                        db.query(
+                          `UPDATE admin_account SET balance = balance + ? WHERE id = 1`,
+                          [totalAmount],
+                          (adminAccErr) => {
+                            if (adminAccErr) return db.rollback(() => res.status(500).json({ success:false, message:"Failed to update admin account." }));
+
+                            db.query(
+                              `UPDATE products SET quantity_in_stock = quantity_in_stock - ? WHERE id = ?`,
+                              [qty, item.product_id],
+                              (stockErr) => {
+                                if (stockErr) return db.rollback(() => res.status(500).json({ success:false, message:"Failed to update stock." }));
+
+                                index++;
+                                processNextItem();
+                              }
+                            );
+                          }
+                        );
+                      }
+                    );
+                  }
+                );
+              }
+
+              processNextItem();
+            });
+          }
+        );
+
+      } catch (error) {
+        console.error("CART MOMO CHECK ERROR:", error.response?.data || error.message);
+
+        res.json({
+          success:true,
+          paid:false,
+          message:"Payment not confirmed yet. Try again."
+        });
+      }
+    }
+  );
+});
+
+
+
+
+
+/////Counts
+app.get("/api/admin/user-verification-count", (req, res) => {
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM users
+    WHERE verification_status = 'pending'
+       OR verification_status = 'not_submitted'
+       OR verification_status IS NULL
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("User verification count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load verification count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+
+app.get("/api/admin/seller-verification-count", (req, res) => {
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM users
+    WHERE role = 'vendor'
+      AND (
+        verification_status = 'pending'
+        OR verification_status = 'not_submitted'
+        OR verification_status IS NULL
+      )
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Seller verification count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load seller verification count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+app.get("/api/admin/pending-products-count", (req, res) => {
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM products
+    WHERE status = 'pending'
+       OR status = 'under review'
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Pending products count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load pending products count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+
+
+app.get("/api/admin/orders-escrow-count", (req, res) => {
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM purchased_products
+    WHERE order_status = 'pending'
+       OR order_status = 'delivering'
+       OR order_status = 'not delivered'
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Orders escrow count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load orders escrow count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+
+app.get("/api/admin/disputes-count", (req, res) => {
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM purchased_products
+    WHERE buyer_confirm_status = 'delayed'
+       OR buyer_confirm_status = 'not received'
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Disputes count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load disputes count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+
+
+
+
+
+
+/////User Counts 
+app.get("/api/cart/count", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM carts
+    WHERE user_id = ?
+  `;
+
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("Cart count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load cart count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+
+
+app.get("/api/seller/purchased-products-count", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const sellerId = req.session.user.id;
+
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM purchased_products
+    WHERE seller_id = ?
+  `;
+
+  db.query(sql, [sellerId], (err, results) => {
+    if (err) {
+      console.error("Purchased products count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load purchased products count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+
+app.get("/api/product-messages/unread-count", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM product_messages
+    WHERE receiver_id = ?
+      AND read_status = 'unread'
+  `;
+
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("Unread product messages count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load unread message count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+
+app.get("/api/report-messages/unread-count", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM report_messages
+    WHERE user_id = ?
+      AND sender = 'admin'
+      AND read_status = 'unread'
+  `;
+
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("Report messages unread count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load report messages count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+
+app.get("/api/my-products/count", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM products
+    WHERE posted_by = ?
+  `;
+
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("My products count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load my products count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+
+
+
+
+/////Read reciept 
+app.post("/api/product-message/mark-read", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+  const { product_id, other_id } = req.body;
+
+  if (!product_id) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing product ID."
+    });
+  }
+
+  let sql = `
+    UPDATE product_messages
+    SET read_status = 'read'
+    WHERE product_id = ?
+      AND receiver_id = ?
+      AND read_status = 'unread'
+  `;
+
+  let values = [product_id, userId];
+
+  if (other_id) {
+    sql += ` AND sender_id = ?`;
+    values.push(other_id);
+  }
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error("Mark product messages read error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to mark messages as read."
+      });
+    }
+
+    res.json({
+      success: true,
+      updated: result.affectedRows
+    });
+  });
+});
+
+
+
+app.post("/api/report/messages/mark-read", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const sql = `
+    UPDATE report_messages
+    SET read_status = 'read'
+    WHERE user_id = ?
+      AND sender = 'admin'
+      AND read_status = 'unread'
+  `;
+
+  db.query(sql, [userId], (err, result) => {
+    if (err) {
+      console.error("Mark report messages read error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to mark report messages as read."
+      });
+    }
+
+    res.json({
+      success: true,
+      updated: result.affectedRows
+    });
+  });
+});
+
+
+
+app.get("/api/admin/report-messages-unread-count", (req, res) => {
+  const sql = `
+    SELECT COUNT(*) AS count
+    FROM report_messages
+    WHERE read_status = 'unread'
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Admin report unread count error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load unread reports count."
+      });
+    }
+
+    res.json({
+      success: true,
+      count: results[0].count
+    });
+  });
+});
+
+app.post("/api/admin/report-messages/mark-read/:user_id", (req, res) => {
+  if (!req.session.user || !["admin", "vendor"].includes(req.session.user.role)) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized."
+    });
+  }
+
+  const userId = req.params.user_id;
+
+  const sql = `
+    UPDATE report_messages
+    SET read_status = 'read'
+    WHERE user_id = ?
+      AND sender = 'user'
+      AND read_status = 'unread'
+  `;
+
+  db.query(sql, [userId], (err, result) => {
+    if (err) {
+      console.error("Admin mark report messages read error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to mark messages as read."
+      });
+    }
+
+    res.json({
+      success: true,
+      updated: result.affectedRows
+    });
+  });
+});
+
+
+/////Comments 
+app.post("/api/products/:id/comments", (req, res) => {
+  const productId = req.params.id;
+  const userId = req.session.user ? req.session.user.id : null;
+  const { comment } = req.body;
+
+  if (!comment || comment.trim() === "") {
+    return res.status(400).json({
+      success: false,
+      message: "Comment cannot be empty."
+    });
+  }
+
+  const sql = `
+    INSERT INTO product_comments (
+      product_id,
+      user_id,
+      comment
+    )
+    VALUES (?, ?, ?)
+  `;
+
+  db.query(sql, [productId, userId, comment.trim()], (err) => {
+    if (err) {
+      console.error("Add comment error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to add comment."
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Comment added successfully."
+    });
+  });
+});
+
+
+app.get("/api/products/:id/comments", (req, res) => {
+  const productId = req.params.id;
+
+  const sql = `
+    SELECT 
+      pc.id,
+      pc.comment,
+      pc.created_at,
+      users.firstname,
+      users.lastname
+    FROM product_comments pc
+    LEFT JOIN users ON pc.user_id = users.id
+    WHERE pc.product_id = ?
+    ORDER BY pc.id DESC
+  `;
+
+  db.query(sql, [productId], (err, results) => {
+    if (err) {
+      console.error("Fetch comments error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load comments."
+      });
+    }
+
+    res.json({
+      success: true,
+      comments: results
+    });
+  });
+});
+
+
+app.get("/api/products/:id/related", (req, res) => {
+  const productId = req.params.id;
+
+  const sql = `
+    SELECT 
+      id,
+      product_name,
+      category,
+      region,
+      district,
+      price,
+      images
+    FROM products
+    WHERE status = 'approved'
+      AND id != ?
+      AND (
+        category = (SELECT category FROM products WHERE id = ?)
+        OR region = (SELECT region FROM products WHERE id = ?)
+        OR product_name LIKE CONCAT('%', (SELECT product_name FROM products WHERE id = ?), '%')
+      )
+    ORDER BY id DESC
+    LIMIT 10
+  `;
+
+  db.query(sql, [productId, productId, productId, productId], (err, results) => {
+    if (err) {
+      console.error("Related products error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load related products."
+      });
+    }
+
+    res.json({
+      success: true,
+      products: results
+    });
+  });
+});
+
+
+
+
+app.use(express.static(path.join(__dirname)));
+
 app.get("/", (req, res) => {
-  res.status(200).send("OK");
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-app.get("/healthz", (req, res) => {
-  res.status(200).json({ status: "healthy" });
-});
-
-// ✅ ENABLE CORS FOR FRONTEND REQUESTS
-
-app.use(cors({ origin: "*" }));
-
-// ✅ FALLBACK (MUST STAY LAST)
-app.use((req, res) => {
-  res.status(404).send("Endpoint not found");
-});
-
-// ✅ START SERVER (DigitalOcean Compatible)
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
-
-
-
