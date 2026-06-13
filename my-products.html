@@ -410,10 +410,19 @@ async function loadProducts(){
         images=JSON.parse(product.images);
       }catch(e){}
 
-      const firstImage =
-      images.length
-      ? `${API_BASE}/${images[0]}`
-      : "https://via.placeholder.com/300";
+     let firstImage = "";
+
+if (images.length) {
+  if (images[0].startsWith("http://") || images[0].startsWith("https://")) {
+    firstImage = images[0];
+  } else if (images[0].startsWith("/uploads/")) {
+    firstImage = `${API_BASE}${images[0]}`;
+  } else {
+    firstImage = `${API_BASE}/uploads/${images[0]}`;
+  }
+} else {
+  firstImage = "";
+}
 
       return `
 
@@ -426,7 +435,10 @@ async function loadProducts(){
       ">
 
       <div class="product-image">
-      <img src="${firstImage}">
+     <img 
+  src="${firstImage}" 
+  onerror="this.parentElement.innerHTML='<div style=&quot;display:flex;align-items:center;justify-content:center;height:100%;background:#f3f4f6;color:#777;font-weight:900;&quot;>No Image</div>'"
+>
       </div>
 
       <div class="product-info">
