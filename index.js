@@ -1956,6 +1956,7 @@ app.post(
 
       const {
         category,
+        subcategory,
         region,
         district,
         product_name,
@@ -1966,16 +1967,32 @@ app.post(
         phone_number,
         instructions,
         description,
-        item_condition
+        item_condition,
+        specifications,
+        seller_name,
+        youtube_link,
+        registered_car,
+        exchange_possible,
+        negotiable,
+        bulk_min_qty,
+        bulk_price,
+        delivery_available,
+        delivery_fee_type,
+        delivery_time,
+        pickup_available,
+        promotion_type
       } = req.body;
 
       if (
         !category ||
+        !subcategory ||
         !region ||
         !district ||
         !product_name ||
         !product_type ||
-        !price
+        !price ||
+        !phone_number ||
+        !item_condition
       ) {
         return res.status(400).json({
           success: false,
@@ -2010,9 +2027,18 @@ app.post(
         imagePaths.push(imageUrl);
       }
 
+      let cleanSpecs = null;
+
+      try {
+        cleanSpecs = specifications ? JSON.stringify(JSON.parse(specifications)) : null;
+      } catch (e) {
+        cleanSpecs = JSON.stringify({});
+      }
+
       const sql = `
         INSERT INTO products (
           category,
+          subcategory,
           region,
           district,
           product_name,
@@ -2025,28 +2051,55 @@ app.post(
           instructions,
           description,
           item_condition,
+          specifications,
+          seller_name,
+          youtube_link,
+          registered_car,
+          exchange_possible,
+          negotiable,
+          bulk_min_qty,
+          bulk_price,
+          delivery_available,
+          delivery_fee_type,
+          delivery_time,
+          pickup_available,
+          promotion_type,
           images,
           posted_by
         )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       `;
 
       db.query(
         sql,
         [
           category,
+          subcategory,
           region,
           district,
           product_name,
           product_type,
           price,
-          product_color,
-          quantity_in_stock,
+          product_color || null,
+          quantity_in_stock || 1,
           "pending",
           phone_number,
           instructions || null,
           description || null,
           item_condition,
+          cleanSpecs,
+          seller_name || null,
+          youtube_link || null,
+          registered_car || null,
+          exchange_possible || null,
+          negotiable || "Not sure",
+          bulk_min_qty || null,
+          bulk_price || null,
+          delivery_available || null,
+          delivery_fee_type || null,
+          delivery_time || null,
+          pickup_available || null,
+          promotion_type || "No promo - Free",
           JSON.stringify(imagePaths),
           userId
         ],

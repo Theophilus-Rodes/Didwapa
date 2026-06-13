@@ -1,369 +1,659 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DIDWAPA - Sell Product</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DIDWAPA - New Advert</title>
 
-  <style>
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      font-family:Arial, Helvetica, sans-serif;
-    }
-
-    :root{
-      --primary:#ff6600;
-      --secondary:#0a2d73;
-      --bg:#f6f7fb;
-      --text:#111827;
-      --muted:#6b7280;
-      --border:#e5e7eb;
-    }
-
-    body{
-      background:var(--bg);
-      color:var(--text);
-      padding-bottom:120px;
-    }
-
-    .app{
-      max-width:650px;
-      margin:auto;
-      background:white;
-      min-height:100vh;
-      overflow:hidden;
-    }
-
-    .header{
-      background:linear-gradient(135deg,var(--secondary),var(--primary));
-      color:white;
-      padding:22px 16px 45px;
-      border-bottom-left-radius:28px;
-      border-bottom-right-radius:28px;
-      animation:slideDown .6s ease;
-    }
-
-    .top-row{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-    }
-
-    .back-btn{
-      border:none;
-      background:rgba(255,255,255,.2);
-      color:white;
-      padding:10px 14px;
-      border-radius:999px;
-      cursor:pointer;
-      font-weight:900;
-    }
-
-    .header h1{
-      margin-top:18px;
-      font-size:1.5rem;
-    }
-
-    .header p{
-      margin-top:8px;
-      font-size:.88rem;
-      opacity:.9;
-      line-height:1.5;
-    }
-
-    .content{
-      padding:16px;
-      margin-top:-26px;
-    }
-
-    .card{
-      background:white;
-      border-radius:22px;
-      padding:16px;
-      box-shadow:0 16px 35px rgba(0,0,0,.08);
-      border:1px solid var(--border);
-      animation:fadeUp .6s ease both;
-    }
-
-    .card-title{
-      font-size:1rem;
-      font-weight:900;
-      color:var(--secondary);
-      margin-bottom:16px;
-    }
-
-    .form-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:14px;
-    }
-
-    .form-group{
-      display:flex;
-      flex-direction:column;
-      gap:7px;
-    }
-
-    .full{
-      grid-column:1 / -1;
-    }
-
-    label{
-      font-size:.8rem;
-      font-weight:900;
-      color:#374151;
-    }
-
-    input,
-    textarea,
-    select{
-      width:100%;
-      border:1px solid var(--border);
-      background:#f9fafb;
-      border-radius:15px;
-      outline:none;
-      transition:.25s ease;
-      padding:13px;
-      font-size:.9rem;
-    }
-
-    textarea{
-      min-height:120px;
-      resize:none;
-    }
-
-    input:focus,
-    textarea:focus,
-    select:focus{
-      border-color:var(--primary);
-      background:white;
-      box-shadow:0 0 0 4px rgba(255,102,0,.12);
-    }
-
-    .upload-box{
-      border:2px dashed #ffb27a;
-      border-radius:18px;
-      padding:20px;
-      background:#fff7f1;
-      text-align:center;
-      transition:.3s ease;
-      cursor:pointer;
-      position:relative;
-      overflow:hidden;
-    }
-
-    .upload-box:hover{
-      transform:translateY(-3px);
-      background:#fff2e7;
-    }
-
-    .upload-box input{
-      display:none;
-    }
-
-    .upload-icon{
-      font-size:2rem;
-      margin-bottom:10px;
-    }
-
-    .upload-text{
-      font-size:.88rem;
-      color:#444;
-      line-height:1.5;
-    }
-
-    .preview-grid{
-      margin-top:16px;
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:10px;
-    }
-
-    .preview-item{
-      aspect-ratio:1/1;
-      border-radius:16px;
-      overflow:hidden;
-      position:relative;
-      animation:zoomIn .4s ease;
-      box-shadow:0 10px 20px rgba(0,0,0,.08);
-    }
-
-    .preview-item img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-    }
-
-    .remove-img-btn{
-      position:absolute;
-      top:6px;
-      right:6px;
-      width:28px;
-      height:28px;
-      border:none;
-      border-radius:50%;
-      background:#ef4444;
-      color:white;
-      font-weight:900;
-      cursor:pointer;
-      font-size:1rem;
-      box-shadow:0 6px 14px rgba(0,0,0,.25);
-    }
-
-    .preview-count{
-      margin-top:10px;
-      font-size:.82rem;
-      color:var(--primary);
-      font-weight:900;
-    }
-
-    .add-more-btn{
-      width:100%;
-      height:48px;
-      border:none;
-      border-radius:18px;
-      margin-top:12px;
-      background:linear-gradient(135deg,var(--secondary),#153f9a);
-      color:white;
-      font-weight:900;
-      cursor:pointer;
-      transition:.3s ease;
-    }
-
-    .submit-btn{
-      width:100%;
-      height:52px;
-      border:none;
-      border-radius:18px;
-      margin-top:20px;
-      background:linear-gradient(135deg,var(--primary),#ff4500);
-      color:white;
-      font-weight:900;
-      font-size:1rem;
-      cursor:pointer;
-      transition:.3s ease;
-    }
-
-    .submit-btn:hover,
-    .add-more-btn:hover{
-      transform:translateY(-4px);
-      box-shadow:0 15px 30px rgba(255,102,0,.3);
-    }
-
-    .alert{
-      position:fixed;
-      top:20px;
-      left:50%;
-      transform:translateX(-50%);
-      background:white;
-      padding:14px 18px;
-      border-radius:15px;
-      box-shadow:0 15px 40px rgba(0,0,0,.15);
-      z-index:999;
-      display:none;
-      font-weight:900;
-    }
-
-    .success{
-      color:green;
-    }
-
-    .error{
-      color:red;
-    }
-
-    @keyframes slideDown{
-      from{
-        transform:translateY(-30px);
-        opacity:0;
-      }
-      to{
-        transform:translateY(0);
-        opacity:1;
-      }
-    }
-
-    @keyframes fadeUp{
-      from{
-        transform:translateY(30px);
-        opacity:0;
-      }
-      to{
-        transform:translateY(0);
-        opacity:1;
-      }
-    }
-
-    @keyframes zoomIn{
-      from{
-        transform:scale(.85);
-        opacity:0;
-      }
-      to{
-        transform:scale(1);
-        opacity:1;
-      }
-    }
-
-    @media(max-width:600px){
-      .content{
-        padding:12px;
-      }
-
-      .card{
-        padding:13px;
-        border-radius:18px;
-      }
-
-      .form-grid{
-        grid-template-columns:1fr;
-        gap:11px;
-      }
-
-      .preview-grid{
-        grid-template-columns:repeat(2,1fr);
-      }
-
-      .header{
-        padding:18px 13px 38px;
-      }
-
-      .header h1{
-        font-size:1.25rem;
-      }
-
-      input,
-      textarea,
-      select{
-        padding:12px;
-        font-size:.83rem;
-      }
-
-      .submit-btn{
-        height:48px;
-        font-size:.92rem;
-      }
-    }
-
-    .submit-btn:disabled{
-  opacity: .8;
-  cursor: not-allowed;
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial, Helvetica, sans-serif;
 }
 
-.btn-spinner{
+:root{
+  --primary:#ff6600;
+  --secondary:#0a2d73;
+  --bg:#f6f7fb;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#d9e2ec;
+  --soft-orange:#fff4ec;
+  --soft-blue:#edf4ff;
+  --danger:#ef4444;
+  --success:#16a34a;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:90px;
+}
+
+.app{
+  max-width:680px;
+  margin:auto;
+  background:#fff;
+  min-height:100vh;
+  overflow:hidden;
+}
+
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:50;
+  background:linear-gradient(135deg,var(--secondary),var(--primary));
+  color:white;
+  padding:15px 16px 18px;
+  border-bottom-left-radius:22px;
+  border-bottom-right-radius:22px;
+  box-shadow:0 10px 25px rgba(10,45,115,.22);
+}
+
+.topbar-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.topbar button{
+  border:none;
+  background:rgba(255,255,255,.16);
+  color:white;
+  padding:8px 12px;
+  border-radius:999px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.page-title{
+  font-size:1.05rem;
+  font-weight:900;
+}
+
+.top-sub{
+  margin-top:10px;
+  font-size:.78rem;
+  opacity:.92;
+  line-height:1.45;
+}
+
+.form{
+  padding:14px;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:0 12px 30px rgba(0,0,0,.055);
+  animation:fadeUp .35s ease both;
+}
+
+.card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:13px;
+}
+
+.card-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:900;
+  color:var(--secondary);
+  font-size:.98rem;
+}
+
+.step-badge{
+  background:var(--soft-orange);
+  color:var(--primary);
+  font-size:.72rem;
+  font-weight:900;
+  padding:7px 10px;
+  border-radius:999px;
+  white-space:nowrap;
+}
+
+.field{
+  position:relative;
+  margin-bottom:13px;
+}
+
+.field:last-child{
+  margin-bottom:0;
+}
+
+label.field-label{
+  display:block;
+  font-size:.78rem;
+  font-weight:900;
+  color:#374151;
+  margin-bottom:7px;
+}
+
+.input,
+input,
+textarea,
+select{
+  width:100%;
+  border:1px solid var(--border);
+  background:#fbfdff;
+  border-radius:14px;
+  padding:14px;
+  min-height:50px;
+  outline:none;
+  color:#1f2937;
+  font-size:.9rem;
+  transition:.22s ease;
+}
+
+textarea{
+  min-height:118px;
+  resize:none;
+  line-height:1.45;
+}
+
+.input:focus,
+input:focus,
+textarea:focus,
+select:focus{
+  border-color:var(--primary);
+  background:white;
+  box-shadow:0 0 0 4px rgba(255,102,0,.12);
+}
+
+.select-box{
+  width:100%;
+  border:1px solid var(--border);
+  background:#fbfdff;
+  border-radius:14px;
+  padding:14px;
+  min-height:50px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  cursor:pointer;
+  font-weight:800;
+}
+
+.select-box .text{
+  color:#1f2937;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.select-box .placeholder{
+  color:#7a8a9a;
+}
+
+.arrow{
+  color:var(--primary);
+  font-size:1.1rem;
+  font-weight:900;
+}
+
+.help-text{
+  font-size:.75rem;
+  color:var(--muted);
+  line-height:1.45;
+  margin-top:8px;
+}
+
+.photo-row{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding-bottom:8px;
+}
+
+.add-photo{
+  min-width:78px;
+  height:78px;
+  border-radius:17px;
+  border:2px dashed var(--primary);
+  background:var(--soft-orange);
+  color:var(--primary);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.add-photo strong{
+  font-size:1.8rem;
+  line-height:1;
+}
+
+.add-photo small{
+  font-size:.62rem;
+  margin-top:4px;
+}
+
+.photo-item{
+  min-width:78px;
+  height:78px;
+  border-radius:17px;
+  overflow:hidden;
+  position:relative;
+  border:1px solid var(--border);
+}
+
+.photo-item img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.remove-photo{
+  position:absolute;
+  top:4px;
+  right:4px;
+  width:23px;
+  height:23px;
+  border:none;
+  border-radius:50%;
+  background:var(--danger);
+  color:white;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.hidden-file{
+  display:none;
+}
+
+.auto-note{
+  background:linear-gradient(135deg,var(--soft-blue),#fff);
+  border:1px solid #dbeafe;
+  color:#1f2937;
+  padding:12px;
+  border-radius:15px;
+  font-size:.84rem;
+  font-weight:800;
+  margin-bottom:12px;
+}
+
+.auto-note span{
+  color:var(--primary);
+}
+
+.spec-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.full{
+  grid-column:1 / -1;
+}
+
+.hide-btn,
+.option-btn{
+  width:100%;
+  border:none;
+  border-radius:15px;
+  background:var(--soft-blue);
+  color:var(--secondary);
+  min-height:48px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.option-btn{
+  background:#fbfdff;
+  border:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 14px;
+  color:#536273;
+}
+
+.radio-row{
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+.radio-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:.88rem;
+  font-weight:800;
+  color:#374151;
+}
+
+.radio-item input{
+  width:22px;
+  height:22px;
+  accent-color:var(--primary);
+}
+
+.inline-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.hidden{
+  display:none !important;
+}
+
+.good-check{
+  position:relative;
+}
+
+.good-check::after{
+  content:"✓";
+  position:absolute;
+  right:13px;
+  top:39px;
+  color:var(--success);
+  font-weight:900;
+}
+
+.submit-area{
+  background:#fff;
+  position:sticky;
+  bottom:0;
+  z-index:30;
+  padding:12px 14px;
+  border-top:1px solid var(--border);
+  box-shadow:0 -8px 25px rgba(0,0,0,.06);
+}
+
+.submit-btn,
+.draft-btn{
+  width:100%;
+  height:51px;
+  border:none;
+  border-radius:16px;
+  font-weight:900;
+  cursor:pointer;
+  margin-bottom:9px;
+}
+
+.submit-btn{
+  background:linear-gradient(135deg,var(--primary),#ff4500);
+  color:white;
+}
+
+.draft-btn{
+  background:white;
+  color:var(--secondary);
+  border:1px solid var(--secondary);
+}
+
+.submit-btn:disabled{
+  opacity:.75;
+  cursor:not-allowed;
+}
+
+.spinner{
   width:18px;
   height:18px;
-  border:3px solid rgba(255,255,255,.4);
-  border-top:3px solid white;
+  border:3px solid rgba(255,255,255,.45);
+  border-top:3px solid #fff;
   border-radius:50%;
   display:inline-block;
   vertical-align:middle;
   margin-right:8px;
-  animation:spin .8s linear infinite;
+  animation:spin .75s linear infinite;
 }
-  </style>
+
+.alert{
+  position:fixed;
+  top:75px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#fff;
+  padding:13px 17px;
+  border-radius:14px;
+  box-shadow:0 15px 40px rgba(0,0,0,.18);
+  z-index:999;
+  display:none;
+  font-weight:900;
+  max-width:92%;
+  text-align:center;
+}
+
+.success{color:green}
+.error{color:red}
+
+/* Full screen pickers */
+.screen{
+  position:fixed;
+  inset:0;
+  background:var(--bg);
+  z-index:100;
+  display:none;
+  max-width:680px;
+  margin:auto;
+  overflow:auto;
+}
+
+.screen.active{
+  display:block;
+}
+
+.screen-head{
+  position:sticky;
+  top:0;
+  z-index:5;
+  background:linear-gradient(135deg,var(--secondary),var(--primary));
+  color:white;
+  min-height:58px;
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.screen-head button{
+  border:none;
+  background:rgba(255,255,255,.16);
+  color:white;
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  font-size:1.15rem;
+  cursor:pointer;
+  font-weight:900;
+}
+
+.screen-title{
+  flex:1;
+  text-align:center;
+  font-weight:900;
+  margin-right:38px;
+}
+
+.search-wrap{
+  position:sticky;
+  top:58px;
+  z-index:4;
+  background:linear-gradient(135deg,var(--secondary),var(--primary));
+  padding:0 14px 12px;
+}
+
+.search-wrap input{
+  min-height:43px;
+  border-radius:999px;
+  border:none;
+  background:white;
+}
+
+.list{
+  padding:10px;
+}
+
+.list-item{
+  background:white;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:13px;
+  margin-bottom:9px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  cursor:pointer;
+  box-shadow:0 7px 20px rgba(0,0,0,.04);
+}
+
+.list-item:hover{
+  border-color:var(--primary);
+}
+
+.icon{
+  width:38px;
+  height:38px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--soft-orange);
+  font-size:1.25rem;
+}
+
+.item-main{
+  flex:1;
+  min-width:0;
+}
+
+.item-title{
+  font-weight:900;
+  color:#1f2937;
+  font-size:.92rem;
+}
+
+.item-sub{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:.72rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.chev,
+.option-check{
+  color:var(--primary);
+  font-weight:900;
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:30px;
+  font-weight:800;
+}
+
+.multi-actions{
+  position:sticky;
+  bottom:0;
+  background:#fff;
+  padding:12px;
+  border-top:1px solid var(--border);
+}
+
+.done-btn{
+  width:100%;
+  height:48px;
+  border:none;
+  border-radius:15px;
+  background:linear-gradient(135deg,var(--primary),#ff4500);
+  color:white;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.save-sheet{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+  z-index:200;
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+}
+
+.save-box{
+  max-width:680px;
+  width:100%;
+  background:white;
+  border-top-left-radius:24px;
+  border-top-right-radius:24px;
+  padding:18px;
+  text-align:center;
+  animation:slideUp .25s ease both;
+}
+
+.save-box h3{
+  color:var(--secondary);
+  margin-bottom:8px;
+}
+
+.save-box p{
+  color:var(--muted);
+  font-size:.85rem;
+  line-height:1.45;
+  margin-bottom:15px;
+}
+
+.sheet-btn{
+  width:100%;
+  height:46px;
+  border:none;
+  border-radius:14px;
+  margin-bottom:9px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.sheet-save{
+  background:var(--soft-orange);
+  color:var(--primary);
+}
+
+.sheet-discard{
+  background:#fff1f2;
+  color:#e11d48;
+}
+
+.sheet-cancel{
+  background:#eef4ff;
+  color:var(--secondary);
+}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+@media(max-width:600px){
+  .form{padding:11px}
+  .card{border-radius:18px;padding:13px}
+  .spec-grid,
+  .inline-grid{
+    grid-template-columns:1fr;
+  }
+  .screen{max-width:100%}
+  .screen-title{font-size:.95rem}
+}
+</style>
 </head>
 
 <body>
@@ -371,288 +661,1058 @@
 <div class="alert" id="alertBox"></div>
 
 <main class="app">
-
-  <section class="header">
-    <div class="top-row">
-      <h3>Sell Product</h3>
-
-      <button class="back-btn" onclick="window.location.href='you.html'">
-        ← Back
-      </button>
+  <header class="topbar">
+    <div class="topbar-row">
+      <button type="button" onclick="askBeforeLeave()">Cancel</button>
+      <div class="page-title">New Advert</div>
+      <button type="button" onclick="clearForm()">Clear</button>
     </div>
+    <div class="top-sub">
+      Create a trusted DIDWAPA advert with the right questions for each product type.
+    </div>
+  </header>
 
-    <h1>Upload Your Product</h1>
+  <form class="form" id="productForm">
 
-    <p>
-      Add your product details and upload at least 5 clear images
-      to increase trust and visibility.
-    </p>
-  </section>
-
-  <section class="content">
-
-    <form class="card" id="productForm">
-
-      <div class="card-title">
-        Product Information
+    <section class="card">
+      <div class="card-head">
+        <div class="card-title">🗂️ Category Details</div>
+        <span class="step-badge">Step 1</span>
       </div>
 
-      <div class="form-grid">
-
-        <div class="form-group">
-          <label>Category</label>
-          <select id="category" required>
-  <option value="">Select category</option>
-  <option>Trending</option>
-  <option>Vehicles</option>
-  <option>Property</option>
-  <option>Phones & Tablets</option>
-  <option>Electronics</option>
-  <option>Home, Furniture & Appliances</option>
-  <option>Fashion</option>
-  <option>Beauty & Personal Care</option>
-  <option>Services</option>
-  <option>Repair & Construction</option>
-  <option>Commercial Equipment & Tools</option>
-  <option>Leisure & Activities</option>
-  <option>Babies & Kids</option>
-  <option>Food, Agriculture & Farming</option>
-  <option>Animals & Pets</option>
-  <option>Jobs</option>
-  <option>Seeking Work - CVs</option>
-</select>
+      <div class="field">
+        <label class="field-label">Category*</label>
+        <div class="select-box" onclick="openCategoryScreen()">
+          <span id="categoryText" class="text placeholder">Choose category</span>
+          <span class="arrow">›</span>
         </div>
+      </div>
 
-        <div class="form-group">
-  <label>Region</label>
-  <select name="region" id="region" required>
-    <option value="">Select region</option>
-    <option value="All Ghana">All Ghana</option>
-    <option value="Ashanti">Ashanti</option>
-    <option value="Central Region">Central Region</option>
-    <option value="Greater Accra">Greater Accra</option>
-    <option value="Brong Ahafo">Brong Ahafo</option>
-    <option value="Eastern Region">Eastern Region</option>
-    <option value="Northern Region">Northern Region</option>
-    <option value="Upper East Region">Upper East Region</option>
-    <option value="Upper West Region">Upper West Region</option>
-    <option value="Volta Region">Volta Region</option>
-    <option value="Western Region">Western Region</option>
-  </select>
-</div>
-
-<div class="form-group">
-  <label>Area / District</label>
-  <select name="district" id="district" required>
-    <option value="">Select area</option>
-  </select>
-</div>
-
-        <div class="form-group">
-          <label>Product Type</label>
-          <input type="text" id="product_type" placeholder="e.g. Phone, Dress" required>
+      <div class="field">
+        <label class="field-label">Subcategory*</label>
+        <div class="select-box" onclick="openSubcategoryScreen()">
+          <span id="subcategoryText" class="text placeholder">Choose subcategory</span>
+          <span class="arrow">›</span>
         </div>
+      </div>
 
-        <div class="form-group full">
-          <label>Product Name</label>
-          <input type="text" id="product_name" placeholder="Enter product name" required>
+      <div class="field">
+        <label class="field-label">Advert Title*</label>
+        <input type="text" id="product_name" placeholder="Example: Toyota Corolla 2018 Automatic" required>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="card-title">📸 Photos & Video</div>
+        <span class="step-badge">Step 2</span>
+      </div>
+
+      <div class="photo-row" id="photoRow">
+        <div class="add-photo" onclick="document.getElementById('images').click()">
+          <strong>+</strong>
+          <small>Add photo</small>
         </div>
+      </div>
 
-        <div class="form-group">
-          <label>Price (GH₵)</label>
-          <input type="number" id="price" placeholder="Enter price" required>
-        </div>
+      <input class="hidden-file" type="file" id="images" accept="image/*" multiple>
 
-        <div class="form-group">
-          <label>Quantity in Stock</label>
-          <input type="number" id="quantity" placeholder="Enter quantity" required>
-        </div>
+      <div class="help-text">
+        Upload at least 5 clear images. First picture becomes the title picture.
+        Supported formats: JPG, JPEG, PNG, WEBP.
+      </div>
 
-        <div class="form-group">
-          <label>Product Color</label>
-          <input type="text" id="product_color" placeholder="e.g. Black, White" required>
-        </div>
+      <div class="field" style="margin-top:14px;">
+        <label class="field-label">Video Link</label>
+        <input type="text" id="youtube_link" placeholder="Link to YouTube or Facebook video">
+      </div>
+    </section>
 
-        <div class="form-group">
-          <label>Item Condition</label>
-          <select id="item_condition" required>
-            <option value="">Select condition</option>
-            <option>Brand New</option>
-            <option>Used</option>
-            <option>Refurbished</option>
-          </select>
-        </div>
+    <section class="card">
+      <div class="card-head">
+        <div class="card-title">📍 Location</div>
+        <span class="step-badge">Step 3</span>
+      </div>
 
-        <div class="form-group full">
-          <label>Phone Number</label>
-          <input type="text" id="phone_number" placeholder="Enter contact number" required>
-        </div>
-
-        <div class="form-group full">
-          <label>Description</label>
-          <textarea id="description" placeholder="Describe your product in detail..." required></textarea>
-        </div>
-
-        <div class="form-group full">
-          <label>Instructions</label>
-          <textarea id="instructions" placeholder="Special delivery or usage instructions..."></textarea>
-        </div>
-
-        <div class="form-group full">
-          <label>Upload Product Images (Minimum 5)</label>
-
-          <div class="upload-box" id="uploadBox">
-            <input type="file" id="images" accept="image/*" multiple>
-
-            <div class="upload-icon">🖼️</div>
-
-            <div class="upload-text">
-              Tap to upload pictures from gallery
-            </div>
-
-            <div class="preview-count" id="previewCount">
-              0 images selected
-            </div>
+      <div class="inline-grid">
+        <div class="field">
+          <label class="field-label">Region*</label>
+          <div class="select-box" onclick="openSimpleOption('region')">
+            <span id="regionText" class="text placeholder">Region*</span>
+            <span class="arrow">⌄</span>
           </div>
-
-          <button type="button" class="add-more-btn" id="addMoreBtn">
-            + Add More Pictures
-          </button>
-
-          <div class="preview-grid" id="previewGrid"></div>
         </div>
 
+        <div class="field">
+          <label class="field-label">Area / District*</label>
+          <div class="select-box" onclick="openSimpleOption('district')">
+            <span id="districtText" class="text placeholder">Area / District*</span>
+            <span class="arrow">⌄</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="specCard" style="display:none;">
+      <div class="card-head">
+        <div class="card-title">⚙️ Product Questions</div>
+        <span class="step-badge">Auto filled</span>
       </div>
 
-      <button type="submit" class="submit-btn">
-        Upload Product
+      <div class="auto-note">
+        👌 <span>DIDWAPA has filled some fields for you.</span> Check them and change the ones that are not correct.
+      </div>
+
+      <div class="spec-grid" id="dynamicFields"></div>
+
+      <button type="button" class="hide-btn" id="hideFieldsBtn" onclick="toggleSpecs()" style="margin-top:12px;">
+        Hide fields ⌃
+      </button>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="card-title">📝 Description</div>
+        <span class="step-badge">Step 4</span>
+      </div>
+
+      <div id="vehicleRegisteredBox" class="field hidden">
+        <label class="field-label">Registered Car</label>
+        <div class="radio-row">
+          <label class="radio-item"><input type="radio" name="registered_car" value="Yes"> Yes</label>
+          <label class="radio-item"><input type="radio" name="registered_car" value="No"> No</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Exchange Possible</label>
+        <div class="select-box" onclick="openSimpleOption('exchange_possible')">
+          <span id="exchange_possibleText" class="text placeholder">Exchange Possible</span>
+          <span class="arrow">⌄</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Description*</label>
+        <textarea id="description" placeholder="Describe the product clearly. Add condition, reason for selling, warranty, and any important details." required></textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="card-title">💰 Price & Negotiation</div>
+        <span class="step-badge">Step 5</span>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Price (GH₵)*</label>
+        <input type="number" id="price" placeholder="Price*" required>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Are you open to negotiation?</label>
+        <div class="radio-row">
+          <label class="radio-item"><input type="radio" name="negotiable" value="Yes"> Yes</label>
+          <label class="radio-item"><input type="radio" name="negotiable" value="No"> No</label>
+          <label class="radio-item"><input type="radio" name="negotiable" value="Not sure" checked> Not sure</label>
+        </div>
+      </div>
+
+      <button class="option-btn" type="button" onclick="toggleBox('bulkBox')">
+        <span>Add bulk price</span>
+        <span class="arrow">›</span>
       </button>
 
-    </form>
+      <div id="bulkBox" class="inline-grid hidden" style="margin-top:13px;">
+        <div class="field">
+          <label class="field-label">Minimum Quantity</label>
+          <input type="number" id="bulk_min_qty" placeholder="e.g. 5">
+        </div>
+        <div class="field">
+          <label class="field-label">Bulk Unit Price (GH₵)</label>
+          <input type="number" id="bulk_price" placeholder="e.g. 950">
+        </div>
+      </div>
+    </section>
 
-  </section>
+    <section class="card">
+      <div class="card-head">
+        <div class="card-title">🚚 Delivery</div>
+        <span class="step-badge">Optional</span>
+      </div>
 
+      <button class="option-btn" type="button" onclick="toggleBox('deliveryBox')">
+        <span>Add delivery options</span>
+        <span class="arrow">›</span>
+      </button>
+
+      <div id="deliveryBox" class="inline-grid hidden" style="margin-top:13px;">
+        <div class="field">
+          <label class="field-label">Delivery Available</label>
+          <div class="select-box" onclick="openSimpleOption('delivery_available')">
+            <span id="delivery_availableText" class="text placeholder">Delivery Available</span>
+            <span class="arrow">⌄</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Delivery Fee</label>
+          <div class="select-box" onclick="openSimpleOption('delivery_fee_type')">
+            <span id="delivery_fee_typeText" class="text placeholder">Delivery Fee</span>
+            <span class="arrow">⌄</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Delivery Time</label>
+          <div class="select-box" onclick="openSimpleOption('delivery_time')">
+            <span id="delivery_timeText" class="text placeholder">Delivery Time</span>
+            <span class="arrow">⌄</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Pickup Available</label>
+          <div class="select-box" onclick="openSimpleOption('pickup_available')">
+            <span id="pickup_availableText" class="text placeholder">Pickup Available</span>
+            <span class="arrow">⌄</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="card-title">👤 Seller Information</div>
+        <span class="step-badge">Step 6</span>
+      </div>
+
+      <div class="field good-check">
+        <label class="field-label">Name</label>
+        <input type="text" id="seller_name" placeholder="Seller or shop name">
+      </div>
+
+      <div class="field good-check">
+        <label class="field-label">Phone Number*</label>
+        <input type="text" id="phone_number" placeholder="Phone number*" required>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="card-title">📢 Promotion</div>
+        <span class="step-badge">Final</span>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Promotion Type</label>
+        <div class="select-box" onclick="openSimpleOption('promotion_type')">
+          <span id="promotion_typeText" class="text">No promo - Free</span>
+          <span class="arrow">⌄</span>
+        </div>
+      </div>
+
+      <div class="inline-grid">
+        <div class="field">
+          <label class="field-label">Quantity in Stock*</label>
+          <input type="number" id="quantity" placeholder="Quantity in Stock*" value="1" min="1" required>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Product Color</label>
+          <input type="text" id="product_color" placeholder="Product Color">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Item Condition*</label>
+        <div class="select-box" onclick="openSimpleOption('item_condition')">
+          <span id="item_conditionText" class="text placeholder">Item Condition*</span>
+          <span class="arrow">⌄</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Instructions</label>
+        <textarea id="instructions" placeholder="Delivery, meeting point, warranty, or special instructions..."></textarea>
+      </div>
+    </section>
+
+  </form>
+
+  <div class="submit-area">
+    <button class="submit-btn" type="submit" form="productForm">Post Ad</button>
+    <button class="draft-btn" type="button" onclick="showAlert('Draft saving will work after we add backend support.', 'success')">Save and Post Later</button>
+  </div>
 </main>
 
+<!-- Category Screen -->
+<div class="screen" id="categoryScreen">
+  <div class="screen-head">
+    <button onclick="closeScreens()">×</button>
+    <div class="screen-title">All Categories</div>
+  </div>
+  <div class="search-wrap">
+    <input type="text" id="categorySearch" placeholder="Find category" oninput="renderCategoryList()">
+  </div>
+  <div class="list" id="categoryList"></div>
+</div>
+
+<!-- Subcategory Screen -->
+<div class="screen" id="subcategoryScreen">
+  <div class="screen-head">
+    <button onclick="openCategoryScreen()">‹</button>
+    <div class="screen-title" id="subcategoryScreenTitle">Subcategories</div>
+  </div>
+  <div class="search-wrap">
+    <input type="text" id="subcategorySearch" placeholder="Search subcategory" oninput="renderSubcategoryList()">
+  </div>
+  <div class="list" id="subcategoryList"></div>
+</div>
+
+<!-- Option Screen -->
+<div class="screen" id="optionScreen">
+  <div class="screen-head">
+    <button onclick="closeOptionScreen()">‹</button>
+    <div class="screen-title" id="optionTitle">Select Option</div>
+  </div>
+  <div class="search-wrap">
+    <input type="text" id="optionSearch" placeholder="Search" oninput="renderOptionList()">
+  </div>
+  <div class="list" id="optionList"></div>
+  <div class="multi-actions hidden" id="multiActions">
+    <button class="done-btn" type="button" onclick="finishMultiSelect()">Done</button>
+  </div>
+</div>
+
+<!-- Save Modal -->
+<div class="save-sheet" id="saveSheet">
+  <div class="save-box">
+    <h3>Save your advert?</h3>
+    <p>You have started creating an advert. You can save it and continue later or discard it.</p>
+    <button class="sheet-btn sheet-save" onclick="saveDraftLocal()">Save</button>
+    <button class="sheet-btn sheet-discard" onclick="discardAndLeave()">Discard</button>
+    <button class="sheet-btn sheet-cancel" onclick="document.getElementById('saveSheet').style.display='none'">Cancel</button>
+  </div>
+</div>
+
 <script>
- const API_BASE =
+const API_BASE =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1"
     ? "http://localhost:5000"
     : "";
 
-const alertBox = document.getElementById("alertBox");
-const imageInput = document.getElementById("images");
-const previewGrid = document.getElementById("previewGrid");
-const previewCount = document.getElementById("previewCount");
-const uploadBox = document.getElementById("uploadBox");
-const addMoreBtn = document.getElementById("addMoreBtn");
+const CATEGORY_DATA = {
+  "Phones & Tablets": {
+    icon:"📱",
+    subcategories:["Mobile Phones","Tablets","Smart Watches","Phone Accessories","Tablet Accessories","SIM Cards","Phone Parts","Power Banks","Chargers & Power Adapters","Phone Cases/Covers"],
+    fields:[
+      {name:"brand",label:"Brand*",type:"select",options:["Apple","Samsung","Tecno","Infinix","Itel","Huawei","Xiaomi","Oppo","Nokia","Google","Lenovo","Amazon","Other"]},
+      {name:"model",label:"Model*",type:"text"},
+      {name:"ram",label:"RAM",type:"select",options:["1GB","2GB","3GB","4GB","6GB","8GB","12GB","16GB+"]},
+      {name:"storage",label:"Internal Storage",type:"select",options:["16GB","32GB","64GB","128GB","256GB","512GB","1TB"]},
+      {name:"os",label:"Operating System",type:"select",options:["Android","iOS","HarmonyOS","Other"],auto:"Android"},
+      {name:"display_type",label:"Display Type",type:"select",options:["IPS LCD","OLED","AMOLED","Super AMOLED","Retina","TFT","Other"],auto:"IPS LCD"},
+      {name:"resolution",label:"Resolution",type:"select",options:["720 x 1280","1080 x 1920","1080 x 2400","1170 x 2532","1440 x 3200","Other"],auto:"720 x 1280"},
+      {name:"sim",label:"SIM",type:"select",options:["Mini-SIM","Micro-SIM","Nano-SIM","eSIM","Dual SIM"],auto:"Mini-SIM"},
+      {name:"card_slot",label:"Card Slot",type:"select",options:["No Card Slot","microSD, up to 32GB","microSD, up to 128GB","microSD, up to 256GB","microSDXC"],auto:"microSD, up to 32GB"},
+      {name:"main_camera",label:"Main Camera",type:"select",options:["5 MP","8 MP","12 MP","13 MP","16 MP","48 MP","50 MP","64 MP","108 MP","Other"],auto:"8 MP"},
+      {name:"selfie_camera",label:"Selfie Camera",type:"select",options:["5 MP","8 MP","12 MP","13 MP","16 MP","32 MP","Other"]},
+      {name:"battery",label:"Battery",type:"text",auto:"1800"},
+      {name:"network",label:"Network",type:"select",options:["2G","3G","4G","5G"],auto:"4G"}
+    ]
+  },
 
+  "Vehicles": {
+    icon:"🚙",
+    subcategories:["Cars","Buses & Microbuses","Construction & Heavy Machinery","Motorcycles & Scooters","Trucks & Trailers","Vehicle Parts & Accessories","Watercraft & Boats"],
+    fields:[
+      {name:"make",label:"Make*",type:"select",options:["Other","Acura","Audi","BAIC","Bentley","BMW","Brilliance","Buick","Cadillac","Changan","Chevrolet","Chrysler","Citroen","Daewoo","Daihatsu","Dodge","Fiat","Ford","Geely","Honda","Hyundai","Infiniti","Isuzu","Jaguar","Jeep","Kia","Land Rover","Lexus","Mazda","Mercedes-Benz","Mitsubishi","Nissan","Opel","Peugeot","Porsche","Renault","Suzuki","Tesla","Toyota","Volkswagen","Volvo"]},
+      {name:"model",label:"Model*",type:"text"},
+      {name:"year",label:"Year of Manufacture*",type:"number"},
+      {name:"color",label:"Color*",type:"select",options:["White","Silver","Black","Gray","Blue","Red","Green","Brown","Beige","Orange","Purple","Gold","Other"]},
+      {name:"interior_color",label:"Interior Color",type:"select",options:["Any","White","Violet","Red","Purple","Orange","Green","Gray","Brown","Blue","Black","Beige","Other"]},
+      {name:"condition",label:"Condition*",type:"select",options:["Brand New","Foreign Used","Ghanaian Used","Used","Damaged","For Parts or Not Working"]},
+      {name:"transmission",label:"Transmission*",type:"select",options:["Automatic","Manual","CVT","Semi-Automatic"]},
+      {name:"fuel_type",label:"Fuel Type",type:"select",options:["Petrol","Diesel","Hybrid","Electric","Gas"]},
+      {name:"mileage",label:"Mileage",type:"number"},
+      {name:"engine_size",label:"Engine Size",type:"text"},
+      {name:"key_features",label:"Key Features",type:"multi",options:["Air Conditioning","Airbags","Alloy Wheels","AM/FM Radio","Android Auto","Anti-Lock Brakes","Armrests","Blind Spot Monitor","Bullbar","CarPlay","CD Player","Cruise Control","Cup Holders","Electric Mirrors","Electric Windows","Front Fog Lamps","Leather Seats","Parking Assist","Parking Sensors","Roof Rack","Sidesteps","Sunroof","Traction Control","Winch","Xenon Lights"]},
+      {name:"vin_chassis",label:"VIN Chassis number",type:"text"}
+    ]
+  },
+
+  "Property": {
+    icon:"🏠",
+    subcategories:["Houses & Apartments for Rent","Houses & Apartments for Sale","Land & Plots for Sale","Commercial Property for Rent","Commercial Property for Sale","Event Centres & Venues","Short Let Property"],
+    fields:[
+      {name:"property_type",label:"Property Type*",type:"select",options:["Apartment","House","Single Room","Chamber and Hall","Shop","Office","Warehouse","Land","Event Centre"]},
+      {name:"bedrooms",label:"Bedrooms",type:"number"},
+      {name:"bathrooms",label:"Bathrooms",type:"number"},
+      {name:"toilets",label:"Toilets",type:"number"},
+      {name:"furnishing",label:"Furnishing",type:"select",options:["Furnished","Semi-Furnished","Unfurnished"]},
+      {name:"parking",label:"Parking Space",type:"select",options:["Yes","No"]},
+      {name:"size",label:"Property Size",type:"text"},
+      {name:"payment_period",label:"Payment Period",type:"select",options:["Per Month","Per Year","One-Time Payment","Negotiable"]},
+      {name:"facilities",label:"Facilities",type:"multi",options:["24-hour Electricity","Air Conditioning","Balcony","Dining Area","Dishwasher","Hot Water","Kitchen Cabinets","Kitchen Shelf","Microwave","Pop Ceiling","Pre-Paid Meter","Refrigerator","Tiled Floor","Wardrobe","Wi-Fi"]},
+      {name:"agent_fee",label:"Agent Fee",type:"select",options:["Yes","No","Not Applicable"]}
+    ]
+  },
+
+  "Electronics": {
+    icon:"📺",
+    subcategories:["TVs","Audio & Music Equipment","Cameras","Computers & Laptops","Computer Accessories","Game Consoles","Printers & Scanners","Security & Surveillance","Networking Products","Software"],
+    fields:[
+      {name:"brand",label:"Brand",type:"text"},
+      {name:"model",label:"Model",type:"text"},
+      {name:"warranty",label:"Warranty",type:"select",options:["No Warranty","1 Month","3 Months","6 Months","1 Year","More than 1 Year"]},
+      {name:"screen_size",label:"Screen Size",type:"text"},
+      {name:"processor",label:"Processor",type:"text"},
+      {name:"ram",label:"RAM",type:"text"},
+      {name:"storage",label:"Storage",type:"text"},
+      {name:"accessories",label:"Accessories Included",type:"multi",options:["Charger","Remote","Box","Receipt","Manual","Stand","Cable","Bag","Mouse","Keyboard"]}
+    ]
+  },
+
+  "Home, Furniture & Appliances": {
+    icon:"🛋️",
+    subcategories:["Furniture","Home Appliances","Kitchen Appliances","Cookware & Kitchenware","Bedding","Home Decor","Garden Supplies","Household Chemicals"],
+    fields:[
+      {name:"product_group",label:"Product Group",type:"text"},
+      {name:"brand",label:"Brand",type:"text"},
+      {name:"material",label:"Material",type:"text"},
+      {name:"size",label:"Size / Capacity",type:"text"},
+      {name:"voltage",label:"Voltage",type:"select",options:["110V","220V","Dual Voltage","Not Applicable"]},
+      {name:"warranty",label:"Warranty",type:"select",options:["No Warranty","1 Month","3 Months","6 Months","1 Year"]}
+    ]
+  },
+
+  "Fashion": {
+    icon:"👗",
+    subcategories:["Clothing","Shoes","Bags","Jewelry","Watches","Wedding Wear","Fashion Accessories","Children's Clothing"],
+    fields:[
+      {name:"gender",label:"Gender",type:"select",options:["Men","Women","Unisex","Boys","Girls"]},
+      {name:"size",label:"Size",type:"text"},
+      {name:"material",label:"Material",type:"text"},
+      {name:"brand",label:"Brand",type:"text"},
+      {name:"style",label:"Style",type:"text"}
+    ]
+  },
+
+  "Beauty & Personal Care": {
+    icon:"💄",
+    subcategories:["Makeup","Hair Beauty","Fragrance","Skin Care","Bath & Body","Tools & Accessories","Vitamins & Supplements"],
+    fields:[
+      {name:"brand",label:"Brand",type:"text"},
+      {name:"product_size",label:"Size / Volume",type:"text"},
+      {name:"for_who",label:"For",type:"select",options:["Men","Women","Unisex","Kids"]},
+      {name:"skin_type",label:"Skin / Hair Type",type:"select",options:["Normal","Dry","Oily","Sensitive","All Types","Not Applicable"]},
+      {name:"expiry_date",label:"Expiry Date",type:"date"}
+    ]
+  },
+
+  "Services": {
+    icon:"🔧",
+    subcategories:["Automotive Services","Building & Trade Services","Cleaning Services","Computer & IT Services","DJ & Entertainment Services","Health & Beauty Services","Legal Services","Logistics Services","Photography & Video Services","Repair Services","Travel Agents & Tours","Tutoring Services"],
+    fields:[
+      {name:"service_type",label:"Service Type",type:"text"},
+      {name:"business_name",label:"Business Name",type:"text"},
+      {name:"company_name",label:"Company Name",type:"text"},
+      {name:"experience",label:"Work Experience",type:"select",options:["Less than 1 year","1-2 years","3-5 years","6-10 years","More than 10 years"]},
+      {name:"pricing_type",label:"Pricing Type",type:"select",options:["Fixed Price","Hourly","Daily","Monthly","Negotiable"]},
+      {name:"availability",label:"Availability",type:"select",options:["Anytime","Weekdays","Weekends","By Appointment"]}
+    ]
+  },
+
+  "Jobs": {
+    icon:"💼",
+    subcategories:["Accounting & Finance Jobs","Advertising & Marketing Jobs","Computing & IT Jobs","Customer Service Jobs","Driver Jobs","Hotel Jobs","Restaurant & Bar Jobs","Teaching Jobs","Healthcare Jobs","Sales Jobs","Security Jobs","Internship Jobs"],
+    fields:[
+      {name:"job_title",label:"Job Title",type:"text"},
+      {name:"company_name",label:"Company Name",type:"text"},
+      {name:"job_type",label:"Job Type",type:"select",options:["Full-Time","Part-Time","Contract","Internship","Temporary"]},
+      {name:"salary",label:"Salary Range",type:"text"},
+      {name:"experience",label:"Experience Level",type:"select",options:["No Experience","Less than 1 year","1-2 years","3-5 years","5+ years"]},
+      {name:"education",label:"Minimum Education",type:"select",options:["None","JHS","SHS","Diploma","Degree","Masters"]}
+    ]
+  },
+
+  "Seeking Work CVs": {
+    icon:"📄",
+    subcategories:["Accounting & Finance CVs","Computing & IT CVs","Customer Service CVs","Driver CVs","Teaching CVs","Healthcare CVs","Sales CVs","Housekeeping & Cleaning CVs","Restaurant & Bar CVs"],
+    fields:[
+      {name:"profession",label:"Profession",type:"text"},
+      {name:"experience",label:"Years of Experience",type:"select",options:["No Experience","Less than 1 year","1-2 years","3-5 years","5+ years"]},
+      {name:"education",label:"Highest Education",type:"select",options:["JHS","SHS","Diploma","Degree","Masters","Other"]},
+      {name:"expected_salary",label:"Expected Salary",type:"text"},
+      {name:"availability",label:"Availability",type:"select",options:["Immediately","In 1 week","In 2 weeks","In 1 month"]}
+    ]
+  },
+
+  "Repair & Construction": {
+    icon:"🧰",
+    subcategories:["Building Materials","Doors","Electrical Equipment","Hand Tools","Plumbing Materials","Solar Energy","Windows","Construction Services"],
+    fields:[
+      {name:"material_type",label:"Material / Service Type",type:"text"},
+      {name:"brand",label:"Brand",type:"text"},
+      {name:"unit",label:"Unit",type:"text"},
+      {name:"quantity_per_pack",label:"Quantity Per Pack",type:"text"},
+      {name:"delivery",label:"Delivery Available",type:"select",options:["Yes","No","Depends on location"]}
+    ]
+  },
+
+  "Commercial Equipment & Tools": {
+    icon:"🛠️",
+    subcategories:["Manufacturing Equipment","Restaurant & Catering Equipment","Medical Equipment","Salon Equipment","Store Equipment","Farm Machinery","Industrial Ovens","Generators","Hand & Power Tools"],
+    fields:[
+      {name:"equipment_type",label:"Equipment Type",type:"text"},
+      {name:"brand",label:"Brand",type:"text"},
+      {name:"capacity",label:"Capacity / Power",type:"text"},
+      {name:"voltage",label:"Voltage",type:"select",options:["110V","220V","Dual Voltage","Not Applicable"]},
+      {name:"warranty",label:"Warranty",type:"select",options:["No Warranty","1 Month","3 Months","6 Months","1 Year"]}
+    ]
+  },
+
+  "Leisure & Activities": {
+    icon:"🎸",
+    subcategories:["Books & Games","Musical Instruments","Sports Equipment","Camping Gear","Arts & Crafts","Tickets","CDs & DVDs"],
+    fields:[
+      {name:"activity_type",label:"Type",type:"text"},
+      {name:"brand_author",label:"Brand / Author",type:"text"},
+      {name:"age_group",label:"Age Group",type:"select",options:["Kids","Teens","Adults","All Ages"]}
+    ]
+  },
+
+  "Babies & Kids": {
+    icon:"🧸",
+    subcategories:["Baby Clothing","Baby Shoes","Baby Gear","Baby Furniture","Toys","Maternity & Pregnancy","Children's Furniture"],
+    fields:[
+      {name:"age_range",label:"Age Range",type:"select",options:["0-3 months","3-6 months","6-12 months","1-2 years","3-5 years","6-10 years","10+ years"]},
+      {name:"for_who",label:"For",type:"select",options:["Boy","Girl","Unisex"]},
+      {name:"brand",label:"Brand",type:"text"},
+      {name:"safety",label:"Safety / Extra Info",type:"text"}
+    ]
+  },
+
+  "Food, Agriculture & Farming": {
+    icon:"🌽",
+    subcategories:["Farm Machinery & Equipment","Feeds, Supplements & Seeds","Meals & Drinks","Livestock & Poultry","Farm Produce","Foodstuff","Farming Services"],
+    fields:[
+      {name:"food_type",label:"Product Type",type:"text"},
+      {name:"quantity_unit",label:"Quantity Unit",type:"text"},
+      {name:"freshness",label:"Freshness",type:"select",options:["Fresh","Dried","Frozen","Processed"]},
+      {name:"expiry_date",label:"Expiry Date",type:"date"},
+      {name:"delivery",label:"Delivery Available",type:"select",options:["Yes","No","Depends on location"]}
+    ]
+  },
+
+  "Pets": {
+    icon:"🐕",
+    subcategories:["Dogs & Puppies","Cats & Kittens","Birds","Fish","Pet Accessories","Pet Food","Other Animals"],
+    fields:[
+      {name:"breed",label:"Breed",type:"text"},
+      {name:"age",label:"Age",type:"text"},
+      {name:"pet_gender",label:"Gender",type:"select",options:["Male","Female","Pair","Unknown"]},
+      {name:"vaccinated",label:"Vaccinated",type:"select",options:["Yes","No","Not Sure"]}
+    ]
+  }
+};
+
+const OPTION_DATA = {
+  item_condition:["Brand New","Foreign Used","Ghanaian Used","Used","Refurbished","For Parts or Not Working"],
+  exchange_possible:["Yes","No","Not Sure"],
+  delivery_available:["Yes","No","Depends on buyer location"],
+  delivery_fee_type:["Free Delivery","Buyer Pays","Seller Pays","Negotiable"],
+  delivery_time:["Same Day","1 - 2 Days","3 - 5 Days","Within 1 Week"],
+  pickup_available:["Yes","No"],
+  promotion_type:["No promo - Free","Top Ad","VIP","Diamond"],
+  region:["All Ghana","Ahafo Region","Ashanti","Bono Region","Bono East Region","Central Region","Eastern Region","Greater Accra","North East Region","Northern Region","Oti Region","Savannah Region","Upper East Region","Upper West Region","Volta Region","Western Region","Western North Region"]
+};
+
+const REGION_AREAS = {
+  "All Ghana":["All Areas"],
+  "Ahafo Region":["Goaso","Hwidiem","Kenyasi","Mim","Bechem","Duayaw Nkwanta","OTHER"],
+  "Ashanti":["Kumasi Metropolitan","Asokore Mampong Municipal","Ejisu","Obuasi Municipal","Bekwai Municipal","Mampong Municipal","Offinso Municipal","Atwima Kwanwoma","Atwima Nwabiagya","Afigya-Kwabre","Bosomtwe","Kwabre East","Konongo","Asante Akim Central","Sekyere East","Sekyere South","OTHER"],
+  "Bono Region":["Sunyani Municipal","Berekum Municipal","Dormaa Municipal","Wenchi Municipal","Jaman North","Jaman South","OTHER"],
+  "Bono East Region":["Techiman Municipal","Atebubu-Amantin","Kintampo North","Nkoranza South","Sene East","Sene West","OTHER"],
+  "Central Region":["Cape Coast Metropolitan","Kasoa","Awutu Senya East Municipal","Effutu Municipal","Mfantsiman Municipal","Agona West Municipal","Komenda/Edina/Eguafo/Abirem","Gomoa East","Gomoa West","Assin North","Assin South","OTHER"],
+  "Eastern Region":["Koforidua","New Juaben","Nsawam","Akim Oda","Nkawkaw","Suhum","Aburi","Akropong","Kibi","Asamankese","OTHER"],
+  "Greater Accra":["Accra Metropolitan","Achimota","Adabraka","Adenta","Tema Metropolitan","Ashaiman Municipal","Ablekuma","Abelemkpe","Abossey Okai","Airport Residential Area","Ashaley Botwe","Awoshie","Cantonments","Circle","Dansoman","Darkuman","Dome","Dzorwulu","East Legon","Gbawe","Haatso","Kaneshie","Kasoa","Labadi","Labone","Lapaz","Madina","Mamprobi","Nima","North Legon","Nungua","Odorkor","Ofankor","Osu","Oyarifa","Pokuase","Ridge","Spintex","Tesano","Teshie","Weija","West Legon","OTHER"],
+  "North East Region":["Nalerigu","Walewale","Gambaga","Bunkpurugu","Chereponi","OTHER"],
+  "Northern Region":["Tamale Metropolitan","Savelugu","Yendi","Tolon","Gushegu","Karaga","Kpandai","OTHER"],
+  "Oti Region":["Dambai","Nkwanta","Kete Krachi","Jasikan","Kadjebi","Biakoye","OTHER"],
+  "Savannah Region":["Damongo","Bole","Salaga","Buipe","Sawla","OTHER"],
+  "Upper East Region":["Bolgatanga Municipal","Bawku Municipal","Navrongo","Paga","Zebilla","Sandema","OTHER"],
+  "Upper West Region":["Wa Municipal","Tumu","Lawra","Nandom","Jirapa","OTHER"],
+  "Volta Region":["Ho Municipal","Hohoe","Keta","Aflao","Sogakope","Kpando","Akatsi","OTHER"],
+  "Western Region":["Takoradi","Sekondi","Tarkwa","Axim","Shama","Prestea","Agona Nkwanta","OTHER"],
+  "Western North Region":["Sefwi Wiawso","Bibiani","Enchi","Aowin","Juaboso","OTHER"]
+};
+
+let selectedCategory = "";
+let selectedSubcategory = "";
 let selectedFiles = [];
+let selectedOptions = {
+  region:"",
+  district:"",
+  item_condition:"",
+  exchange_possible:"",
+  delivery_available:"",
+  delivery_fee_type:"",
+  delivery_time:"",
+  pickup_available:"",
+  promotion_type:"No promo - Free"
+};
 
-function showAlert(message, type = "success"){
+let activeOptionKey = "";
+let activeSpecName = "";
+let activeFieldType = "";
+let currentOptionTarget = "";
+let currentOptions = [];
+let multiTemp = [];
+
+const alertBox = document.getElementById("alertBox");
+
+function showAlert(message,type="success"){
   alertBox.textContent = message;
   alertBox.className = `alert ${type}`;
   alertBox.style.display = "block";
-
-  setTimeout(() => {
-    alertBox.style.display = "none";
-  }, 2500);
+  setTimeout(()=>alertBox.style.display="none",2800);
 }
 
-uploadBox.addEventListener("click", () => {
-  imageInput.click();
-});
+function closeScreens(){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+}
 
-addMoreBtn.addEventListener("click", () => {
-  imageInput.click();
-});
+function openCategoryScreen(){
+  closeScreens();
+  document.getElementById("categoryScreen").classList.add("active");
+  renderCategoryList();
+}
 
-imageInput.addEventListener("change", () => {
-  const newFiles = [...imageInput.files];
+function renderCategoryList(){
+  const q = document.getElementById("categorySearch").value.toLowerCase();
+  const list = document.getElementById("categoryList");
 
-  newFiles.forEach(file => {
-    if (!file.type.startsWith("image/")) {
-      return;
+  const cats = Object.keys(CATEGORY_DATA).filter(cat => cat.toLowerCase().includes(q));
+
+  list.innerHTML = cats.map(cat => {
+    const subs = CATEGORY_DATA[cat].subcategories.slice(0,4).join(", ");
+    return `
+      <div class="list-item" onclick="chooseCategory('${safe(cat)}')">
+        <div class="icon">${CATEGORY_DATA[cat].icon}</div>
+        <div class="item-main">
+          <div class="item-title">${cat}</div>
+          <div class="item-sub">${subs}</div>
+        </div>
+        <div class="chev">›</div>
+      </div>
+    `;
+  }).join("") || `<div class="empty">No category found</div>`;
+}
+
+function chooseCategory(cat){
+  selectedCategory = cat;
+  selectedSubcategory = "";
+
+  document.getElementById("categoryText").textContent = cat;
+  document.getElementById("categoryText").classList.remove("placeholder");
+
+  document.getElementById("subcategoryText").textContent = "Choose subcategory";
+  document.getElementById("subcategoryText").classList.add("placeholder");
+
+  document.getElementById("specCard").style.display = "none";
+  document.getElementById("dynamicFields").innerHTML = "";
+
+  openSubcategoryScreen();
+}
+
+function openSubcategoryScreen(){
+  if(!selectedCategory){
+    showAlert("Please choose a category first.", "error");
+    return;
+  }
+
+  closeScreens();
+
+  document.getElementById("subcategoryScreenTitle").textContent = selectedCategory;
+  document.getElementById("subcategoryScreen").classList.add("active");
+
+  renderSubcategoryList();
+}
+
+function renderSubcategoryList(){
+  const q = document.getElementById("subcategorySearch").value.toLowerCase();
+  const subs = CATEGORY_DATA[selectedCategory].subcategories.filter(sub => sub.toLowerCase().includes(q));
+
+  document.getElementById("subcategoryList").innerHTML = subs.map(sub => `
+    <div class="list-item" onclick="chooseSubcategory('${safe(sub)}')">
+      <div class="icon">${CATEGORY_DATA[selectedCategory].icon}</div>
+      <div class="item-main">
+        <div class="item-title">${sub}</div>
+      </div>
+      <div class="chev">›</div>
+    </div>
+  `).join("") || `<div class="empty">No subcategory found</div>`;
+}
+
+function chooseSubcategory(sub){
+  selectedSubcategory = sub;
+  document.getElementById("subcategoryText").textContent = sub;
+  document.getElementById("subcategoryText").classList.remove("placeholder");
+  closeScreens();
+  renderDynamicFields();
+  updateConditionalSections();
+}
+
+function updateConditionalSections(){
+  const vehicleRegisteredBox = document.getElementById("vehicleRegisteredBox");
+  const isVehicle = selectedCategory === "Vehicles";
+  vehicleRegisteredBox.classList.toggle("hidden", !isVehicle);
+}
+
+function renderDynamicFields(){
+  const fields = CATEGORY_DATA[selectedCategory]?.fields || [];
+  const wrap = document.getElementById("dynamicFields");
+  const card = document.getElementById("specCard");
+
+  if(!fields.length){
+    card.style.display = "none";
+    return;
+  }
+
+  card.style.display = "block";
+  card.classList.remove("hidden");
+  wrap.classList.remove("hidden");
+
+  wrap.innerHTML = fields.map(field => {
+    const auto = field.auto || "";
+    const full = field.type === "multi" ? "full" : "";
+
+    if(field.type === "select" || field.type === "multi"){
+      const displayText = auto || field.label;
+      return `
+        <div class="field ${full}" data-spec-wrap="${field.name}">
+          <label class="field-label">${field.label}</label>
+          <div class="select-box" onclick="openSpecOption('${safe(field.name)}')">
+            <span id="spec_${field.name}Text" class="text ${auto ? "" : "placeholder"}">${displayText}</span>
+            <span class="arrow">${field.type === "multi" ? "›" : "⌄"}</span>
+          </div>
+          <input type="hidden" class="spec-input" data-name="${field.name}" id="spec_${field.name}" value="${auto}">
+        </div>
+      `;
     }
 
-    selectedFiles.push(file);
+    return `
+      <div class="field ${full}" data-spec-wrap="${field.name}">
+        <label class="field-label">${field.label}</label>
+        <input class="spec-input" data-name="${field.name}" id="spec_${field.name}" type="${field.type || "text"}" value="${auto}" placeholder="${field.label}">
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("hideFieldsBtn").textContent = `Hide ${fields.length} fields ⌃`;
+}
+
+function toggleSpecs(){
+  const wrap = document.getElementById("dynamicFields");
+  const count = CATEGORY_DATA[selectedCategory]?.fields.length || 0;
+
+  wrap.classList.toggle("hidden");
+
+  document.getElementById("hideFieldsBtn").textContent = wrap.classList.contains("hidden")
+    ? `Show ${count} fields ⌄`
+    : `Hide ${count} fields ⌃`;
+}
+
+function openSpecOption(name){
+  const field = CATEGORY_DATA[selectedCategory].fields.find(f => f.name === name);
+  if(!field) return;
+
+  activeOptionKey = "";
+  activeSpecName = name;
+  activeFieldType = field.type;
+
+  const current = document.getElementById(`spec_${name}`).value;
+
+  if(field.type === "multi"){
+    multiTemp = current ? current.split(",").map(x => x.trim()).filter(Boolean) : [];
+  }else{
+    multiTemp = [];
+  }
+
+  openOptionScreen(field.label, field.options || [], `spec_${name}Text`, field.type === "multi");
+}
+
+function openSimpleOption(key){
+  if(key === "district" && !selectedOptions.region){
+    showAlert("Please select region first.", "error");
+    return;
+  }
+
+  activeOptionKey = key;
+  activeSpecName = "";
+  activeFieldType = "single";
+  multiTemp = [];
+
+  const titles = {
+    region:"Select Region",
+    district:"Select Area / District",
+    item_condition:"Select Item Condition",
+    exchange_possible:"Exchange Possible",
+    delivery_available:"Delivery Available",
+    delivery_fee_type:"Delivery Fee",
+    delivery_time:"Delivery Time",
+    pickup_available:"Pickup Available",
+    promotion_type:"Promotion Type"
+  };
+
+  const options = key === "district"
+    ? (REGION_AREAS[selectedOptions.region] || [])
+    : (OPTION_DATA[key] || []);
+
+  openOptionScreen(titles[key] || "Select Option", options, `${key}Text`, false);
+}
+
+function openOptionScreen(title, options, targetId, isMulti=false){
+  currentOptionTarget = targetId;
+  currentOptions = options;
+
+  closeScreens();
+
+  document.getElementById("optionTitle").textContent = title;
+  document.getElementById("optionSearch").value = "";
+  document.getElementById("optionScreen").classList.add("active");
+  document.getElementById("multiActions").classList.toggle("hidden", !isMulti);
+
+  renderOptionList();
+}
+
+function renderOptionList(){
+  const q = document.getElementById("optionSearch").value.toLowerCase();
+  const list = document.getElementById("optionList");
+  const filtered = currentOptions.filter(opt => String(opt).toLowerCase().includes(q));
+
+  const isMulti = activeFieldType === "multi";
+
+  list.innerHTML = filtered.map(opt => {
+    const checked = isMulti
+      ? multiTemp.includes(opt)
+      : getCurrentText() === opt;
+
+    return `
+      <div class="list-item" onclick="chooseOption('${safe(opt)}')">
+        <div class="item-main">
+          <div class="item-title">${opt}</div>
+        </div>
+        <div class="option-check">${checked ? "✓" : ""}</div>
+      </div>
+    `;
+  }).join("") || `<div class="empty">No option found</div>`;
+}
+
+function chooseOption(value){
+  if(activeFieldType === "multi"){
+    if(multiTemp.includes(value)){
+      multiTemp = multiTemp.filter(v => v !== value);
+    }else{
+      multiTemp.push(value);
+    }
+    renderOptionList();
+    return;
+  }
+
+  const target = document.getElementById(currentOptionTarget);
+  target.textContent = value;
+  target.classList.remove("placeholder");
+
+  if(activeOptionKey){
+    selectedOptions[activeOptionKey] = value;
+
+    if(activeOptionKey === "region"){
+      selectedOptions.district = "";
+      const districtText = document.getElementById("districtText");
+      districtText.textContent = "Area / District*";
+      districtText.classList.add("placeholder");
+    }
+
+    if(activeOptionKey === "item_condition"){
+      const conditionSpec = document.getElementById("spec_condition");
+      const conditionText = document.getElementById("spec_conditionText");
+      if(conditionSpec && !conditionSpec.value){
+        conditionSpec.value = value;
+        if(conditionText){
+          conditionText.textContent = value;
+          conditionText.classList.remove("placeholder");
+        }
+      }
+    }
+  }
+
+  if(activeSpecName){
+    document.getElementById(`spec_${activeSpecName}`).value = value;
+
+    if(activeSpecName === "color"){
+      document.getElementById("product_color").value = value;
+    }
+
+    if(activeSpecName === "condition" && !selectedOptions.item_condition){
+      selectedOptions.item_condition = value;
+      const itemText = document.getElementById("item_conditionText");
+      itemText.textContent = value;
+      itemText.classList.remove("placeholder");
+    }
+  }
+
+  closeOptionScreen();
+}
+
+function finishMultiSelect(){
+  if(!activeSpecName) return;
+
+  const value = multiTemp.join(", ");
+  document.getElementById(`spec_${activeSpecName}`).value = value;
+
+  const text = document.getElementById(`spec_${activeSpecName}Text`);
+  text.textContent = value || "Select options";
+  text.classList.toggle("placeholder", !value);
+
+  closeOptionScreen();
+}
+
+function getCurrentText(){
+  return document.getElementById(currentOptionTarget)?.textContent || "";
+}
+
+function closeOptionScreen(){
+  document.getElementById("optionScreen").classList.remove("active");
+}
+
+function toggleBox(id){
+  document.getElementById(id).classList.toggle("hidden");
+}
+
+document.getElementById("images").addEventListener("change", () => {
+  [...document.getElementById("images").files].forEach(file => {
+    if(!file.type.startsWith("image/")) return;
+
+    const exists = selectedFiles.some(f =>
+      f.name === file.name &&
+      f.size === file.size &&
+      f.lastModified === file.lastModified
+    );
+
+    if(!exists) selectedFiles.push(file);
   });
 
-  renderPreviews();
-
-  imageInput.value = "";
+  document.getElementById("images").value = "";
+  renderPhotos();
 });
 
-function renderPreviews(){
-  previewGrid.innerHTML = "";
+function renderPhotos(){
+  const row = document.getElementById("photoRow");
 
-  previewCount.textContent = `${selectedFiles.length} image(s) selected`;
+  row.innerHTML = `
+    <div class="add-photo" onclick="document.getElementById('images').click()">
+      <strong>+</strong>
+      <small>Add photo</small>
+    </div>
+  `;
 
-  selectedFiles.forEach((file, index) => {
+  selectedFiles.forEach((file,index) => {
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = e => {
       const div = document.createElement("div");
-      div.className = "preview-item";
-
+      div.className = "photo-item";
       div.innerHTML = `
         <img src="${e.target.result}" alt="Product image">
-        <button type="button" class="remove-img-btn" onclick="removeImage(${index})">×</button>
+        <button type="button" class="remove-photo" onclick="removePhoto(${index})">×</button>
       `;
-
-      previewGrid.appendChild(div);
+      row.appendChild(div);
     };
 
     reader.readAsDataURL(file);
   });
 }
 
-function removeImage(index){
-  selectedFiles.splice(index, 1);
-  renderPreviews();
+function removePhoto(index){
+  selectedFiles.splice(index,1);
+  renderPhotos();
 }
 
-document.getElementById("productForm").addEventListener("submit", async (e) => {
+function collectSpecifications(){
+  const specs = {};
+
+  document.querySelectorAll(".spec-input").forEach(input => {
+    const key = input.dataset.name || input.id.replace("spec_","");
+    specs[key] = input.value || "";
+  });
+
+  return specs;
+}
+
+document.getElementById("productForm").addEventListener("submit", async e => {
   e.preventDefault();
 
-  const submitBtn = document.querySelector(".submit-btn");
+  if(!selectedCategory || !selectedSubcategory){
+    showAlert("Please select category and subcategory.", "error");
+    return;
+  }
 
-  if(submitBtn.disabled) return;
-
-  const files = selectedFiles;
-
-  if(files.length < 5){
+  if(selectedFiles.length < 5){
     showAlert("Please upload at least 5 images.", "error");
     return;
   }
 
+  if(!selectedOptions.region || !selectedOptions.district){
+    showAlert("Please select region and area.", "error");
+    return;
+  }
+
+  if(!selectedOptions.item_condition){
+    showAlert("Please select item condition.", "error");
+    return;
+  }
+
+  const submitBtn = document.querySelector(".submit-btn");
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `<span class="spinner"></span>Posting Ad...`;
+
+  const specs = collectSpecifications();
   const formData = new FormData();
 
-  formData.append("category", document.getElementById("category").value);
-  formData.append("region", document.getElementById("region").value);
-  formData.append("district", document.getElementById("district").value);
+  formData.append("category", selectedCategory);
+  formData.append("subcategory", selectedSubcategory);
+  formData.append("product_type", selectedSubcategory);
+  formData.append("region", selectedOptions.region);
+  formData.append("district", selectedOptions.district);
   formData.append("product_name", document.getElementById("product_name").value);
-  formData.append("product_type", document.getElementById("product_type").value);
   formData.append("price", document.getElementById("price").value);
-  formData.append("product_color", document.getElementById("product_color").value);
+  formData.append("product_color", document.getElementById("product_color").value || specs.color || "");
   formData.append("quantity_in_stock", document.getElementById("quantity").value);
   formData.append("phone_number", document.getElementById("phone_number").value);
   formData.append("instructions", document.getElementById("instructions").value);
   formData.append("description", document.getElementById("description").value);
-  formData.append("item_condition", document.getElementById("item_condition").value);
+  formData.append("item_condition", selectedOptions.item_condition);
+  formData.append("seller_name", document.getElementById("seller_name").value || "");
+  formData.append("youtube_link", document.getElementById("youtube_link").value || "");
+  formData.append("registered_car", document.querySelector('input[name="registered_car"]:checked')?.value || "");
+  formData.append("exchange_possible", selectedOptions.exchange_possible || "");
+  formData.append("negotiable", document.querySelector('input[name="negotiable"]:checked')?.value || "Not sure");
+  formData.append("bulk_min_qty", document.getElementById("bulk_min_qty").value || "");
+  formData.append("bulk_price", document.getElementById("bulk_price").value || "");
+  formData.append("delivery_available", selectedOptions.delivery_available || "");
+  formData.append("delivery_fee_type", selectedOptions.delivery_fee_type || "");
+  formData.append("delivery_time", selectedOptions.delivery_time || "");
+  formData.append("pickup_available", selectedOptions.pickup_available || "");
+  formData.append("promotion_type", selectedOptions.promotion_type || "No promo - Free");
+  formData.append("specifications", JSON.stringify(specs));
 
-  files.forEach(file => {
-    formData.append("images", file);
-  });
+  selectedFiles.forEach(file => formData.append("images", file));
 
- submitBtn.disabled = true;
-submitBtn.innerHTML = `
-  <span class="btn-spinner"></span>
-  Uploading Product...
-`;
-
-try{
+  try{
     const res = await fetch(`${API_BASE}/api/products/upload`, {
       method:"POST",
       credentials:"include",
@@ -662,107 +1722,101 @@ try{
     const data = await res.json();
 
     if(data.success){
-      showAlert(data.message || "Product uploaded successfully.");
-
-      document.getElementById("productForm").reset();
-
-     selectedFiles = [];
-previewGrid.innerHTML = "";
-previewCount.textContent = "0 images selected";
-
-submitBtn.disabled = false;
-submitBtn.innerHTML = "Upload Product";
+      showAlert(data.message || "Advert posted successfully.");
+      clearForm(false);
     }else{
       showAlert(data.message || "Upload failed.", "error");
-      submitBtn.disabled = false;
-submitBtn.innerHTML = "Upload Product";
     }
-
   }catch(error){
     console.error(error);
     showAlert("Upload failed. Try again.", "error");
+  }finally{
     submitBtn.disabled = false;
-submitBtn.innerHTML = "Upload Product";
+    submitBtn.innerHTML = "Post Ad";
   }
 });
 
+function askBeforeLeave(){
+  document.getElementById("saveSheet").style.display = "flex";
+}
 
-const regionSelect = document.getElementById("region");
-const districtSelect = document.getElementById("district");
+function saveDraftLocal(){
+  const draft = {
+    selectedCategory,
+    selectedSubcategory,
+    selectedOptions,
+    product_name:document.getElementById("product_name").value,
+    description:document.getElementById("description").value,
+    price:document.getElementById("price").value,
+    phone_number:document.getElementById("phone_number").value,
+    seller_name:document.getElementById("seller_name").value,
+    saved_at:new Date().toISOString()
+  };
 
-const regionAreas = {
-  "Ashanti": [
-    "Atwima Kwanwoma", "Atwima Nwabiagya", "Ejisu-Juaben Municipal",
-    "Kumasi Metropolitan", "Kwabre", "OTHER", "Adansi North",
-    "Adansi South", "Afigya-Kwabre", "Ahafo Ano North", "Ahafo Ano South",
-    "Amansie Central", "Amansie West", "Asante Akim Central Municipal",
-    "Asante Akim North", "Asante Akim South", "Asokore Mampong Municipal",
-    "Atwima Mponua", "Bekwai Municipal", "Bosome Freho", "Bosomtwe",
-    "Ejura/Sekyedumase", "Mampong Municipal", "Obuasi Municipal",
-    "Offinso Municipal", "Offinso North", "Sekyere Afram Plains",
-    "Sekyere Central", "Sekyere East", "Sekyere Kumawu", "Sekyere South"
-  ],
+  localStorage.setItem("didwapa_sell_draft", JSON.stringify(draft));
+  document.getElementById("saveSheet").style.display = "none";
+  showAlert("Draft saved on this device.", "success");
+}
 
-  "Central Region": [
-    "Awutu Senya East Municipal", "Cape Coast Metropolitan", "Effutu Municipal",
-    "Gomoa East", "OTHER", "Abura/Asebu/Kwamankese", "Agona East",
-    "Agona West Municipal", "Ajumako/Enyan/Essiam", "Asikuma/Odoben/Brakwa",
-    "Assin North Municipal", "Assin South", "Awutu Senya West", "Ekumfi",
-    "Gomoa West", "Komenda/Edina/Eguafo/Abirem Municipal",
-    "Mfantsiman Municipal", "Potsin", "Twifo-Ati Morkwa",
-    "Twifo/Heman/Lower Denkyira", "Upper Denkyira East", "Upper Denkyira West"
-  ],
+function discardAndLeave(){
+  document.getElementById("saveSheet").style.display = "none";
+  window.location.href = "you.html";
+}
 
-  "Greater Accra": [
-    "Accra Metropolitan", "Achimota", "Adabraka", "Adenta",
-    "Tema Metropolitan", "OTHER", "Abelemkpe", "Ablekuma", "Abofu",
-    "Abokobi", "Abossey Okai", "Accra New Town", "Adjiriganor",
-    "Agbogba", "Agbogbloshie", "Airport Residential Area", "Akweteyman",
-    "Alajo", "Amrahia", "Anyaa", "Apenkwa", "Ashaiman Municipal",
-    "Ashaley Botwe", "Ashomang Estate", "Asylum Down", "Avenor Area",
-    "Awoshie", "Banana Inn", "Bubuashie", "BurmaCamp", "Cantonments",
-    "Chorkor", "Circle", "Control", "Danfa", "Dansoman", "Darkuman",
-    "Dodowa", "Dome", "Dworwulu", "Dzorwulu", "East Legon",
-    "GaEast Municipal", "Ga South Municipal", "Ga West Municipal",
-    "Gbawe", "Haatso", "James Town", "Kaneshie", "Kasoa", "Kokomlemle",
-    "Korle Gonno", "Kotobabi", "Kwashieman", "Labadi", "Labone",
-    "Lapaz", "Lartebiokorshie", "Lartebiokoshie", "Ledzokuku-Krowor",
-    "Little Legon", "Madina", "Mamobi", "Mamprobi", "Mataheko",
-    "McCarthy Hill", "Nii Boi Town", "Nima", "Ningo-Prampram",
-    "North Industrial Area", "North Legon", "Nungua", "Odorkor",
-    "Ofankor", "Okaishie", "Okponglo", "Old Ashomang", "Osu",
-    "Oyarifa", "Oyibi", "Pokuase", "Ridge", "Roman Ridge",
-    "SSNIT Flats", "Santa Maria", "Sege", "Sempe New Town",
-    "South La", "Shiashie", "Sowutwuom", "Spintex", "Sukura",
-    "Taifa-Burkina", "Tantra Hills", "Tesano", "Teshie", "Weija",
-    "West Legon", "Zoti Area"
-  ],
+function clearForm(show=true){
+  document.getElementById("productForm").reset();
 
-  "Brong Ahafo": [
-    "Atebubu-Amantin", "Berekum Municipal", "Sunyani Municipal",
-    "Techiman Municipal", "OTHER", "Asunafo North Municipal",
-    "Asunafo South", "Asutifi North", "Asutifi South", "Banda",
-    "Dormaa East", "Dormaa Municipal", "Dormaa West", "Jaman North",
-    "Jaman South", "Kintampo North Municipal", "Kintampo South",
-    "Nkoranza North", "Nkoranza South", "Pru", "Sene East",
-    "Sene West", "Sunyani West", "Tain", "Tano North", "Tano South",
-    "Techiman South", "Wenchi Municipal"
-  ]
-};
+  selectedCategory = "";
+  selectedSubcategory = "";
+  selectedFiles = [];
+  selectedOptions = {
+    region:"",
+    district:"",
+    item_condition:"",
+    exchange_possible:"",
+    delivery_available:"",
+    delivery_fee_type:"",
+    delivery_time:"",
+    pickup_available:"",
+    promotion_type:"No promo - Free"
+  };
 
-regionSelect.addEventListener("change", () => {
-  const region = regionSelect.value;
-  const areas = regionAreas[region] || [];
+  setText("categoryText","Choose category",true);
+  setText("subcategoryText","Choose subcategory",true);
+  setText("regionText","Region*",true);
+  setText("districtText","Area / District*",true);
+  setText("item_conditionText","Item Condition*",true);
+  setText("exchange_possibleText","Exchange Possible",true);
+  setText("delivery_availableText","Delivery Available",true);
+  setText("delivery_fee_typeText","Delivery Fee",true);
+  setText("delivery_timeText","Delivery Time",true);
+  setText("pickup_availableText","Pickup Available",true);
+  setText("promotion_typeText","No promo - Free",false);
 
-  districtSelect.innerHTML = `<option value="">Select area</option>`;
+  document.getElementById("specCard").style.display = "none";
+  document.getElementById("dynamicFields").innerHTML = "";
+  document.getElementById("bulkBox").classList.add("hidden");
+  document.getElementById("deliveryBox").classList.add("hidden");
+  document.getElementById("vehicleRegisteredBox").classList.add("hidden");
 
-  areas.forEach(area => {
-    const option = document.createElement("option");
-    option.value = area;
-    option.textContent = area;
-    districtSelect.appendChild(option);
-  });
-});
+  renderPhotos();
+
+  if(show) showAlert("Form cleared.", "success");
+}
+
+function setText(id,text,placeholder){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = text;
+  el.classList.toggle("placeholder", placeholder);
+}
+
+function safe(str){
+  return String(str)
+    .replace(/\\/g,"\\\\")
+    .replace(/'/g,"\\'")
+    .replace(/"/g,"&quot;");
+}
 </script>
 
 </body>
