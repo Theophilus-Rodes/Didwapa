@@ -1009,7 +1009,7 @@ const CATEGORY_DATA = {
     subcategories:["Mobile Phones","Tablets","Smart Watches","Phone Accessories","Tablet Accessories","SIM Cards","Phone Parts","Power Banks","Chargers & Power Adapters","Phone Cases/Covers"],
     fields:[
       {name:"brand",label:"Brand*",type:"select",options:["Apple","Samsung","Tecno","Infinix","Itel","Huawei","Xiaomi","Oppo","Nokia","Google","Lenovo","Amazon","Other"]},
-      {name:"model",label:"Model*",type:"text"},
+     {name:"model",label:"Model*",type:"text"},
       {name:"ram",label:"RAM",type:"select",options:["1GB","2GB","3GB","4GB","6GB","8GB","12GB","16GB+"]},
       {name:"storage",label:"Internal Storage",type:"select",options:["16GB","32GB","64GB","128GB","256GB","512GB","1TB"]},
       {name:"os",label:"Operating System",type:"select",options:["Android","iOS","HarmonyOS","Other"],auto:"Android"},
@@ -1029,7 +1029,7 @@ const CATEGORY_DATA = {
     subcategories:["Cars","Buses & Microbuses","Construction & Heavy Machinery","Motorcycles & Scooters","Trucks & Trailers","Vehicle Parts & Accessories","Watercraft & Boats"],
     fields:[
       {name:"make",label:"Make*",type:"select",options:["Other","Acura","Audi","BAIC","Bentley","BMW","Brilliance","Buick","Cadillac","Changan","Chevrolet","Chrysler","Citroen","Daewoo","Daihatsu","Dodge","Fiat","Ford","Geely","Honda","Hyundai","Infiniti","Isuzu","Jaguar","Jeep","Kia","Land Rover","Lexus","Mazda","Mercedes-Benz","Mitsubishi","Nissan","Opel","Peugeot","Porsche","Renault","Suzuki","Tesla","Toyota","Volkswagen","Volvo"]},
-      {name:"model",label:"Model*",type:"text"},
+      {name:"model",label:"Model*",type:"select",dependsOn:"make",options:[]},
       {name:"year",label:"Year of Manufacture*",type:"number"},
       {name:"color",label:"Color*",type:"select",options:["White","Silver","Black","Gray","Blue","Red","Green","Brown","Beige","Orange","Purple","Gold","Other"]},
       {name:"interior_color",label:"Interior Color",type:"select",options:["Any","White","Violet","Red","Purple","Orange","Green","Gray","Brown","Blue","Black","Beige","Other"]},
@@ -1372,6 +1372,29 @@ function updateConditionalSections(){
   vehicleRegisteredBox.classList.toggle("hidden", !isVehicle);
 }
 
+
+
+const VEHICLE_MODELS = {
+  Toyota: ["Corolla", "Camry", "RAV4", "Highlander", "Yaris", "Vitz", "Hilux", "Land Cruiser", "Prado"],
+  Honda: ["Civic", "Accord", "CR-V", "Fit", "Pilot", "Odyssey"],
+  Hyundai: ["Elantra", "Sonata", "Tucson", "Santa Fe", "Accent", "i10"],
+  Nissan: ["Altima", "Sentra", "Rogue", "Pathfinder", "X-Trail", "Navara"],
+  Kia: ["Morning", "Rio", "Sportage", "Sorento", "Optima", "Cerato"],
+  "Mercedes-Benz": ["C-Class", "E-Class", "S-Class", "GLA", "GLC", "GLE", "Sprinter"],
+  BMW: ["3 Series", "5 Series", "7 Series", "X1", "X3", "X5", "X6"],
+  Ford: ["Focus", "Fusion", "Explorer", "Escape", "F-150", "Ranger"],
+  Lexus: ["RX", "ES", "NX", "GX", "LX", "IS"],
+  Mitsubishi: ["Pajero", "Outlander", "Lancer", "ASX", "L200"],
+  Volkswagen: ["Golf", "Passat", "Jetta", "Tiguan", "Polo"],
+  Chevrolet: ["Cruze", "Spark", "Malibu", "Camaro", "Captiva"],
+  Mazda: ["Mazda 3", "Mazda 6", "CX-3", "CX-5", "CX-9"],
+  Suzuki: ["Swift", "Alto", "Vitara", "Baleno", "Jimny"],
+  Tesla: ["Model 3", "Model S", "Model X", "Model Y"],
+  Other: ["Other"]
+};
+
+
+
 function renderDynamicFields(){
   const fields = CATEGORY_DATA[selectedCategory]?.fields || [];
   const wrap = document.getElementById("dynamicFields");
@@ -1434,6 +1457,19 @@ function openSpecOption(name){
   activeSpecName = name;
   activeFieldType = field.type;
 
+  let options = field.options || [];
+
+  if(name === "model" && selectedCategory === "Vehicles"){
+    const make = document.getElementById("spec_make")?.value;
+
+    if(!make){
+      showAlert("Please select make first.", "error");
+      return;
+    }
+
+    options = VEHICLE_MODELS[make] || ["Other"];
+  }
+
   const current = document.getElementById(`spec_${name}`).value;
 
   if(field.type === "multi"){
@@ -1442,7 +1478,7 @@ function openSpecOption(name){
     multiTemp = [];
   }
 
-  openOptionScreen(field.label, field.options || [], `spec_${name}Text`, field.type === "multi");
+  openOptionScreen(field.label, options, `spec_${name}Text`, field.type === "multi");
 }
 
 function openSimpleOption(key){
@@ -1552,6 +1588,17 @@ function chooseOption(value){
 
   if(activeSpecName){
     document.getElementById(`spec_${activeSpecName}`).value = value;
+
+      if(activeSpecName === "make"){
+    const modelInput = document.getElementById("spec_model");
+    const modelText = document.getElementById("spec_modelText");
+
+    if(modelInput && modelText){
+      modelInput.value = "";
+      modelText.textContent = "Model*";
+      modelText.classList.add("placeholder");
+    }
+  }
 
     if(activeSpecName === "color"){
       document.getElementById("product_color").value = value;
