@@ -15,7 +15,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
-const path = require("path");
+
 
 const upload = multer({
   storage: multer.memoryStorage(),
