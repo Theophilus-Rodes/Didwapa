@@ -256,6 +256,58 @@
 .cancel-callback{
   background:#111827 !important;
 }
+
+.image-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.92);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:99999;
+  padding:20px;
+}
+
+.image-modal img{
+  max-width:95%;
+  max-height:85vh;
+  border-radius:18px;
+  background:white;
+}
+
+.close-img{
+  position:absolute;
+  top:18px;
+  right:25px;
+  color:white;
+  font-size:38px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.img-nav{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  width:45px;
+  height:45px;
+  border:none;
+  border-radius:50%;
+  background:rgba(255,255,255,.2);
+  color:white;
+  font-size:28px;
+  font-weight:900;
+}
+
+.prev-img{left:15px}
+.next-img{right:15px}
+
+.image-count{
+  position:absolute;
+  bottom:18px;
+  color:white;
+  font-weight:900;
+}
   </style>
 </head>
 
@@ -331,18 +383,74 @@ const productId = new URLSearchParams(window.location.search).get("id");
 let product = null;
 let selectedQty = 1;
 
-function getFirstImage(images) {
+let productImages = [];
+let currentImageIndex = 0;
+
+function openImageModal(index = 0){
+  if(!productImages.length) return;
+
+  currentImageIndex = index;
+  document.getElementById("modalImage").src = productImages[currentImageIndex];
+  document.getElementById("imageCount").textContent =
+    `${currentImageIndex + 1} / ${productImages.length}`;
+
+  document.getElementById("imageModal").style.display = "flex";
+}
+
+function closeImageModal(){
+  document.getElementById("imageModal").style.display = "none";
+  document.getElementById("modalImage").src = "";
+}
+
+function nextImage(){
+  currentImageIndex = (currentImageIndex + 1) % productImages.length;
+  openImageModal(currentImageIndex);
+}
+
+function prevImage(){
+  currentImageIndex =
+    (currentImageIndex - 1 + productImages.length) % productImages.length;
+  openImageModal(currentImageIndex);
+}
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const modalImg = document.getElementById("modalImage");
+
+  modalImg.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+
+  modalImg.addEventListener("touchend", (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+
+    if (touchStartX - touchEndX > 50) {
+      nextImage();   // Swipe left
+    }
+
+    if (touchEndX - touchStartX > 50) {
+      prevImage();   // Swipe right
+    }
+  });
+});
+
+function getProductImages(images) {
   try {
-    const parsed = JSON.parse(images);
-    let img = parsed[0] || "";
-    img = img.replace(/\\/g, "/");
+    const parsed = JSON.parse(images || "[]");
 
-    if (img.startsWith("http")) return img;
-    if (img.startsWith("/")) return API_BASE + img;
+    return parsed.map(img => {
+      img = String(img || "").replace(/\\/g, "/");
 
-    return API_BASE + "/" + img;
+      if (img.startsWith("http://") || img.startsWith("https://")) return img;
+      if (img.startsWith("/uploads/")) return API_BASE + img;
+      if (img.startsWith("uploads/")) return API_BASE + "/" + img;
+
+      return API_BASE + "/uploads/" + img;
+    }).filter(Boolean);
+
   } catch {
-    return "";
+    return [];
   }
 }
 
@@ -357,12 +465,16 @@ async function loadProduct() {
     }
 
     product = data.product;
-    const image = getFirstImage(product.images);
+  productImages = getProductImages(product.images);
+const image = productImages[0] || "";
 
     document.getElementById("productBox").innerHTML = `
-      <div class="image">
-        <img src="${image || 'https://via.placeholder.com/400'}">
-      </div>
+    <div class="image" onclick="openImageModal(0)">
+  <img
+    src="${image || 'https://via.placeholder.com/400'}"
+    onerror="this.outerHTML='<div style=&quot;padding:80px 20px;text-align:center;color:#777;font-weight:900;&quot;>No Image</div>'"
+  >
+</div>
 
       <h2>${product.product_name}</h2>
       <div class="price">GH₵${Number(product.price).toFixed(2)}</div>
@@ -577,7 +689,8 @@ async function loadRelatedProducts() {
     }
 
     relatedBox.innerHTML = data.products.map(p => {
-      const image = getFirstImage(p.images);
+      const relatedImages = getProductImages(p.images);
+const image = relatedImages[0] || "";
 
       return `
         <div class="related-card" onclick="window.location.href='product-details.html?id=${p.id}'">
@@ -667,6 +780,12 @@ loadProduct();
 loadComments();
 loadRelatedProducts();
 </script>
-
+<div class="image-modal" id="imageModal">
+  <span class="close-img" onclick="closeImageModal()">×</span>
+  <button class="img-nav prev-img" onclick="prevImage()">‹</button>
+  <img id="modalImage" src="">
+  <button class="img-nav next-img" onclick="nextImage()">›</button>
+  <div class="image-count" id="imageCount"></div>
+</div>
 </body>
 </html>
