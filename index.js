@@ -5515,33 +5515,6 @@ app.post("/api/product/momo/initiate", (req, res) => {
 
 
 
-app.get("/api/test-space", async (req, res) => {
-  try {
-    await spacesClient.send(
-      new PutObjectCommand({
-        Bucket: SPACES_BUCKET,
-        Key: "test.txt",
-        Body: "DIDWAPA Spaces Test",
-        ACL: "public-read",
-        ContentType: "text/plain"
-      })
-    );
-
-    res.json({
-      success: true,
-      url: `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/test.txt`
-    });
-
-  } catch (err) {
-    console.error(err);
-
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
-  }
-});
-
 
 
 
