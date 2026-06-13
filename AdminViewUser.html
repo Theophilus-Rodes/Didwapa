@@ -444,7 +444,15 @@ function closeImageModal() {
   modalImage.src = "";
 }
 
-  const imageUrl = `${API_BASE}/uploads/${filename}`;
+let imageUrl = "";
+
+if (filename.startsWith("http://") || filename.startsWith("https://")) {
+  imageUrl = filename;
+} else if (filename.startsWith("/uploads/")) {
+  imageUrl = `${API_BASE}${filename}`;
+} else {
+  imageUrl = `${API_BASE}/uploads/${filename}`;
+}
 
   return `
     <div class="image-box" onclick="openImage('${imageUrl}')">

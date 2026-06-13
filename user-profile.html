@@ -305,6 +305,38 @@
         width: 100%;
       }
     }
+
+    .verify-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+
+.verify-img{
+  background:#f9fafb;
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:10px;
+}
+
+.verify-img h4{
+  font-size:.8rem;
+  margin-bottom:8px;
+  color:var(--secondary);
+}
+
+.verify-img img{
+  width:100%;
+  height:130px;
+  object-fit:cover;
+  border-radius:14px;
+}
+
+@media(max-width:520px){
+  .verify-grid{
+    grid-template-columns:1fr;
+  }
+}
   </style>
 </head>
 
@@ -412,6 +444,27 @@
         </div>
       </form>
 
+<div class="card">
+  <div class="card-title">Verification Images</div>
+
+  <div class="verify-grid">
+    <div class="verify-img">
+      <h4>Selfie</h4>
+      <img id="selfieImg" src="" alt="Selfie">
+    </div>
+
+    <div class="verify-img">
+      <h4>Ghana Card Front</h4>
+      <img id="frontCardImg" src="" alt="Ghana Card Front">
+    </div>
+
+    <div class="verify-img">
+      <h4>Ghana Card Back</h4>
+      <img id="backCardImg" src="" alt="Ghana Card Back">
+    </div>
+  </div>
+</div>
+
       <form class="card" id="passwordForm">
         <div class="card-title">Change Password</div>
 
@@ -491,6 +544,9 @@
         document.getElementById("dob").value = user.dob ? user.dob.split("T")[0] : "";
         document.getElementById("digital_address").value = user.digital_address || "";
         document.getElementById("address").value = user.address || "";
+        document.getElementById("selfieImg").src = getImageUrl(user.selfie_image);
+document.getElementById("frontCardImg").src = getImageUrl(user.gh_card_front);
+document.getElementById("backCardImg").src = getImageUrl(user.gh_card_back);
 
       } catch (error) {
         console.error(error);
@@ -571,6 +627,20 @@
         showAlert("Failed to change password.", "error");
       }
     });
+
+    function getImageUrl(value){
+  if(!value) return "";
+
+  if(value.startsWith("http://") || value.startsWith("https://")){
+    return value;
+  }
+
+  if(value.startsWith("/uploads/")){
+    return `${API_BASE}${value}`;
+  }
+
+  return `${API_BASE}/uploads/${value}`;
+}
 
     loadProfile();
   </script>

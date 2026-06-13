@@ -1708,7 +1708,6 @@ app.get("/api/user/notifications", (req, res) => {
   });
 });
 
-
 app.get("/api/user/profile", (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({
@@ -1734,6 +1733,9 @@ app.get("/api/user/profile", (req, res) => {
       digital_address,
       address,
       verification_status,
+      selfie_image,
+      gh_card_front,
+      gh_card_back,
       created_at
     FROM users
     WHERE id = ?
@@ -1762,7 +1764,6 @@ app.get("/api/user/profile", (req, res) => {
     });
   });
 });
-
 
 app.put("/api/user/profile/update", (req, res) => {
   if (!req.session.user) {
