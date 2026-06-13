@@ -1298,9 +1298,9 @@
           <span>🛠️</span> Services
         </button>
 
-        <button class="cat-tab" onclick="filterByCategory('All', this)">
-          <span>☰</span> More
-        </button>
+        <button class="cat-tab" onclick="window.location.href='categorylist.html'">
+  <span>☰</span> More
+</button>
       </nav>
     </header>
 
@@ -1390,7 +1390,7 @@
 
       <div class="section-head">
         <h2>Shop by Category</h2>
-        <a class="view-all" onclick="filterByCategory('All', document.querySelector('.cat-tab:last-child'))">View all</a>
+        <a class="view-all" onclick="window.location.href='categorylist.html'">View all</a>
       </div>
 
       <section class="shop-cats">
@@ -1603,25 +1603,14 @@
           return;
         }
 
-        if (data.products.length === 0) {
-          const fallbackRes = await fetch(`${API_BASE}/api/products`, {
-            method: "GET",
-            credentials: "include"
-          });
-
-          const fallbackData = await fallbackRes.json();
-
-          if (fallbackData.success && fallbackData.products.length > 0) {
-            data.products = fallbackData.products;
-          } else {
-            productsContainer.innerHTML = `
-              <p style="grid-column:1/-1;padding:15px;">
-                No approved products available.
-              </p>
-            `;
-            return;
-          }
-        }
+     if (data.products.length === 0) {
+  productsContainer.innerHTML = `
+    <p style="grid-column:1/-1;padding:15px;">
+      No product found.
+    </p>
+  `;
+  return;
+}
 
         productsContainer.innerHTML = data.products.map(product => {
           const firstImage = getFirstImage(product.images);
