@@ -337,6 +337,62 @@
     grid-template-columns:1fr;
   }
 }
+
+.image-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.9);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  padding:20px;
+  animation:fadeIn .3s ease;
+}
+
+.image-modal img{
+  max-width:95%;
+  max-height:90vh;
+  border-radius:18px;
+  background:white;
+  box-shadow:0 25px 70px rgba(0,0,0,.5);
+  animation:zoomIn .3s ease;
+}
+
+.close-image{
+  position:absolute;
+  top:20px;
+  right:25px;
+  color:white;
+  font-size:40px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.verify-img img{
+  cursor:pointer;
+  transition:.3s ease;
+}
+
+.verify-img img:hover{
+  transform:scale(1.03);
+}
+
+@keyframes fadeIn{
+  from{opacity:0;}
+  to{opacity:1;}
+}
+
+@keyframes zoomIn{
+  from{
+    transform:scale(.9);
+    opacity:.5;
+  }
+  to{
+    transform:scale(1);
+    opacity:1;
+  }
+}
   </style>
 </head>
 
@@ -450,17 +506,32 @@
   <div class="verify-grid">
     <div class="verify-img">
       <h4>Selfie</h4>
-      <img id="selfieImg" src="" alt="Selfie">
+      <img
+  id="selfieImg"
+  src=""
+  alt="Selfie"
+  onclick="openImage(this.src)"
+>
     </div>
 
     <div class="verify-img">
       <h4>Ghana Card Front</h4>
-      <img id="frontCardImg" src="" alt="Ghana Card Front">
+     <img
+  id="frontCardImg"
+  src=""
+  alt="Ghana Card Front"
+  onclick="openImage(this.src)"
+>
     </div>
 
     <div class="verify-img">
       <h4>Ghana Card Back</h4>
-      <img id="backCardImg" src="" alt="Ghana Card Back">
+      <img
+  id="backCardImg"
+  src=""
+  alt="Ghana Card Back"
+  onclick="openImage(this.src)"
+>
     </div>
   </div>
 </div>
@@ -642,8 +713,29 @@ document.getElementById("backCardImg").src = getImageUrl(user.gh_card_back);
   return `${API_BASE}/uploads/${value}`;
 }
 
+
+
+function openImage(src){
+  if(!src) return;
+
+  document.getElementById("modalImage").src = src;
+  document.getElementById("imageModal").style.display = "flex";
+}
+
+function closeImageModal(){
+  document.getElementById("imageModal").style.display = "none";
+  document.getElementById("modalImage").src = "";
+}
     loadProfile();
   </script>
+<div class="image-modal" id="imageModal" onclick="closeImageModal()">
+  <span class="close-image">&times;</span>
 
+  <img
+    id="modalImage"
+    src=""
+    onclick="event.stopPropagation()"
+  >
+</div>
 </body>
 </html>
