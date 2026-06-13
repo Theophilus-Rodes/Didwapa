@@ -230,7 +230,8 @@ onclick="history.back()">
 
 <img
 id="mainImage"
-src="">
+src=""
+onerror="this.style.display='none'">
 
 </div>
 
@@ -376,12 +377,19 @@ try{
 images = JSON.parse(p.images);
 }catch(e){}
 
-document.getElementById(
-"mainImage"
-).src =
-images.length
-? `${API_BASE}/${images[0]}`
-: "";
+let mainImage = "";
+
+if (images.length) {
+  if (images[0].startsWith("http://") || images[0].startsWith("https://")) {
+    mainImage = images[0];
+  } else if (images[0].startsWith("/uploads/")) {
+    mainImage = `${API_BASE}${images[0]}`;
+  } else {
+    mainImage = `${API_BASE}/uploads/${images[0]}`;
+  }
+}
+
+document.getElementById("mainImage").src = mainImage;
 
 document.getElementById(
 "productName"
