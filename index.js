@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-const multer = require("multer");
+
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const path = require("path");
 
