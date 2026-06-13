@@ -573,25 +573,25 @@ app.get("/api/vendor/check-session", (req, res) => {
 
 
 ///// Verify 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = Date.now() + "-" + file.originalname.replace(/\s+/g, "_");
-    cb(null, uniqueName);
-  }
-});
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, "uploads/");
+//   },
+//   filename: function (req, file, cb) {
+//     const uniqueName = Date.now() + "-" + file.originalname.replace(/\s+/g, "_");
+//     cb(null, uniqueName);
+//   }
+// });
 
-const upload = multer({
-  storage,
-  limits: {
-    fieldSize: 10 * 1024 * 1024,
-    fileSize: 10 * 1024 * 1024
-  }
-});
+// const upload = multer({
+//   storage,
+//   limits: {
+//     fieldSize: 10 * 1024 * 1024,
+//     fileSize: 10 * 1024 * 1024
+//   }
+// });
 
 
 
