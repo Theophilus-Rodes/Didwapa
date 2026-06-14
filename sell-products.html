@@ -1009,7 +1009,7 @@ const CATEGORY_DATA = {
     subcategories:["Mobile Phones","Tablets","Smart Watches","Phone Accessories","Tablet Accessories","SIM Cards","Phone Parts","Power Banks","Chargers & Power Adapters","Phone Cases/Covers"],
     fields:[
       {name:"brand",label:"Brand*",type:"select",options:["Apple","Samsung","Tecno","Infinix","Itel","Huawei","Xiaomi","Oppo","Nokia","Google","Lenovo","Amazon","Other"]},
-     {name:"model",label:"Model*",type:"text"},
+      {name:"model",label:"Model*",type:"select",dependsOn:"brand",options:[]},
       {name:"ram",label:"RAM",type:"select",options:["1GB","2GB","3GB","4GB","6GB","8GB","12GB","16GB+"]},
       {name:"storage",label:"Internal Storage",type:"select",options:["16GB","32GB","64GB","128GB","256GB","512GB","1TB"]},
       {name:"os",label:"Operating System",type:"select",options:["Android","iOS","HarmonyOS","Other"],auto:"Android"},
@@ -1375,25 +1375,65 @@ function updateConditionalSections(){
 
 
 const VEHICLE_MODELS = {
-  Toyota: ["Corolla", "Camry", "RAV4", "Highlander", "Yaris", "Vitz", "Hilux", "Land Cruiser", "Prado"],
-  Honda: ["Civic", "Accord", "CR-V", "Fit", "Pilot", "Odyssey"],
-  Hyundai: ["Elantra", "Sonata", "Tucson", "Santa Fe", "Accent", "i10"],
-  Nissan: ["Altima", "Sentra", "Rogue", "Pathfinder", "X-Trail", "Navara"],
-  Kia: ["Morning", "Rio", "Sportage", "Sorento", "Optima", "Cerato"],
-  "Mercedes-Benz": ["C-Class", "E-Class", "S-Class", "GLA", "GLC", "GLE", "Sprinter"],
-  BMW: ["3 Series", "5 Series", "7 Series", "X1", "X3", "X5", "X6"],
-  Ford: ["Focus", "Fusion", "Explorer", "Escape", "F-150", "Ranger"],
-  Lexus: ["RX", "ES", "NX", "GX", "LX", "IS"],
-  Mitsubishi: ["Pajero", "Outlander", "Lancer", "ASX", "L200"],
-  Volkswagen: ["Golf", "Passat", "Jetta", "Tiguan", "Polo"],
-  Chevrolet: ["Cruze", "Spark", "Malibu", "Camaro", "Captiva"],
-  Mazda: ["Mazda 3", "Mazda 6", "CX-3", "CX-5", "CX-9"],
-  Suzuki: ["Swift", "Alto", "Vitara", "Baleno", "Jimny"],
-  Tesla: ["Model 3", "Model S", "Model X", "Model Y"],
-  Other: ["Other"]
+  Other: ["Other"],
+
+  Acura: ["CL", "ILX", "Integra", "MDX", "RDX", "RL", "RLX", "TL", "TLX", "TSX", "ZDX", "Other"],
+  Audi: ["A1", "A3", "A4", "A5", "A6", "A7", "A8", "Q2", "Q3", "Q5", "Q7", "Q8", "R8", "TT", "Other"],
+  BAIC: ["A1", "A5", "BJ20", "BJ40", "BJ80", "X25", "X35", "X55", "X65", "Other"],
+  Bentley: ["Bentayga", "Continental", "Flying Spur", "Mulsanne", "Other"],
+  BMW: ["1 Series", "2 Series", "3 Series", "4 Series", "5 Series", "6 Series", "7 Series", "8 Series", "i3", "i4", "i8", "iX", "X1", "X2", "X3", "X4", "X5", "X6", "X7", "Z4", "Other"],
+  Brilliance: ["BS2", "BS4", "BS6", "FRV", "H220", "H230", "H330", "V3", "V5", "Other"],
+  Buick: ["Century", "Encore", "Enclave", "Envision", "LaCrosse", "LeSabre", "Park Avenue", "Regal", "Verano", "Other"],
+  Cadillac: ["ATS", "CT4", "CT5", "CTS", "DTS", "Escalade", "SRX", "XT4", "XT5", "XT6", "XTS", "Other"],
+  Changan: ["Alsvin", "Benni", "CS15", "CS35", "CS55", "CS75", "Eado", "Hunter", "Karvaan", "Other"],
+  Chevrolet: ["Aveo", "Camaro", "Captiva", "Colorado", "Cruze", "Equinox", "Impala", "Malibu", "Silverado", "Sonic", "Spark", "Suburban", "Tahoe", "Trailblazer", "Traverse", "Other"],
+  Chrysler: ["200", "300", "Aspen", "Pacifica", "PT Cruiser", "Sebring", "Town & Country", "Voyager", "Other"],
+  Citroen: ["Berlingo", "C1", "C2", "C3", "C4", "C5", "C-Elysee", "DS3", "DS4", "DS5", "Jumper", "Other"],
+  Daewoo: ["Espero", "Kalos", "Lacetti", "Lanos", "Leganza", "Matiz", "Nubira", "Tacuma", "Other"],
+  Daihatsu: ["Applause", "Charade", "Copen", "Cuore", "Feroza", "Mira", "Rocky", "Sirion", "Terios", "Other"],
+  Dodge: ["Avenger", "Caliber", "Caravan", "Challenger", "Charger", "Dakota", "Dart", "Durango", "Journey", "Nitro", "Ram", "Other"],
+  Fiat: ["500", "500L", "500X", "Bravo", "Doblo", "Ducato", "Linea", "Panda", "Punto", "Tipo", "Other"],
+  Ford: ["Bronco", "C-Max", "EcoSport", "Edge", "Escape", "Expedition", "Explorer", "F-150", "Fiesta", "Focus", "Fusion", "Galaxy", "Mondeo", "Mustang", "Ranger", "Taurus", "Transit", "Other"],
+  Geely: ["Atlas", "Boyue", "Coolray", "Emgrand", "GC6", "MK", "Okavango", "Tugella", "Vision", "Other"],
+  Honda: ["Accord", "City", "Civic", "CR-V", "Crosstour", "Element", "Fit", "HR-V", "Insight", "Jazz", "Odyssey", "Passport", "Pilot", "Ridgeline", "Other"],
+  Hyundai: ["Accent", "Atos", "Azera", "Creta", "Elantra", "Genesis", "Getz", "Grand i10", "H-1", "i10", "i20", "i30", "ix35", "Kona", "Palisade", "Santa Fe", "Sonata", "Tucson", "Veloster", "Venue", "Veracruz", "Other"],
+  Infiniti: ["EX", "FX", "G", "JX", "M", "Q30", "Q50", "Q60", "Q70", "QX30", "QX50", "QX56", "QX60", "QX70", "QX80", "Other"],
+  Isuzu: ["Ascender", "D-Max", "Elf", "F-Series", "MU-X", "N-Series", "Rodeo", "Trooper", "Other"],
+  Jaguar: ["E-Pace", "F-Pace", "F-Type", "I-Pace", "S-Type", "XE", "XF", "XJ", "X-Type", "Other"],
+  Jeep: ["Cherokee", "Commander", "Compass", "Gladiator", "Grand Cherokee", "Liberty", "Patriot", "Renegade", "Wrangler", "Other"],
+  Kia: ["Carens", "Carnival", "Cerato", "Forte", "K5", "K7", "K9", "Morning", "Optima", "Picanto", "Rio", "Sedona", "Seltos", "Sorento", "Soul", "Sportage", "Stinger", "Telluride", "Other"],
+  "Land Rover": ["Defender", "Discovery", "Discovery Sport", "Freelander", "Range Rover", "Range Rover Evoque", "Range Rover Sport", "Range Rover Velar", "Other"],
+  Lexus: ["CT", "ES", "GS", "GX", "HS", "IS", "LC", "LS", "LX", "NX", "RC", "RX", "SC", "UX", "Other"],
+  Mazda: ["2", "3", "5", "6", "Atenza", "B-Series", "BT-50", "CX-3", "CX-30", "CX-5", "CX-7", "CX-9", "Demio", "MPV", "Tribute", "Other"],
+  "Mercedes-Benz": ["A-Class", "B-Class", "C-Class", "CLA-Class", "CLK-Class", "CLS-Class", "E-Class", "G-Class", "GL-Class", "GLA-Class", "GLB-Class", "GLC-Class", "GLE-Class", "GLK-Class", "GLS-Class", "M-Class", "S-Class", "SL-Class", "SLK-Class", "Sprinter", "V-Class", "Viano", "Vito", "Other"],
+  Mitsubishi: ["ASX", "Attrage", "Canter", "Colt", "Eclipse", "Endeavor", "Galant", "L200", "Lancer", "Mirage", "Montero", "Outlander", "Pajero", "RVR", "Space Star", "Other"],
+  Nissan: ["350Z", "370Z", "Almera", "Altima", "Armada", "Bluebird", "Frontier", "Juke", "Leaf", "Maxima", "Murano", "Navara", "Note", "Pathfinder", "Patrol", "Primera", "Qashqai", "Rogue", "Sentra", "Serena", "Sunny", "Teana", "Terrano", "Tiida", "Titan", "Versa", "X-Trail", "Other"],
+  Opel: ["Agila", "Antara", "Astra", "Combo", "Corsa", "Crossland", "Frontera", "Insignia", "Meriva", "Mokka", "Omega", "Signum", "Vectra", "Vivaro", "Zafira", "Other"],
+  Peugeot: ["107", "108", "206", "207", "208", "301", "307", "308", "406", "407", "508", "2008", "3008", "5008", "Boxer", "Expert", "Partner", "Other"],
+  Porsche: ["911", "Boxster", "Cayenne", "Cayman", "Macan", "Panamera", "Taycan", "Other"],
+  Renault: ["Captur", "Clio", "Duster", "Espace", "Fluence", "Kadjar", "Kangoo", "Koleos", "Laguna", "Logan", "Megane", "Sandero", "Scenic", "Talisman", "Trafic", "Other"],
+  Suzuki: ["Alto", "Baleno", "Celerio", "Ciaz", "Ertiga", "Grand Vitara", "Jimny", "Kizashi", "Liana", "S-Cross", "Splash", "Swift", "SX4", "Vitara", "Wagon R", "Other"],
+  Tesla: ["Model 3", "Model S", "Model X", "Model Y", "Cybertruck", "Roadster", "Other"],
+  Toyota: ["4Runner", "Allex", "Allion", "Alphard", "Aqua", "Aurion", "Avalon", "Avanza", "Avensis", "Belta", "Blade", "C-HR", "Camry", "Carina", "Celica", "Coaster", "Corolla", "Corolla Cross", "Crown", "Dyna", "Estima", "FJ Cruiser", "Fortuner", "Harrier", "HiAce", "Highlander", "Hilux", "Ist", "Land Cruiser", "Land Cruiser Prado", "Matrix", "Noah", "Passo", "Picnic", "Premio", "Previa", "Prius", "RAV4", "Rush", "Sequoia", "Sienna", "Tacoma", "Tundra", "Venza", "Verossa", "Vios", "Vitz", "Voxy", "Wish", "Yaris", "Other"],
+  Volkswagen: ["Amarok", "Arteon", "Beetle", "Bora", "Caddy", "CC", "Crafter", "Golf", "Jetta", "Passat", "Polo", "Scirocco", "Sharan", "T-Cross", "Tiguan", "Touareg", "Touran", "Transporter", "Other"],
+  Volvo: ["C30", "C70", "S40", "S60", "S80", "S90", "V40", "V50", "V60", "V70", "V90", "XC40", "XC60", "XC70", "XC90", "Other"]
 };
 
-
+const PHONE_MODELS = {
+  Apple: ["iPhone 6", "iPhone 6 Plus", "iPhone 6s", "iPhone 6s Plus", "iPhone 7", "iPhone 7 Plus", "iPhone 8", "iPhone 8 Plus", "iPhone X", "iPhone XR", "iPhone XS", "iPhone XS Max", "iPhone 11", "iPhone 11 Pro", "iPhone 11 Pro Max", "iPhone SE", "iPhone 12", "iPhone 12 mini", "iPhone 12 Pro", "iPhone 12 Pro Max", "iPhone 13", "iPhone 13 mini", "iPhone 13 Pro", "iPhone 13 Pro Max", "iPhone 14", "iPhone 14 Plus", "iPhone 14 Pro", "iPhone 14 Pro Max", "iPhone 15", "iPhone 15 Plus", "iPhone 15 Pro", "iPhone 15 Pro Max", "iPhone 16", "iPhone 16 Plus", "iPhone 16 Pro", "iPhone 16 Pro Max", "Other"],
+  Samsung: ["Galaxy A03", "Galaxy A04", "Galaxy A05", "Galaxy A06", "Galaxy A10", "Galaxy A12", "Galaxy A13", "Galaxy A14", "Galaxy A15", "Galaxy A16", "Galaxy A20", "Galaxy A21s", "Galaxy A22", "Galaxy A23", "Galaxy A24", "Galaxy A25", "Galaxy A30", "Galaxy A31", "Galaxy A32", "Galaxy A33", "Galaxy A34", "Galaxy A35", "Galaxy A50", "Galaxy A51", "Galaxy A52", "Galaxy A53", "Galaxy A54", "Galaxy A55", "Galaxy A70", "Galaxy A71", "Galaxy A72", "Galaxy M11", "Galaxy M12", "Galaxy M31", "Galaxy M32", "Galaxy M33", "Galaxy M51", "Galaxy Note 8", "Galaxy Note 9", "Galaxy Note 10", "Galaxy Note 10 Plus", "Galaxy Note 20", "Galaxy Note 20 Ultra", "Galaxy S8", "Galaxy S9", "Galaxy S10", "Galaxy S20", "Galaxy S20 FE", "Galaxy S21", "Galaxy S21 Ultra", "Galaxy S22", "Galaxy S22 Ultra", "Galaxy S23", "Galaxy S23 Ultra", "Galaxy S24", "Galaxy S24 Ultra", "Galaxy Z Flip", "Galaxy Z Fold", "Other"],
+  Tecno: ["Pop 2", "Pop 3", "Pop 4", "Pop 5", "Pop 6", "Pop 7", "Pop 8", "Spark 5", "Spark 6", "Spark 7", "Spark 8", "Spark 9", "Spark 10", "Spark 20", "Camon 12", "Camon 15", "Camon 16", "Camon 17", "Camon 18", "Camon 19", "Camon 20", "Camon 30", "Pova", "Pova 2", "Pova 3", "Pova 4", "Pova 5", "Phantom X", "Phantom V Fold", "Other"],
+  Infinix: ["Hot 8", "Hot 9", "Hot 10", "Hot 11", "Hot 12", "Hot 20", "Hot 30", "Hot 40", "Smart 5", "Smart 6", "Smart 7", "Smart 8", "Note 7", "Note 8", "Note 10", "Note 11", "Note 12", "Note 30", "Zero 8", "Zero X", "Zero 20", "Zero 30", "GT 10 Pro", "Other"],
+  Itel: ["A16", "A23", "A33", "A48", "A56", "A60", "A70", "P13", "P15", "P17", "P36", "P37", "P38", "P40", "S16", "S17", "S18", "S23", "Other"],
+  Huawei: ["Y5", "Y6", "Y7", "Y9", "P8", "P9", "P10", "P20", "P30", "P40", "Mate 10", "Mate 20", "Mate 30", "Mate 40", "Nova 3", "Nova 5", "Nova 7", "Nova 9", "Other"],
+  Xiaomi: ["Redmi 8", "Redmi 9", "Redmi 10", "Redmi 12", "Redmi 13", "Redmi Note 8", "Redmi Note 9", "Redmi Note 10", "Redmi Note 11", "Redmi Note 12", "Redmi Note 13", "Mi 9", "Mi 10", "Mi 11", "Mi 12", "Poco C40", "Poco X3", "Poco X4", "Poco X5", "Poco F3", "Poco F4", "Other"],
+  Oppo: ["A12", "A15", "A16", "A17", "A31", "A54", "A57", "A74", "A76", "A77", "A78", "A94", "F9", "F11", "F15", "F19", "Reno 4", "Reno 5", "Reno 6", "Reno 7", "Reno 8", "Reno 10", "Other"],
+  Nokia: ["C1", "C2", "C10", "C20", "C21", "C30", "G10", "G20", "G21", "G22", "X10", "X20", "X30", "2.4", "3.4", "5.4", "6.1", "7.2", "8.3", "Other"],
+  Google: ["Pixel 3", "Pixel 3 XL", "Pixel 4", "Pixel 4 XL", "Pixel 4a", "Pixel 5", "Pixel 5a", "Pixel 6", "Pixel 6 Pro", "Pixel 6a", "Pixel 7", "Pixel 7 Pro", "Pixel 7a", "Pixel 8", "Pixel 8 Pro", "Pixel 8a", "Other"],
+  Lenovo: ["Tab M7", "Tab M8", "Tab M10", "Tab P11", "Tab P12", "K5", "K6", "K8", "K10", "Vibe", "Other"],
+  Amazon: ["Fire 7", "Fire HD 8", "Fire HD 10", "Fire Max 11", "Kindle", "Kindle Paperwhite", "Other"],
+  Other: ["Other"]
+};
 
 function renderDynamicFields(){
   const fields = CATEGORY_DATA[selectedCategory]?.fields || [];
@@ -1468,6 +1508,17 @@ function openSpecOption(name){
     }
 
     options = VEHICLE_MODELS[make] || ["Other"];
+  }
+
+  if(name === "model" && selectedCategory === "Phones & Tablets"){
+    const brand = document.getElementById("spec_brand")?.value;
+
+    if(!brand){
+      showAlert("Please select brand first.", "error");
+      return;
+    }
+
+    options = PHONE_MODELS[brand] || ["Other"];
   }
 
   const current = document.getElementById(`spec_${name}`).value;
@@ -1590,6 +1641,17 @@ function chooseOption(value){
     document.getElementById(`spec_${activeSpecName}`).value = value;
 
       if(activeSpecName === "make"){
+    const modelInput = document.getElementById("spec_model");
+    const modelText = document.getElementById("spec_modelText");
+
+    if(modelInput && modelText){
+      modelInput.value = "";
+      modelText.textContent = "Model*";
+      modelText.classList.add("placeholder");
+    }
+  }
+
+  if(activeSpecName === "brand" && selectedCategory === "Phones & Tablets"){
     const modelInput = document.getElementById("spec_model");
     const modelText = document.getElementById("spec_modelText");
 
