@@ -1944,8 +1944,15 @@ app.post(
   upload.array("images", 10),
 
   async (req, res) => {
+    const requestId = Date.now();
+
+    console.log(`\n========== PRODUCT UPLOAD START ${requestId} ==========`);
+
     try {
+      console.log("SESSION USER:", req.session.user || "NO SESSION USER");
+
       if (!req.session.user) {
+        console.log("FAILED: User not logged in");
         return res.status(401).json({
           success: false,
           message: "Please login first."
@@ -1953,6 +1960,10 @@ app.post(
       }
 
       const userId = req.session.user.id;
+      console.log("USER ID:", userId);
+
+      console.log("BODY RECEIVED:", req.body);
+      console.log("FILES RECEIVED:", req.files ? req.files.length : 0);
 
       const {
         category,
@@ -1983,6 +1994,18 @@ app.post(
         promotion_type
       } = req.body;
 
+      console.log("REQUIRED FIELD CHECK:", {
+        category,
+        subcategory,
+        region,
+        district,
+        product_name,
+        product_type,
+        price,
+        phone_number,
+        item_condition
+      });
+
       if (
         !category ||
         !subcategory ||
@@ -1994,6 +2017,7 @@ app.post(
         !phone_number ||
         !item_condition
       ) {
+        console.log("FAILED: Missing required fields");
         return res.status(400).json({
           success: false,
           message: "Please fill all required fields."
@@ -2001,6 +2025,7 @@ app.post(
       }
 
       if (!req.files || req.files.length < 5) {
+        console.log("FAILED: Less than 5 images uploaded");
         return res.status(400).json({
           success: false,
           message: "Please upload at least 5 images."
@@ -2009,7 +2034,15 @@ app.post(
 
       const imagePaths = [];
 
+      console.log("STARTING SPACES IMAGE UPLOAD...");
+
       for (const file of req.files) {
+        console.log("UPLOADING FILE:", {
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size
+        });
+
         const ext = path.extname(file.originalname);
         const fileName = `products/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
 
@@ -2025,13 +2058,20 @@ app.post(
 
         const imageUrl = `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/${fileName}`;
         imagePaths.push(imageUrl);
+
+        console.log("FILE UPLOADED:", imageUrl);
       }
+
+      console.log("ALL IMAGE PATHS:", imagePaths);
 
       let cleanSpecs = null;
 
       try {
-        cleanSpecs = specifications ? JSON.stringify(JSON.parse(specifications)) : null;
+        cleanSpecs = specifications ? JSON.stringify(JSON.parse(specifications)) : JSON.stringify({});
+        console.log("CLEAN SPECS:", cleanSpecs);
       } catch (e) {
+        console.log("SPECIFICATIONS JSON PARSE ERROR:", e.message);
+        console.log("RAW SPECIFICATIONS:", specifications);
         cleanSpecs = JSON.stringify({});
       }
 
@@ -2070,59 +2110,77 @@ app.post(
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       `;
 
-      db.query(
-        sql,
-        [
-          category,
-          subcategory,
-          region,
-          district,
-          product_name,
-          product_type,
-          price,
-          product_color || null,
-          quantity_in_stock || 1,
-          "pending",
-          phone_number,
-          instructions || null,
-          description || null,
-          item_condition,
-          cleanSpecs,
-          seller_name || null,
-          youtube_link || null,
-          registered_car || null,
-          exchange_possible || null,
-          negotiable || "Not sure",
-          bulk_min_qty || null,
-          bulk_price || null,
-          delivery_available || null,
-          delivery_fee_type || null,
-          delivery_time || null,
-          pickup_available || null,
-          promotion_type || "No promo - Free",
-          JSON.stringify(imagePaths),
-          userId
-        ],
+      const values = [
+        category,
+        subcategory,
+        region,
+        district,
+        product_name,
+        product_type,
+        price,
+        product_color || null,
+        quantity_in_stock || 1,
+        "pending",
+        phone_number,
+        instructions || null,
+        description || null,
+        item_condition,
+        cleanSpecs,
+        seller_name || null,
+        youtube_link || null,
+        registered_car || null,
+        exchange_possible || null,
+        negotiable || "Not sure",
+        bulk_min_qty || null,
+        bulk_price || null,
+        delivery_available || null,
+        delivery_fee_type || null,
+        delivery_time || null,
+        pickup_available || null,
+        promotion_type || "No promo - Free",
+        JSON.stringify(imagePaths),
+        userId
+      ];
 
-        (err) => {
-          if (err) {
-            console.error("Upload product error:", err);
+      console.log("SQL TO RUN:", sql);
+      console.log("VALUES TO INSERT:", values);
 
-            return res.status(500).json({
-              success: false,
-              message: err.sqlMessage || "Failed to upload product."
-            });
-          }
+      db.query(sql, values, (err, result) => {
+        if (err) {
+          console.error("UPLOAD PRODUCT DB ERROR:", {
+            message: err.message,
+            sqlMessage: err.sqlMessage,
+            code: err.code,
+            errno: err.errno,
+            sqlState: err.sqlState
+          });
 
-          res.json({
-            success: true,
-            message: "Product uploaded successfully and pending approval."
+          console.log(`========== PRODUCT UPLOAD FAILED ${requestId} ==========\n`);
+
+          return res.status(500).json({
+            success: false,
+            message: err.sqlMessage || "Failed to upload product."
           });
         }
-      );
+
+        console.log("INSERT RESULT:", result);
+        console.log("INSERTED PRODUCT ID:", result.insertId);
+        console.log(`========== PRODUCT UPLOAD SUCCESS ${requestId} ==========\n`);
+
+        res.json({
+          success: true,
+          message: "Product uploaded successfully and pending approval.",
+          productId: result.insertId
+        });
+      });
 
     } catch (error) {
-      console.error("Spaces upload error:", error);
+      console.error("PRODUCT UPLOAD CATCH ERROR:", {
+        message: error.message,
+        stack: error.stack
+      });
+
+      console.log(`========== PRODUCT UPLOAD CRASHED ${requestId} ==========\n`);
 
       res.status(500).json({
         success: false,
@@ -2131,6 +2189,9 @@ app.post(
     }
   }
 );
+
+
+
 
 /////User Products view 
 app.get(
