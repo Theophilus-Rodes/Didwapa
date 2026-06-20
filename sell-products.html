@@ -1003,220 +1003,431 @@ const API_BASE =
     ? "http://localhost:5000"
     : "";
 
+
+
+
+const PHONE_BRANDS = ["Apple","Samsung","Tecno","Infinix","Itel","Huawei","Xiaomi","Oppo","Nokia","Google","Lenovo","Amazon","Other"];
+
+const PHONE_CONDITIONS = ["Brand New","Used","Refurbished","For Parts or Not Working"];
+
+const STORAGE_OPTIONS = ["4GB","8GB","16GB","32GB","64GB","128GB","256GB","512GB","1TB","Other"];
+
+const RAM_OPTIONS = ["1GB","2GB","3GB","4GB","6GB","8GB","12GB","16GB","18GB","24GB","Other"];
+
+const Internal_Storage = ["64","128","256","512","1TB","2TB","Other"];
+
+const Dual_eSIM = ["Dual Nano Sim/eSIM","Dual Nano-SIM","Dual eSIM"];
+
+const Key_Features = ["Bluetooth","Ceramic Shield Glass","Face ID","NFC","Stereo Speaker","USD Lighting, USD","Finger Print","Radio","Others"];
+
+const Color_of_Phone = ["Black","Blue","Bronze","Gold","Green","Orange","Pink","Purple","Red","Rose Gold","Silver","White","Yellow","Other"];
+
+const SCREEN_SIZES = ["Below 4 inches","4 - 4.4 inches","4.5 - 4.9 inches","5 - 5.4 inches","5.5 - 5.9 inches","6 - 6.4 inches","6.5 - 6.9 inches","7 inches & above","Other"];
+
+const PHONE_OS = ["Android","iOS","HarmonyOS","Windows","Other"];
+
+const ACCESSORY_TYPES = [
+  "Cases & Covers","Chargers","Cables","Power Banks","Earphones","Headphones","Screen Protectors","Memory Cards","Phone Holders","Tablet Keyboards","Stylus Pens","Batteries",
+  "Phone Screen","Bateries","Blutooth Mono Headset","Blutooth Stereo Headset","Finder Sleeves","Memory Card","Grips","Mobile Flashes & Selfie Lights","MP3 Sunflasses",
+"Phone Charms","Phone Coolers","Phone Fans","Phone Pouches","Screen Magnifier","Screen Repair Kits","Sim Cards","Tablet Keyboard",
+"Others"];
+
+const WATCH_TYPES = ["Smart Watch","Fitness Tracker","Kids Smart Watch","Luxury Smart Watch","Accessories","Other"];
+
+const BAND_COLORS = ["Black","White","Blue","Red","Green","Pink","Gray","Brown","Gold","Silver","Other"];
+
+const BAND_MATERIALS = ["Silicone","Faux Leather","Stainless Steel","Rubber","Fabric","Nylon","Plastic","Aluminium","Ceramic",
+"Genuine Leather","Polyurenthane","Others"];
+
+
+const COLORS = [
+  "Black","Blue","Bronze","Gold","Green","Orange","Pink",
+  "Purple","Red","Rose Gold","Silver","White","Yellow","Other"
+];
+
+
 const CATEGORY_DATA = {
-  "Phones & Tablets": {
-    icon:"📱",
-    subcategories:["Mobile Phones","Tablets","Smart Watches","Phone Accessories","Tablet Accessories","SIM Cards","Phone Parts","Power Banks","Chargers & Power Adapters","Phone Cases/Covers"],
-    fields:[
-      {name:"brand",label:"Brand*",type:"select",options:["Apple","Samsung","Tecno","Infinix","Itel","Huawei","Xiaomi","Oppo","Nokia","Google","Lenovo","Amazon","Other"]},
+"Phones & Tablets": {
+  icon:"📱",
+  subcategories:[
+    "Mobile Phones",
+    "Tablets"
+    
+  ],
+
+  fieldsBySubcategory: {
+    "Mobile Phones": [
+      {name:"brand",label:"Brand*",type:"select",options:PHONE_BRANDS},
       {name:"model",label:"Model*",type:"select",dependsOn:"brand",options:[]},
-      {name:"ram",label:"RAM",type:"select",options:["1GB","2GB","3GB","4GB","6GB","8GB","12GB","16GB+"]},
-      {name:"storage",label:"Internal Storage",type:"select",options:["16GB","32GB","64GB","128GB","256GB","512GB","1TB"]},
-      {name:"os",label:"Operating System",type:"select",options:["Android","iOS","HarmonyOS","Other"],auto:"Android"},
-      {name:"display_type",label:"Display Type",type:"select",options:["IPS LCD","OLED","AMOLED","Super AMOLED","Retina","TFT","Other"],auto:"IPS LCD"},
-      {name:"resolution",label:"Resolution",type:"select",options:["720 x 1280","1080 x 1920","1080 x 2400","1170 x 2532","1440 x 3200","Other"],auto:"720 x 1280"},
-      {name:"sim",label:"SIM",type:"select",options:["Mini-SIM","Micro-SIM","Nano-SIM","eSIM","Dual SIM"],auto:"Mini-SIM"},
-      {name:"card_slot",label:"Card Slot",type:"select",options:["No Card Slot","microSD, up to 32GB","microSD, up to 128GB","microSD, up to 256GB","microSDXC"],auto:"microSD, up to 32GB"},
-      {name:"main_camera",label:"Main Camera",type:"select",options:["5 MP","8 MP","12 MP","13 MP","16 MP","48 MP","50 MP","64 MP","108 MP","Other"],auto:"8 MP"},
-      {name:"selfie_camera",label:"Selfie Camera",type:"select",options:["5 MP","8 MP","12 MP","13 MP","16 MP","32 MP","Other"]},
-      {name:"battery",label:"Battery",type:"text",auto:"1800"},
-      {name:"network",label:"Network",type:"select",options:["2G","3G","4G","5G"],auto:"4G"}
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS},
+      {name:"storage",label:"Storage Capacity*",type:"select",options:STORAGE_OPTIONS},
+      {name:"screen_size",label:"Screen Size*",type:"select",options:SCREEN_SIZES},
+      {name:"color",label:"Color*",type:"select",options:COLORS},
+      {name:"os",label:"Operating System*",type:"select",options:PHONE_OS},
+      {name:"ram",label:"RAM*",type:"select",options:RAM_OPTIONS},
+      {name:"internalstorage",label:"Internal Storage*",type:"select",options:Internal_Storage},
+      {name:"Color",label:"Color*",type:"select",options:Color_of_Phone},
+      {name:"eSIM",label:"SIM*",type:"select",options:Dual_eSIM},
+      {name:"Features",label:"Key Features*",type:"multi",options:Key_Features}
+    ],
+
+    "Tablets": [
+      {name:"brand",label:"Brand*",type:"select",options:PHONE_BRANDS},
+      {name:"model",label:"Model*",type:"select",dependsOn:"brand",options:[]},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS},
+      {name:"storage",label:"Storage Capacity*",type:"select",options:STORAGE_OPTIONS},
+      {name:"screen_size",label:"Screen Size*",type:"select",options:SCREEN_SIZES},
+      {name:"color",label:"Color*",type:"select",options:COLORS},
+      {name:"os",label:"Operating System*",type:"select",options:PHONE_OS},
+      {name:"ram",label:"RAM*",type:"select",options:RAM_OPTIONS}
+    ],
+
+  }
+},
+
+ 
+
+"Electronics": {
+  icon:"📺",
+  subcategories:[
+    "Laptops & Computers",
+    "Headphones",
+    "Video Game Consoles",
+    "Smart Watchs"
+  ],
+
+  fieldsBySubcategory: {
+    "Laptops & Computers": [
+      {name:"type",label:"Type*",type:"select",options:["Laptop","Desktop Computer","Mini PC","All-in-One","Server","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Apple","Samsung","Sony","HP","Dell","Lenovo","Asus","Acer","MSI","LG","Other"]},
+      {name:"model",label:"Model*",type:"text"},
+      {name:"subtype",label:"Subtype*",type:"select",options:["Traditional Laptops","Gaming Laptops","Ultrabooks","Netbooks","Workstations","2-in-1 Laptops","Chromebooks","Other"]},
+      {name:"condition",label:"Condition*",type:"select",options:["Brand New","Used","Refurbished","For Parts or Not Working"]},
+      {name:"processor",label:"Processor*",type:"select",options:["Intel Core i3","Intel Core i5","Intel Core i7","Intel Core i9","Intel Celeron","Intel Pentium","AMD Ryzen 3","AMD Ryzen 5","AMD Ryzen 7","AMD Ryzen 9","Apple M1","Apple M2","Apple M3","Other"]},
+      {name:"cores",label:"Number of Cores",type:"select",options:["Dual Core","Quad Core","Hexa Core","Octa Core","10 Core","12 Core","16 Core","Other"]},
+      {name:"ram",label:"RAM*",type:"select",options:["2GB","4GB","6GB","8GB","12GB","16GB","24GB","32GB","64GB","Other"]},
+      {name:"storage",label:"Storage Capacity*",type:"select",options:["64GB","128GB","256GB","512GB","1TB","2TB","Other"]},
+      {name:"storage_type",label:"Storage Type*",type:"select",options:["HDD","SSD","SSHD","eMMC","Other"]},
+      {name:"display_size",label:"Display Size*",type:"select",options:["11 inches","12 inches","13 inches","14 inches","15 inches","16 inches","17 inches","18 inches","Other"]},
+      {name:"graphics_card",label:"Graphics Card",type:"select",options:["Intel Graphics","Intel Iris Xe","NVIDIA GeForce","NVIDIA RTX","AMD Radeon","Apple GPU","Other"]},
+      {name:"graphics_memory",label:"Graphics Card Memory",type:"select",options:["1GB","2GB","4GB","6GB","8GB","12GB","16GB","Other"]},
+      {name:"os",label:"Operating System*",type:"select",options:["Windows","macOS","Linux","Chrome OS","DOS","Other"]},
+      {name:"color",label:"Color*",type:"select",options:["Black","Blue","Bronze","Gold","Green","Orange","Pink","Purple","Red","Rose Gold","Silver","White","Yellow","Other"]}
+    ],
+
+       "Smart Watchs": [
+      {name:"title",label:"Title*",type:"text"},
+      {name:"brand",label:"Brand*",type:"select",options:["Apple","Samsung","Huawei","Xiaomi","Oraimo","Fitbit","Garmin","Amazfit","Other"]},
+      {name:"model",label:"Model*",type:"text"},
+      {name:"type",label:"Type*",type:"select",options:WATCH_TYPES},
+      {name:"band_color",label:"Band Color",type:"select",options:BAND_COLORS},
+      {name:"band_material",label:"Band Material",type:"select",options:BAND_MATERIALS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+    ],
+
+    "Headphones": [
+      {name:"title",label:"Title*",type:"text"},
+      {name:"brand",label:"Brand*",type:"select",options:["Sony","JBL","Oraimo","Apple","Samsung","Beats","Bose","Anker","Lenovo","HP","Other"]},
+      {name:"model",label:"Model*",type:"text"},
+      {name:"type",label:"Type*",type:"select",options:["In-Ear","On-Ear","Over-Ear","Earbuds","Gaming Headset","Other"]},
+      {name:"form_factor",label:"Form Factor*",type:"select",options:["In-Ear","On-Ear","Over-Ear","Portable","Other"]},
+      {name:"connectivity",label:"Connectivity*",type:"select",options:["Wired","Wireless","Bluetooth","USB","2.4GHz Wireless","Other"]},
+      {name:"resistance",label:"Resistance",type:"text"},
+      {name:"color",label:"Color*",type:"select",options:["Black","Blue","Bronze","Gold","Green","Orange","Pink","Purple","Red","Rose Gold","Silver","White","Yellow","Other"]},
+      {name:"condition",label:"Condition*",type:"select",options:["Brand New","Used","Refurbished","For Parts or Not Working"]},
+      {name:"features",label:"Features",type:"multi",options:["Noise Cancellation","Microphone","Water Resistant","Volume Control","Bass Boost","Foldable","Other"]}
+    ],
+
+    "Video Game Consoles": [
+      {name:"title",label:"Title*",type:"text"},
+      {name:"brand",label:"Brand",type:"select",options:["Sony","Microsoft","Nintendo","Steam","Other"]},
+      {name:"type",label:"Type",type:"select",options:["Game Consoles","Game Controllers"]}
     ]
   },
 
-  "Vehicles": {
-    icon:"🚙",
-    subcategories:["Cars","Buses & Microbuses","Construction & Heavy Machinery","Motorcycles & Scooters","Trucks & Trailers","Vehicle Parts & Accessories","Watercraft & Boats"],
-    fields:[
-      {name:"make",label:"Make*",type:"select",options:["Other","Acura","Audi","BAIC","Bentley","BMW","Brilliance","Buick","Cadillac","Changan","Chevrolet","Chrysler","Citroen","Daewoo","Daihatsu","Dodge","Fiat","Ford","Geely","Honda","Hyundai","Infiniti","Isuzu","Jaguar","Jeep","Kia","Land Rover","Lexus","Mazda","Mercedes-Benz","Mitsubishi","Nissan","Opel","Peugeot","Porsche","Renault","Suzuki","Tesla","Toyota","Volkswagen","Volvo"]},
-      {name:"model",label:"Model*",type:"select",dependsOn:"make",options:[]},
-      {name:"year",label:"Year of Manufacture*",type:"number"},
-      {name:"color",label:"Color*",type:"select",options:["White","Silver","Black","Gray","Blue","Red","Green","Brown","Beige","Orange","Purple","Gold","Other"]},
-      {name:"interior_color",label:"Interior Color",type:"select",options:["Any","White","Violet","Red","Purple","Orange","Green","Gray","Brown","Blue","Black","Beige","Other"]},
-      {name:"condition",label:"Condition*",type:"select",options:["Brand New","Foreign Used","Ghanaian Used","Used","Damaged","For Parts or Not Working"]},
-      {name:"transmission",label:"Transmission*",type:"select",options:["Automatic","Manual","CVT","Semi-Automatic"]},
-      {name:"fuel_type",label:"Fuel Type",type:"select",options:["Petrol","Diesel","Hybrid","Electric","Gas"]},
-      {name:"mileage",label:"Mileage",type:"number"},
-      {name:"engine_size",label:"Engine Size",type:"text"},
-      {name:"key_features",label:"Key Features",type:"multi",options:["Air Conditioning","Airbags","Alloy Wheels","AM/FM Radio","Android Auto","Anti-Lock Brakes","Armrests","Blind Spot Monitor","Bullbar","CarPlay","CD Player","Cruise Control","Cup Holders","Electric Mirrors","Electric Windows","Front Fog Lamps","Leather Seats","Parking Assist","Parking Sensors","Roof Rack","Sidesteps","Sunroof","Traction Control","Winch","Xenon Lights"]},
-      {name:"vin_chassis",label:"VIN Chassis number",type:"text"}
+  fieldsByType: {
+    "Video Game Consoles": {
+      "Game Consoles": [
+        {name:"console_type",label:"Console Type*",type:"select",options:["Home Console","Handheld Console","Hybrid Console","Retro Console","Other"]},
+        {name:"form_factor",label:"Form Factor",type:"select",options:["Home Console","Handheld","Portable","Other"]},
+        {name:"video_resolution",label:"Video Resolution",type:"select",options:["720p","1080p","1440p","4K","8K","Other"]},
+        {name:"internal_storage",label:"Internal Storage*",type:"select",options:["32GB","64GB","128GB","256GB","512GB","1TB","2TB","Other"]},
+        {name:"ram",label:"RAM",type:"select",options:["2GB","4GB","6GB","8GB","12GB","16GB","24GB","32GB","Other"]},
+        {name:"console_connectivity",label:"Console Connectivity",type:"select",options:["Wired","Wireless","Bluetooth","Wi-Fi","USB","Other"]},
+        {name:"condition",label:"Condition*",type:"select",options:["Brand New","Used","Refurbished","For Parts or Not Working"]}
+      ],
+
+      "Game Controllers": [
+        {name:"controller_type",label:"Controller Type",type:"select",options:["Gamepad","Joystick","Racing Wheel","Arcade Stick","VR Controller","Paddle","Touchscreen","Trackball","Others"]},
+        {name:"controller_compatibility",label:"Controller Compatibility",type:"select",options:["PlayStation","Xbox","Nintendo","PC","Android","iOS","Steam Deck","Other"]},
+        {name:"controller_connectivity",label:"Controller Connectivity",type:"select",options:["Wired","Wireless","Bluetooth","USB","2.4GHz Wireless","Other"]},
+        {name:"condition",label:"Condition*",type:"select",options:["Brand New","Used","Refurbished","For Parts or Not Working"]}
+      ],
+
+    }
+  }
+},
+
+ 
+"Home Appliances": {
+  icon:"🛋️",
+  subcategories:["TVs","Fridge","Fans","Air Conditioners"],
+
+  fieldsBySubcategory:{
+    "TVs":[
+      {name:"brand",label:"Brand*",type:"select",options:["Samsung","LG","Sony","Hisense","TCL","Nasco","Midea","Philips","Panasonic","Other"]},
+      {name:"model",label:"Model*",type:"text"},
+      {name:"type",label:"Type*",type:"select",options:["TVs","Projector","Decoders"]}
+    ],
+
+    "Fridge":[
+      {name:"brand",label:"Brand*",type:"select",options:["Samsung","LG","Nasco","Midea","Hisense","Bruhm","Binatone","Philips","Panasonic","Other"]},
+      {name:"color",label:"Color",type:"select",options:COLORS},
+      {name:"power_source",label:"Power Source",type:"select",options:["Electric","Solar","Gas","Battery","Others"]},
+      {name:"refrigerator_type",label:"Refrigerator Type*",type:"select",options:["Single Door","Double Door","Side-by-Side","French Door","Chest Freezer","Upright Freezer","Other"]},
+      {name:"number_of_doors",label:"Number of Doors",type:"select",options:["1","2","3","4","Other"]},
+      {name:"number_of_shelves",label:"Number of Shelves*",type:"select",options:["1","2","3","4","5","6","Other"]},
+      {name:"material",label:"Material",type:"select",options:["Stainless Steel","Plastic","Glass","Metal","Other"]},
+      {name:"dispenser_location",label:"Ice and Water Dispenser Location",type:"select",options:["None","Inside","Outside","Other"]},
+      {name:"defrost_type",label:"Defrost Type",type:"select",options:["Manual","Frost Free","Auto Defrost","Adaptive","Other"]},
+      {name:"installation_type",label:"Installation Type",type:"select",options:["Freestanding","Built-in","Countertop","Other"]},
+      {name:"energy_class",label:"Energy Class",type:"select",options:["A","A+","A++","A+++","B","C","Other"]},
+      {name:"voltage",label:"Voltage",type:"text"},
+      {name:"refrigerator_features",label:"Refrigerator Features",type:"multi",options:["Fast Freeze","Low Noise","Door Alarm","Water Dispenser","Ice Maker","Auto Defrost","Auto Shut-Off","Digital Display","Door Lock","Door-Open Alarm","Other"]},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+    ],
+
+    "Fans":[
+      {name:"brand",label:"Brand*",type:"select",options:["Binatone","Nasco","Midea","Hisense","Samsung","LG","Other"]},
+      {name:"type",label:"Type*",type:"select",options:["Fans"]},
+      {name:"power_source",label:"Power Source",type:"select",options:["Electric","Rechargeable","Solar","Battery","Other"]},
+      {name:"voltage",label:"Voltage",type:"text"},
+      {name:"fan_subtype",label:"Fans Subtype",type:"select",options:["Standing Fan","Ceiling Fan","Wall Fan","Table Fan","Extractor Fan","Other"]},
+      {name:"color",label:"Color",type:"select",options:COLORS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+    ],
+
+    "Air Conditioners":[
+      {name:"brand",label:"Brand*",type:"select",options:["Samsung","LG","Midea","Hisense","Nasco","TCL","Panasonic","Other"]},
+      {name:"type",label:"Type*",type:"select",options:["Air Conditioners"]},
+      {name:"ac_type",label:"AC Type*",type:"select",options:["Split AC","Window AC","Portable AC","Standing AC","Cassette AC","Other"]},
+      {name:"inverter_technology",label:"Inverter Technology*",type:"select",options:["Yes","No","Not Sure"]},
+      {name:"ac_features",label:"AC Features",type:"multi",options:["Remote Control","Energy Saving","Fast Cooling","Air Purifier","Timer","Sleep Mode","Other"]},
+      {name:"color",label:"Color",type:"select",options:COLORS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
     ]
   },
 
-  "Property": {
-    icon:"🏠",
-    subcategories:["Houses & Apartments for Rent","Houses & Apartments for Sale","Land & Plots for Sale","Commercial Property for Rent","Commercial Property for Sale","Event Centres & Venues","Short Let Property"],
-    fields:[
-      {name:"property_type",label:"Property Type*",type:"select",options:["Apartment","House","Single Room","Chamber and Hall","Shop","Office","Warehouse","Land","Event Centre"]},
-      {name:"bedrooms",label:"Bedrooms",type:"number"},
-      {name:"bathrooms",label:"Bathrooms",type:"number"},
-      {name:"toilets",label:"Toilets",type:"number"},
-      {name:"furnishing",label:"Furnishing",type:"select",options:["Furnished","Semi-Furnished","Unfurnished"]},
-      {name:"parking",label:"Parking Space",type:"select",options:["Yes","No"]},
-      {name:"size",label:"Property Size",type:"text"},
-      {name:"payment_period",label:"Payment Period",type:"select",options:["Per Month","Per Year","One-Time Payment","Negotiable"]},
-      {name:"facilities",label:"Facilities",type:"multi",options:["24-hour Electricity","Air Conditioning","Balcony","Dining Area","Dishwasher","Hot Water","Kitchen Cabinets","Kitchen Shelf","Microwave","Pop Ceiling","Pre-Paid Meter","Refrigerator","Tiled Floor","Wardrobe","Wi-Fi"]},
-      {name:"agent_fee",label:"Agent Fee",type:"select",options:["Yes","No","Not Applicable"]}
-    ]
-  },
+  fieldsByType:{
+    "TVs":{
+      "TVs":[
+        {name:"screen_size",label:"Screen Size*",type:"text"},
+        {name:"display_technology",label:"Display Technology*",type:"select",options:["LED","OLED","QLED","LCD","Plasma","Other"]},
+        {name:"display_resolution",label:"Display Resolution",type:"select",options:["HD","Full HD","2K","4K","8K","480i","576i","Others"]},
+        {name:"display_type",label:"Display Type",type:"select",options:["Flat","Curved","Smart TV","Android TV","Glossy","Matte","Other"]},
+        {name:"refresh_rate",label:"Refresh Rate",type:"select",options:["50Hz","60Hz","90Hz","120Hz","144Hz","Other"]},
+        {name:"ports",label:"Ports",type:"multi",options:["HDMI","USB","VGA","AV","LAN","Optical Audio","Bluetooth","Wi-Fi","Ethernet","SCART","Aux","DVI","Others"]},
+        {name:"tv_features",label:"TV Features",type:"multi",options:["Smart TV","Netflix","YouTube","Bluetooth","Wi-Fi","Screen Mirroring","Voice Control","Air Play","Wall Mountable","Other"]},
+        {name:"tv_os",label:"TV Operation System",type:"select",options:["Android TV","Google TV","WebOS","Tizen","Roku TV","Smart Tv (android A0SP)","Smart TV (own System)","Others"]},
+        {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+      ],
 
-  "Electronics": {
-    icon:"📺",
-    subcategories:["TVs","Audio & Music Equipment","Cameras","Computers & Laptops","Computer Accessories","Game Consoles","Printers & Scanners","Security & Surveillance","Networking Products","Software"],
-    fields:[
+      "Projector":[
+        {name:"ports",label:"Ports",type:"multi",options:["HDMI","USB","VGA","AV","LAN","Audio Out","Other"]},
+        {name:"projector_technology",label:"Projector Technology*",type:"select",options:["LCD","DLP","LED","Laser","Other"]},
+        {name:"projector_resolution",label:"Projector Resolution*",type:"select",options:["480p","720p","1080p","2K","4K","Other"]},
+        {name:"image_brightness",label:"Image Brightness",type:"text"},
+        {name:"aspect_ratio",label:"Aspect Ratio*",type:"select",options:["4:3","16:9","16:10","Other"]},
+        {name:"projector_features",label:"Projector Features",type:"multi",options:["Wi-Fi","Bluetooth","Built-in Speaker","Android","Portable","Remote Control","Other"]},
+        {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+      ],
+
+      "Decoders":[
+        {name:"ports",label:"Ports",type:"multi",options:["HDMI","USB","AV","Ethernet","Coaxial","Other"]},
+        {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+      ]
+    }
+  }
+},
+
+
+"Fashion": {
+  icon:"👗",
+  subcategories:[
+    "Men's Clothing",
+    "Women's Clothing",
+    "Shoes",
+    "Bags",
+    "Wigs & Hair Extensions",
+    "Watches",
+    "Jewelry",
+    "Perfume",
+    "Beauty Accessories"
+  ],
+
+  fieldsBySubcategory:{
+
+    "Men's Clothing":[
+      {name:"brand",label:"Brand*",type:"select",options:["Nike","Adidas","Puma","Zara","H&M","Gucci","Louis Vuitton","Other"]},
+      {name:"type",label:"Type*",type:"select",options:["Shirts","T-Shirts","Jeans","Trousers","Suits","Jackets","Shorts","Traditional Wear","Sportswear","Other"]},
+      {name:"gender",label:"Gender*",type:"select",options:["Men","Boys","Unisex"]},
+      {name:"size",label:"Size*",type:"select",options:["XS","S","M","L","XL","XXL","XXXL","Other"]},
+      {name:"material",label:"Material",type:"select",options:["Cotton","Polyester","Denim","Leather","Wool","Silk","Linen","Other"]},
+      {name:"color",label:"Color*",type:"select",options:COLORS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+    ],
+
+    "Women's Clothing":[
+      {name:"brand",label:"Brand*",type:"select",options:["Nike","Adidas","Puma","Zara","H&M","Gucci","Louis Vuitton","Shein","Other"]},
+      {name:"type",label:"Type*",type:"select",options:["Dresses","Tops","Skirts","Jeans","Trousers","Jumpsuits","Jackets","Traditional Wear","Sportswear","Other"]},
+      {name:"gender",label:"Gender*",type:"select",options:["Women","Girls","Unisex"]},
+      {name:"size",label:"Size*",type:"select",options:["XS","S","M","L","XL","XXL","XXXL","Other"]},
+      {name:"material",label:"Material",type:"select",options:["Cotton","Polyester","Denim","Leather","Silk","Lace","Linen","Other"]},
+      {name:"color",label:"Color*",type:"select",options:COLORS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+    ],
+
+    "Shoes":[
+      {name:"brand",label:"Brand*",type:"select",options:["Nike","Adidas","Puma","Vans","Converse","Clarks","Balenciaga","Gucci","Other"]},
+      {name:"type",label:"Type*",type:"select",options:["Sneakers","Heels","Sandals","Slippers","Boots","Loafers","Formal Shoes","Sports Shoes","Other"]},
+      {name:"gender",label:"Gender*",type:"select",options:["Men","Women","Unisex","Boys","Girls"]},
+      {name:"size",label:"Shoe Size*",type:"select",options:["35","36","37","38","39","40","41","42","43","44","45","46","47","Other"]},
+      {name:"upper_material",label:"Upper Material",type:"select",options:["Leather","Suede","Canvas","Rubber","Synthetic","Textile","Other"]},
+      {name:"color",label:"Color*",type:"select",options:COLORS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+    ],
+
+    "Bags":[
+      {name:"brand",label:"Brand*",type:"select",options:["Gucci","Louis Vuitton","Chanel","Dior","Nike","Adidas","Puma","Other"]},
+      {name:"type",label:"Type*",type:"select",options:["Handbag","Backpack","Travel Bag","Laptop Bag","School Bag","Clutch","Wallet","Crossbody Bag","Other"]},
+      {name:"gender",label:"Gender*",type:"select",options:["Men","Women","Unisex"]},
+      {name:"material",label:"Material",type:"select",options:["Leather","Faux Leather","Canvas","Nylon","Polyester","Rubber","Other"]},
+      {name:"color",label:"Color*",type:"select",options:COLORS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+    ],
+
+    "Wigs & Hair Extensions":[
       {name:"brand",label:"Brand",type:"text"},
-      {name:"model",label:"Model",type:"text"},
-      {name:"warranty",label:"Warranty",type:"select",options:["No Warranty","1 Month","3 Months","6 Months","1 Year","More than 1 Year"]},
-      {name:"screen_size",label:"Screen Size",type:"text"},
-      {name:"processor",label:"Processor",type:"text"},
-      {name:"ram",label:"RAM",type:"text"},
-      {name:"storage",label:"Storage",type:"text"},
-      {name:"accessories",label:"Accessories Included",type:"multi",options:["Charger","Remote","Box","Receipt","Manual","Stand","Cable","Bag","Mouse","Keyboard"]}
-    ]
-  },
+      {name:"type",label:"Type*",type:"select",options:["Wig","Hair Extension","Braids","Closure","Frontal","Ponytail","Other"]},
+      {name:"hair_type",label:"Hair Type*",type:"select",options:["Human Hair","Synthetic Hair","Human Blend","Other"]},
+      {name:"length",label:"Length*",type:"select",options:["8 inches","10 inches","12 inches","14 inches","16 inches","18 inches","20 inches","22 inches","24 inches","26 inches","30 inches","Other"]},
+      {name:"texture",label:"Texture",type:"select",options:["Straight","Body Wave","Deep Wave","Curly","Kinky","Loose Wave","Other"]},
+      {name:"color",label:"Color*",type:"select",options:COLORS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+    ],
 
-  "Home, Furniture & Appliances": {
-    icon:"🛋️",
-    subcategories:["Furniture","Home Appliances","Kitchen Appliances","Cookware & Kitchenware","Bedding","Home Decor","Garden Supplies","Household Chemicals"],
-    fields:[
-      {name:"product_group",label:"Product Group",type:"text"},
+    "Watches":[
+      {name:"brand",label:"Brand*",type:"select",options:["Rolex","Casio","Curren","Hublot","Fossil","Apple","Samsung","Other"]},
+      {name:"type",label:"Type*",type:"select",options:["Analog","Digital","Smart Watch","Luxury Watch","Sports Watch","Other"]},
+      {name:"gender",label:"Gender*",type:"select",options:["Men","Women","Unisex"]},
+      {name:"strap_material",label:"Strap Material",type:"select",options:["Leather","Rubber","Stainless Steel","Silicone","Fabric","Other"]},
+      {name:"color",label:"Color*",type:"select",options:COLORS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+    ],
+
+    "Jewelry":[
+      {name:"type",label:"Type*",type:"select",options:["Necklace","Ring","Bracelet","Earrings","Chain","Pendant","Anklet","Set","Other"]},
+      {name:"material",label:"Material*",type:"select",options:["Gold","Silver","Stainless Steel","Diamond","Beads","Pearl","Copper","Other"]},
+      {name:"gender",label:"Gender*",type:"select",options:["Men","Women","Unisex"]},
+      {name:"color",label:"Color*",type:"select",options:COLORS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
+    ],
+
+    "Perfume":[
+      {name:"brand",label:"Brand*",type:"select",options:["Dior","Chanel","Versace","Tom Ford","Creed","Lattafa","Armaf","Other"]},
+      {name:"type",label:"Type*",type:"select",options:["Eau de Parfum","Eau de Toilette","Body Spray","Oil Perfume","Other"]},
+      {name:"gender",label:"Gender*",type:"select",options:["Men","Women","Unisex"]},
+      {name:"volume",label:"Volume*",type:"select",options:["30ml","50ml","75ml","100ml","150ml","200ml","Other"]},
+      {name:"fragrance",label:"Fragrance",type:"select",options:["Woody","Floral","Fresh","Sweet","Oud","Citrus","Spicy","Other"]},
+      {name:"condition",label:"Condition*",type:"select",options:["Brand New","Used"]}
+    ],
+
+    "Beauty Accessories":[
       {name:"brand",label:"Brand",type:"text"},
-      {name:"material",label:"Material",type:"text"},
-      {name:"size",label:"Size / Capacity",type:"text"},
-      {name:"voltage",label:"Voltage",type:"select",options:["110V","220V","Dual Voltage","Not Applicable"]},
-      {name:"warranty",label:"Warranty",type:"select",options:["No Warranty","1 Month","3 Months","6 Months","1 Year"]}
-    ]
-  },
-
-  "Fashion": {
-    icon:"👗",
-    subcategories:["Clothing","Shoes","Bags","Jewelry","Watches","Wedding Wear","Fashion Accessories","Children's Clothing"],
-    fields:[
-      {name:"gender",label:"Gender",type:"select",options:["Men","Women","Unisex","Boys","Girls"]},
-      {name:"size",label:"Size",type:"text"},
-      {name:"material",label:"Material",type:"text"},
-      {name:"brand",label:"Brand",type:"text"},
-      {name:"style",label:"Style",type:"text"}
-    ]
-  },
-
-  "Beauty & Personal Care": {
-    icon:"💄",
-    subcategories:["Makeup","Hair Beauty","Fragrance","Skin Care","Bath & Body","Tools & Accessories","Vitamins & Supplements"],
-    fields:[
-      {name:"brand",label:"Brand",type:"text"},
-      {name:"product_size",label:"Size / Volume",type:"text"},
-      {name:"for_who",label:"For",type:"select",options:["Men","Women","Unisex","Kids"]},
-      {name:"skin_type",label:"Skin / Hair Type",type:"select",options:["Normal","Dry","Oily","Sensitive","All Types","Not Applicable"]},
-      {name:"expiry_date",label:"Expiry Date",type:"date"}
-    ]
-  },
-
-  "Services": {
-    icon:"🔧",
-    subcategories:["Automotive Services","Building & Trade Services","Cleaning Services","Computer & IT Services","DJ & Entertainment Services","Health & Beauty Services","Legal Services","Logistics Services","Photography & Video Services","Repair Services","Travel Agents & Tours","Tutoring Services"],
-    fields:[
-      {name:"service_type",label:"Service Type",type:"text"},
-      {name:"business_name",label:"Business Name",type:"text"},
-      {name:"company_name",label:"Company Name",type:"text"},
-      {name:"experience",label:"Work Experience",type:"select",options:["Less than 1 year","1-2 years","3-5 years","6-10 years","More than 10 years"]},
-      {name:"pricing_type",label:"Pricing Type",type:"select",options:["Fixed Price","Hourly","Daily","Monthly","Negotiable"]},
-      {name:"availability",label:"Availability",type:"select",options:["Anytime","Weekdays","Weekends","By Appointment"]}
-    ]
-  },
-
-  "Jobs": {
-    icon:"💼",
-    subcategories:["Accounting & Finance Jobs","Advertising & Marketing Jobs","Computing & IT Jobs","Customer Service Jobs","Driver Jobs","Hotel Jobs","Restaurant & Bar Jobs","Teaching Jobs","Healthcare Jobs","Sales Jobs","Security Jobs","Internship Jobs"],
-    fields:[
-      {name:"job_title",label:"Job Title",type:"text"},
-      {name:"company_name",label:"Company Name",type:"text"},
-      {name:"job_type",label:"Job Type",type:"select",options:["Full-Time","Part-Time","Contract","Internship","Temporary"]},
-      {name:"salary",label:"Salary Range",type:"text"},
-      {name:"experience",label:"Experience Level",type:"select",options:["No Experience","Less than 1 year","1-2 years","3-5 years","5+ years"]},
-      {name:"education",label:"Minimum Education",type:"select",options:["None","JHS","SHS","Diploma","Degree","Masters"]}
-    ]
-  },
-
-  "Seeking Work CVs": {
-    icon:"📄",
-    subcategories:["Accounting & Finance CVs","Computing & IT CVs","Customer Service CVs","Driver CVs","Teaching CVs","Healthcare CVs","Sales CVs","Housekeeping & Cleaning CVs","Restaurant & Bar CVs"],
-    fields:[
-      {name:"profession",label:"Profession",type:"text"},
-      {name:"experience",label:"Years of Experience",type:"select",options:["No Experience","Less than 1 year","1-2 years","3-5 years","5+ years"]},
-      {name:"education",label:"Highest Education",type:"select",options:["JHS","SHS","Diploma","Degree","Masters","Other"]},
-      {name:"expected_salary",label:"Expected Salary",type:"text"},
-      {name:"availability",label:"Availability",type:"select",options:["Immediately","In 1 week","In 2 weeks","In 1 month"]}
-    ]
-  },
-
-  "Repair & Construction": {
-    icon:"🧰",
-    subcategories:["Building Materials","Doors","Electrical Equipment","Hand Tools","Plumbing Materials","Solar Energy","Windows","Construction Services"],
-    fields:[
-      {name:"material_type",label:"Material / Service Type",type:"text"},
-      {name:"brand",label:"Brand",type:"text"},
-      {name:"unit",label:"Unit",type:"text"},
-      {name:"quantity_per_pack",label:"Quantity Per Pack",type:"text"},
-      {name:"delivery",label:"Delivery Available",type:"select",options:["Yes","No","Depends on location"]}
-    ]
-  },
-
-  "Commercial Equipment & Tools": {
-    icon:"🛠️",
-    subcategories:["Manufacturing Equipment","Restaurant & Catering Equipment","Medical Equipment","Salon Equipment","Store Equipment","Farm Machinery","Industrial Ovens","Generators","Hand & Power Tools"],
-    fields:[
-      {name:"equipment_type",label:"Equipment Type",type:"text"},
-      {name:"brand",label:"Brand",type:"text"},
-      {name:"capacity",label:"Capacity / Power",type:"text"},
-      {name:"voltage",label:"Voltage",type:"select",options:["110V","220V","Dual Voltage","Not Applicable"]},
-      {name:"warranty",label:"Warranty",type:"select",options:["No Warranty","1 Month","3 Months","6 Months","1 Year"]}
-    ]
-  },
-
-  "Leisure & Activities": {
-    icon:"🎸",
-    subcategories:["Books & Games","Musical Instruments","Sports Equipment","Camping Gear","Arts & Crafts","Tickets","CDs & DVDs"],
-    fields:[
-      {name:"activity_type",label:"Type",type:"text"},
-      {name:"brand_author",label:"Brand / Author",type:"text"},
-      {name:"age_group",label:"Age Group",type:"select",options:["Kids","Teens","Adults","All Ages"]}
-    ]
-  },
-
-  "Babies & Kids": {
-    icon:"🧸",
-    subcategories:["Baby Clothing","Baby Shoes","Baby Gear","Baby Furniture","Toys","Maternity & Pregnancy","Children's Furniture"],
-    fields:[
-      {name:"age_range",label:"Age Range",type:"select",options:["0-3 months","3-6 months","6-12 months","1-2 years","3-5 years","6-10 years","10+ years"]},
-      {name:"for_who",label:"For",type:"select",options:["Boy","Girl","Unisex"]},
-      {name:"brand",label:"Brand",type:"text"},
-      {name:"safety",label:"Safety / Extra Info",type:"text"}
-    ]
-  },
-
-  "Food, Agriculture & Farming": {
-    icon:"🌽",
-    subcategories:["Farm Machinery & Equipment","Feeds, Supplements & Seeds","Meals & Drinks","Livestock & Poultry","Farm Produce","Foodstuff","Farming Services"],
-    fields:[
-      {name:"food_type",label:"Product Type",type:"text"},
-      {name:"quantity_unit",label:"Quantity Unit",type:"text"},
-      {name:"freshness",label:"Freshness",type:"select",options:["Fresh","Dried","Frozen","Processed"]},
-      {name:"expiry_date",label:"Expiry Date",type:"date"},
-      {name:"delivery",label:"Delivery Available",type:"select",options:["Yes","No","Depends on location"]}
-    ]
-  },
-
-  "Pets": {
-    icon:"🐕",
-    subcategories:["Dogs & Puppies","Cats & Kittens","Birds","Fish","Pet Accessories","Pet Food","Other Animals"],
-    fields:[
-      {name:"breed",label:"Breed",type:"text"},
-      {name:"age",label:"Age",type:"text"},
-      {name:"pet_gender",label:"Gender",type:"select",options:["Male","Female","Pair","Unknown"]},
-      {name:"vaccinated",label:"Vaccinated",type:"select",options:["Yes","No","Not Sure"]}
+      {name:"type",label:"Type*",type:"select",options:["Makeup Kit","Brushes","Mirror","Nail Tools","Lashes","Cosmetic Bag","Hair Tools","Skin Care Tool","Other"]},
+      {name:"gender",label:"Gender*",type:"select",options:["Women","Men","Unisex"]},
+      {name:"color",label:"Color",type:"select",options:COLORS},
+      {name:"condition",label:"Condition*",type:"select",options:PHONE_CONDITIONS}
     ]
   }
+},
+
+  
+
+"Services": {
+  icon:"🔧",
+  subcategories:[
+    "Graphic Design",
+    "Website Design",
+    "Plumbing",
+    "Electricians",
+    "Cleaning Services"
+  ],
+
+  fieldsBySubcategory:{
+
+    "Graphic Design":[
+      {name:"service_type",label:"Service Type*",type:"select",options:["Logo Design","Flyer Design","Poster Design","Business Card Design","Social Media Design","Banner Design","Branding","Invitation Design","Other"]},
+      {name:"business_name",label:"Business Name",type:"text"},
+      {name:"designer_type",label:"Designer Type",type:"select",options:["Freelancer","Agency","Printing Press","Other"]},
+      {name:"delivery_format",label:"Delivery Format",type:"multi",options:["JPG","PNG","PDF","PSD","AI","CDR","Editable File","Printed Copy","Other"]},
+      {name:"revision_available",label:"Revision Available",type:"select",options:["Yes","No","Limited Revisions"]},
+      {name:"experience",label:"Work Experience",type:"select",options:["Less than 1 year","1-2 years","3-5 years","6-10 years","More than 10 years"]},
+      {name:"pricing_type",label:"Pricing Type",type:"select",options:["Fixed Price","Per Design","Hourly","Daily","Negotiable"]},
+      {name:"availability",label:"Availability",type:"select",options:["Anytime","Weekdays","Weekends","By Appointment"]}
+    ],
+
+    "Website Design":[
+      {name:"service_type",label:"Service Type*",type:"select",options:["Business Website","E-commerce Website","School Website","Portfolio Website","Blog","Landing Page","Web App","Website Redesign","Other"]},
+      {name:"business_name",label:"Business Name",type:"text"},
+      {name:"developer_type",label:"Developer Type",type:"select",options:["Freelancer","Agency","Software Company","Other"]},
+      {name:"technology",label:"Technology",type:"multi",options:["HTML/CSS/JS","WordPress","React","Node.js","PHP","Laravel","Shopify","Wix","Other"]},
+      {name:"hosting_available",label:"Hosting Available",type:"select",options:["Yes","No","Optional"]},
+      {name:"domain_available",label:"Domain Registration",type:"select",options:["Yes","No","Optional"]},
+      {name:"maintenance_available",label:"Maintenance Support",type:"select",options:["Yes","No","Monthly Support","By Request"]},
+      {name:"experience",label:"Work Experience",type:"select",options:["Less than 1 year","1-2 years","3-5 years","6-10 years","More than 10 years"]},
+      {name:"pricing_type",label:"Pricing Type",type:"select",options:["Fixed Price","Hourly","Per Project","Monthly","Negotiable"]},
+      {name:"availability",label:"Availability",type:"select",options:["Anytime","Weekdays","Weekends","By Appointment"]}
+    ],
+
+    "Plumbing":[
+      {name:"service_type",label:"Service Type*",type:"select",options:["Pipe Installation","Leak Repair","Toilet Repair","Bathroom Installation","Water Tank Installation","Drainage Work","Kitchen Plumbing","General Plumbing","Other"]},
+      {name:"business_name",label:"Business Name",type:"text"},
+      {name:"emergency_service",label:"Emergency Service",type:"select",options:["Yes","No","Depends on location"]},
+      {name:"tools_available",label:"Comes With Tools",type:"select",options:["Yes","No"]},
+      {name:"service_location",label:"Service Location",type:"select",options:["Customer Location","Workshop","Both"]},
+      {name:"experience",label:"Work Experience",type:"select",options:["Less than 1 year","1-2 years","3-5 years","6-10 years","More than 10 years"]},
+      {name:"pricing_type",label:"Pricing Type",type:"select",options:["Fixed Price","Hourly","Daily","After Inspection","Negotiable"]},
+      {name:"availability",label:"Availability",type:"select",options:["Anytime","Weekdays","Weekends","By Appointment"]}
+    ],
+
+    "Electricians":[
+      {name:"service_type",label:"Service Type*",type:"select",options:["House Wiring","Fault Repair","Light Installation","Socket Installation","Fan Installation","Appliance Repair","CCTV Installation","Solar Installation","General Electrical Work","Other"]},
+      {name:"business_name",label:"Business Name",type:"text"},
+      {name:"emergency_service",label:"Emergency Service",type:"select",options:["Yes","No","Depends on location"]},
+      {name:"tools_available",label:"Comes With Tools",type:"select",options:["Yes","No"]},
+      {name:"service_location",label:"Service Location",type:"select",options:["Customer Location","Workshop","Both"]},
+      {name:"experience",label:"Work Experience",type:"select",options:["Less than 1 year","1-2 years","3-5 years","6-10 years","More than 10 years"]},
+      {name:"pricing_type",label:"Pricing Type",type:"select",options:["Fixed Price","Hourly","Daily","After Inspection","Negotiable"]},
+      {name:"availability",label:"Availability",type:"select",options:["Anytime","Weekdays","Weekends","By Appointment"]}
+    ],
+
+    "Cleaning Services":[
+      {name:"service_type",label:"Service Type*",type:"select",options:["Home Cleaning","Office Cleaning","Deep Cleaning","Carpet Cleaning","Sofa Cleaning","Post Construction Cleaning","Move-in / Move-out Cleaning","Fumigation","Other"]},
+      {name:"business_name",label:"Business Name",type:"text"},
+      {name:"cleaning_materials",label:"Cleaning Materials Provided",type:"select",options:["Yes","No","Optional"]},
+      {name:"team_size",label:"Team Size",type:"select",options:["1 Person","2 People","3-5 People","More than 5 People"]},
+      {name:"service_location",label:"Service Location",type:"select",options:["Customer Location","Office","Both"]},
+      {name:"experience",label:"Work Experience",type:"select",options:["Less than 1 year","1-2 years","3-5 years","6-10 years","More than 10 years"]},
+      {name:"pricing_type",label:"Pricing Type",type:"select",options:["Fixed Price","Hourly","Daily","Per Room","After Inspection","Negotiable"]},
+      {name:"availability",label:"Availability",type:"select",options:["Anytime","Weekdays","Weekends","By Appointment"]}
+    ]
+  }
+},
+
+
+
+ 
 };
 
 const OPTION_DATA = {
@@ -1436,7 +1647,13 @@ const PHONE_MODELS = {
 };
 
 function renderDynamicFields(){
-  const fields = CATEGORY_DATA[selectedCategory]?.fields || [];
+  let fields = [];
+
+if(CATEGORY_DATA[selectedCategory]?.fieldsBySubcategory){
+  fields = CATEGORY_DATA[selectedCategory].fieldsBySubcategory[selectedSubcategory] || [];
+}else{
+  fields = CATEGORY_DATA[selectedCategory]?.fields || [];
+}
   const wrap = document.getElementById("dynamicFields");
   const card = document.getElementById("specCard");
 
@@ -1478,9 +1695,76 @@ function renderDynamicFields(){
   document.getElementById("hideFieldsBtn").textContent = `Hide ${fields.length} fields ⌃`;
 }
 
+
+function renderConsoleFields(typeValue){
+
+  const wrap = document.getElementById("dynamicFields");
+
+  // remove old controller/console fields first
+  wrap.querySelectorAll(".console-extra").forEach(el => el.remove());
+
+  const extraFields =
+    CATEGORY_DATA?.Electronics?.fieldsByType?.["Video Game Consoles"]?.[typeValue] || [];
+
+  if(!extraFields.length) return;
+
+  extraFields.forEach(field => {
+
+    const div = document.createElement("div");
+    div.className = "field console-extra";
+
+    if(field.type === "select"){
+
+      div.innerHTML = `
+        <label class="field-label">${field.label}</label>
+
+        <div class="select-box"
+             onclick="openExtraConsoleOption('${field.name}')">
+
+          <span id="spec_${field.name}Text"
+                class="text placeholder">
+                ${field.label}
+          </span>
+
+          <span class="arrow">⌄</span>
+        </div>
+
+        <input
+          type="hidden"
+          class="spec-input"
+          data-name="${field.name}"
+          id="spec_${field.name}">
+      `;
+
+    }else{
+
+      div.innerHTML = `
+        <label class="field-label">${field.label}</label>
+
+        <input
+          class="spec-input"
+          data-name="${field.name}"
+          id="spec_${field.name}"
+          placeholder="${field.label}">
+      `;
+    }
+
+    wrap.appendChild(div);
+  });
+}
+
 function toggleSpecs(){
   const wrap = document.getElementById("dynamicFields");
-  const count = CATEGORY_DATA[selectedCategory]?.fields.length || 0;
+
+  let fields = [];
+
+  if(CATEGORY_DATA[selectedCategory]?.fieldsBySubcategory){
+    fields = CATEGORY_DATA[selectedCategory].fieldsBySubcategory[selectedSubcategory] || [];
+  }else{
+    fields = CATEGORY_DATA[selectedCategory]?.fields || [];
+  }
+
+  const count = fields.length;
 
   wrap.classList.toggle("hidden");
 
@@ -1489,8 +1773,33 @@ function toggleSpecs(){
     : `Hide ${count} fields ⌃`;
 }
 
-function openSpecOption(name){
-  const field = CATEGORY_DATA[selectedCategory].fields.find(f => f.name === name);
+async function loadVehicleModels(make){
+  try{
+    const res = await fetch(`${API_BASE}/api/vehicle-models?make=${encodeURIComponent(make)}`);
+    const data = await res.json();
+
+    if(data.success && data.models.length > 0){
+      return data.models;
+    }
+
+    return ["Other Model"];
+  }catch(error){
+    console.error(error);
+    return ["Other Model"];
+  }
+}
+
+
+async function openSpecOption(name){
+  let fields = [];
+
+  if(CATEGORY_DATA[selectedCategory]?.fieldsBySubcategory){
+    fields = CATEGORY_DATA[selectedCategory].fieldsBySubcategory[selectedSubcategory] || [];
+  }else{
+    fields = CATEGORY_DATA[selectedCategory]?.fields || [];
+  }
+
+  const field = fields.find(f => f.name === name);
   if(!field) return;
 
   activeOptionKey = "";
@@ -1507,7 +1816,7 @@ function openSpecOption(name){
       return;
     }
 
-    options = VEHICLE_MODELS[make] || ["Other"];
+    options = await loadVehicleModels(make);
   }
 
   if(name === "model" && selectedCategory === "Phones & Tablets"){
@@ -1530,6 +1839,62 @@ function openSpecOption(name){
   }
 
   openOptionScreen(field.label, options, `spec_${name}Text`, field.type === "multi");
+}
+
+function openExtraConsoleOption(name){
+
+  const typeValue =
+    document.getElementById("spec_type")?.value;
+
+  const fields =
+    CATEGORY_DATA.Electronics.fieldsByType["Video Game Consoles"][typeValue];
+
+  const field = fields.find(f => f.name === name);
+
+  if(!field) return;
+
+  activeOptionKey = "";
+  activeSpecName = name;
+  activeFieldType = field.type;
+
+  currentOptions = field.options || [];
+
+  openOptionScreen(
+    field.label,
+    currentOptions,
+    `spec_${name}Text`,
+    false
+  );
+}
+
+
+function openExtraTypeOption(name){
+  const typeValue = document.getElementById("spec_type")?.value;
+
+  const fields =
+    CATEGORY_DATA?.[selectedCategory]?.fieldsByType?.[selectedSubcategory]?.[typeValue] || [];
+
+  const field = fields.find(f => f.name === name);
+  if(!field) return;
+
+  activeOptionKey = "";
+  activeSpecName = name;
+  activeFieldType = field.type;
+
+  const current = document.getElementById(`spec_${name}`)?.value || "";
+
+  if(field.type === "multi"){
+    multiTemp = current ? current.split(",").map(x => x.trim()).filter(Boolean) : [];
+  }else{
+    multiTemp = [];
+  }
+
+  openOptionScreen(
+    field.label,
+    field.options || [],
+    `spec_${name}Text`,
+    field.type === "multi"
+  );
 }
 
 function openSimpleOption(key){
@@ -1640,6 +2005,22 @@ function chooseOption(value){
   if(activeSpecName){
     document.getElementById(`spec_${activeSpecName}`).value = value;
 
+    // Electronics -> Video Game Consoles dynamic fields
+if (
+  selectedCategory === "Electronics" &&
+  selectedSubcategory === "Video Game Consoles" &&
+  activeSpecName === "type"
+){
+  renderConsoleFields(value);
+}
+
+if (
+  selectedCategory === "Home Appliances" &&
+  activeSpecName === "type"
+){
+  renderTypeFields(value);
+}
+
       if(activeSpecName === "make"){
     const modelInput = document.getElementById("spec_model");
     const modelText = document.getElementById("spec_modelText");
@@ -1675,6 +2056,40 @@ function chooseOption(value){
   }
 
   closeOptionScreen();
+}
+
+function renderTypeFields(typeValue){
+  const wrap = document.getElementById("dynamicFields");
+
+  wrap.querySelectorAll(".type-extra").forEach(el => el.remove());
+
+  const extraFields =
+    CATEGORY_DATA?.[selectedCategory]?.fieldsByType?.[selectedSubcategory]?.[typeValue] || [];
+
+  if(!extraFields.length) return;
+
+  extraFields.forEach(field => {
+    const div = document.createElement("div");
+    div.className = `field type-extra ${field.type === "multi" ? "full" : ""}`;
+
+    if(field.type === "select" || field.type === "multi"){
+      div.innerHTML = `
+        <label class="field-label">${field.label}</label>
+        <div class="select-box" onclick="openExtraTypeOption('${field.name}')">
+          <span id="spec_${field.name}Text" class="text placeholder">${field.label}</span>
+          <span class="arrow">${field.type === "multi" ? "›" : "⌄"}</span>
+        </div>
+        <input type="hidden" class="spec-input" data-name="${field.name}" id="spec_${field.name}">
+      `;
+    }else{
+      div.innerHTML = `
+        <label class="field-label">${field.label}</label>
+        <input class="spec-input" data-name="${field.name}" id="spec_${field.name}" placeholder="${field.label}">
+      `;
+    }
+
+    wrap.appendChild(div);
+  });
 }
 
 function finishMultiSelect(){
@@ -1794,12 +2209,12 @@ document.getElementById("productForm").addEventListener("submit", async e => {
 
   formData.append("category", selectedCategory);
   formData.append("subcategory", selectedSubcategory);
-  formData.append("product_type", selectedSubcategory);
+  formData.append("product_type", specs.type || specs.product_type || selectedSubcategory);
   formData.append("region", selectedOptions.region);
   formData.append("district", selectedOptions.district);
   formData.append("product_name", document.getElementById("product_name").value);
   formData.append("price", document.getElementById("price").value);
-  formData.append("product_color", document.getElementById("product_color").value || specs.color || "");
+formData.append("product_color", document.getElementById("product_color").value || specs.color || specs.Color || "");
   formData.append("quantity_in_stock", document.getElementById("quantity").value);
   formData.append("phone_number", document.getElementById("phone_number").value);
   formData.append("instructions", document.getElementById("instructions").value);

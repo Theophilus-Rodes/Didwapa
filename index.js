@@ -66,34 +66,34 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/uploads", express.static("uploads"));
 
-const db = mysql.createConnection({
-  host: "didwapa-db-do-user-28779964-0.l.db.ondigitalocean.com",
-  port: 25060,
-  user: "doadmin",
-  password: "AVNS_degqR0I6013iI0PsQd5",
-  database: "didwapadb",
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
+// const db = mysql.createConnection({
+//   host: "didwapa-db-do-user-28779964-0.l.db.ondigitalocean.com",
+//   port: 25060,
+//   user: "doadmin",
+//   password: "AVNS_degqR0I6013iI0PsQd5",
+//   database: "didwapadb",
+//   ssl: {
+//     rejectUnauthorized: false
+//   }
+// });
 
-db.connect((err) => {
-  if (err) {
-    console.error("Database connection failed:", err);
-    return;
-  }
+// db.connect((err) => {
+//   if (err) {
+//     console.error("Database connection failed:", err);
+//     return;
+//   }
 
-  console.log("Connected to DigitalOcean MySQL database: didwapadb");
-});
+//   console.log("Connected to DigitalOcean MySQL database: didwapadb");
+// });
 
 
-// const db = mysql.createConnection({ 
-//   host: "localhost", user: "root", 
-//   password: "", 
-//   database: "didwapadb" }); 
-//   db.connect((err) => { if (err) 
-//     { console.error("Database connection failed:", err); return; } 
-//     console.log("Connected to MySQL database: didwapadb"); });
+const db = mysql.createConnection({ 
+  host: "localhost", user: "root", 
+  password: "", 
+  database: "didwapadb" }); 
+  db.connect((err) => { if (err) 
+    { console.error("Database connection failed:", err); return; } 
+    console.log("Connected to MySQL database: didwapadb"); });
 
 app.post("/api/create-account", async (req, res) => {
   try {
@@ -6684,6 +6684,43 @@ app.get("/api/products/:id/related", (req, res) => {
     res.json({
       success: true,
       products: results
+    });
+  });
+});
+
+
+
+
+//////Makes abd model calls 
+app.get("/api/vehicle-models", (req, res) => {
+  const { make } = req.query;
+
+  if(!make){
+    return res.status(400).json({
+      success:false,
+      message:"Make is required"
+    });
+  }
+
+  const sql = `
+    SELECT model_name 
+    FROM vehicle_models
+    WHERE make_name = ?
+    ORDER BY model_name ASC
+  `;
+
+  db.query(sql, [make], (err, rows) => {
+    if(err){
+      console.error(err);
+      return res.status(500).json({
+        success:false,
+        message:"Failed to load models"
+      });
+    }
+
+    res.json({
+      success:true,
+      models: rows.map(r => r.model_name)
     });
   });
 });
