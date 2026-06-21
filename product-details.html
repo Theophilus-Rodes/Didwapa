@@ -311,37 +311,48 @@
 
 .spec-grid{
   display:grid;
-  grid-template-columns:repeat(5, 1fr);
-  gap:7px;
-  margin-top:10px;
+  grid-template-columns:repeat(2,1fr);
+  gap:14px;
+  margin-top:12px;
 }
 
 .spec-item{
-  background:#f3f6fb;
-  padding:8px 6px;
-  border-radius:11px;
-  min-height:58px;
-  text-align:center;
-  border:1px solid #e5e7eb;
+  background:white;
+  border:none;
+  padding:0;
+  min-height:auto;
+  text-align:left;
 }
 
 .spec-item small{
   display:block;
-  color:#6b7280;
-  font-weight:900;
-  font-size:.62rem;
-  margin-bottom:4px;
-  line-height:1.1;
+  color:#9ca3af;
+  font-size:.72rem;
+  font-weight:700;
+  text-transform:uppercase;
+  margin-top:4px;
 }
 
 .spec-item span{
   display:block;
   color:#111827;
-  font-weight:800;
-  font-size:.72rem;
-  line-height:1.15;
-  word-break:break-word;
+  font-size:1rem;
+  font-weight:700;
+  margin-bottom:8px;
 }
+
+.spec-hidden{
+  display:none;
+}
+
+.show-more-btn{
+  color:#ff6600;
+  font-weight:900;
+  cursor:pointer;
+  margin-top:10px;
+  text-align:right;
+}
+
 
 @media(max-width:480px){
   .spec-grid{
@@ -538,30 +549,89 @@ function renderSpecifications(specData){
   let specs = {};
 
   try{
-    specs = typeof specData === "string" ? JSON.parse(specData) : specData;
+    specs = typeof specData === "string"
+      ? JSON.parse(specData)
+      : specData;
   }catch(e){
     return "";
   }
 
   const entries = Object.entries(specs).filter(([k,v]) =>
-    v !== null && v !== undefined && String(v).trim() !== ""
+    v !== null &&
+    v !== undefined &&
+    String(v).trim() !== ""
   );
 
   if(!entries.length) return "";
 
+  const firstSix = entries.slice(0,6);
+  const remaining = entries.slice(6);
+
   return `
     <div class="info">
-      <strong style="margin-bottom:8px;">More Product Details</strong>
+
+      <strong style="
+        display:block;
+        margin-bottom:14px;
+        color:#0a2d73;
+        font-size:1.05rem;
+      ">
+        Product Details
+      </strong>
+
       <div class="spec-grid">
-        ${entries.map(([key,value]) => `
+
+        ${firstSix.map(([key,value]) => `
           <div class="spec-item">
-            <small>${safeText(niceLabel(key))}</small>
             <span>${safeText(value)}</span>
+            <small>${safeText(niceLabel(key))}</small>
           </div>
         `).join("")}
+
+        ${remaining.map(([key,value]) => `
+          <div class="spec-item spec-hidden extra-spec">
+            <span>${safeText(value)}</span>
+            <small>${safeText(niceLabel(key))}</small>
+          </div>
+        `).join("")}
+
       </div>
+
+      ${
+        remaining.length
+        ? `
+        <div
+          class="show-more-btn"
+          onclick="toggleSpecs(this)"
+        >
+          Show More ▼
+        </div>
+        `
+        : ""
+      }
+
     </div>
   `;
+}
+
+
+function toggleSpecs(btn){
+
+  const hidden =
+    document.querySelectorAll(".extra-spec");
+
+  const showing =
+    hidden[0]?.style.display === "block";
+
+  hidden.forEach(el=>{
+    el.style.display =
+      showing ? "none" : "block";
+  });
+
+  btn.innerHTML =
+    showing
+      ? "Show More ▼"
+      : "Show Less ▲";
 }
 
 function isNegotiableProduct(){
