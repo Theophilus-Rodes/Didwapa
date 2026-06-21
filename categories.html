@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>DIDWAPA Categories</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+:root{
+  --primary:#ff6600;
+  --primary-dark:#e95600;
+  --green:#16a34a;
+  --bg:#f7f8fb;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --soft:#fff4ea;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:20px;
+}
+
+.app{
+  max-width:480px;
+  margin:0 auto;
+  background:#fff;
+  min-height:100vh;
+}
+
+.header{
+  background:#fff;
+  position:sticky;
+  top:0;
+  z-index:20;
+  padding:14px;
+  border-bottom:1px solid var(--border);
+  box-shadow:0 6px 20px rgba(0,0,0,.05);
+}
+
+.top-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.back{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  border:none;
+  background:var(--soft);
+  color:var(--primary);
+  font-size:22px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.title-box{
+  flex:1;
+}
+
+.title-box small{
+  color:var(--muted);
+  font-weight:700;
+}
+
+.title-box h2{
+  font-size:1.25rem;
+  margin-top:2px;
+}
+
+.search-box{
+  height:46px;
+  background:#f9fafb;
+  border:1px solid var(--border);
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 12px;
+}
+
+.search-box span{
+  color:var(--primary);
+  font-size:18px;
+}
+
+.search-box input{
+  width:100%;
+  border:none;
+  outline:none;
+  background:transparent;
+  font-size:.9rem;
+}
+
+.category-list{
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.cat-row{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:13px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  cursor:pointer;
+  box-shadow:0 8px 20px rgba(0,0,0,.035);
+  transition:.25s ease;
+}
+
+.cat-row:active{
+  transform:scale(.97);
+}
+
+.cat-icon{
+  width:48px;
+  height:48px;
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  background:var(--soft);
+  font-size:24px;
+  flex-shrink:0;
+}
+
+.cat-info{
+  flex:1;
+}
+
+.cat-info strong{
+  display:block;
+  font-size:.95rem;
+  margin-bottom:3px;
+}
+
+.cat-info small{
+  color:var(--muted);
+  font-size:.75rem;
+}
+
+.arrow{
+  color:var(--primary);
+  font-size:22px;
+  font-weight:900;
+}
+
+.empty{
+  padding:25px;
+  text-align:center;
+  color:var(--muted);
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header class="header">
+    <div class="top-row">
+      <button class="back" onclick="history.back()">←</button>
+
+      <div class="title-box">
+        <small>Browse subcategories</small>
+        <h2 id="pageTitle">Categories</h2>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <span>🔍</span>
+      <input id="categorySearch" type="text" placeholder="Search subcategory...">
+    </div>
+  </header>
+
+  <section id="categoryList" class="category-list"></section>
+
+</div>
+
+<script>
+const data = {
+  "Phones & Tablets":[
+    "iPhones",
+    "Samsung",
+    "Tecno",
+    "Infinix",
+    "iPads"
+  ],
+
+  "Electronics":[
+    "Laptops",
+    "Headphones",
+    "Smart Watches",
+    "Gaming Consoles"
+  ],
+
+  "Fashion":[
+    "Women’s Clothing",
+    "Men’s Clothing",
+    "Shoes",
+    "Bags",
+    "Wigs & Hair Extensions",
+    "Watches",
+    "Jewelry",
+    "Perfumes",
+    "Beauty Accessories"
+  ],
+
+  "Home Appliances":[
+    "TVs",
+    "Fridges",
+    "Fans",
+    "Air Conditioners"
+  ],
+
+  "Services":[
+    "Graphic Design",
+    "Website Design",
+    "Plumbing",
+    "Electricians",
+    "Cleaning Services"
+  ]
+};
+
+const icons = {
+  "iPhones":"📱",
+  "Samsung":"📱",
+  "Tecno":"📱",
+  "Infinix":"📱",
+  "iPads":"📱",
+
+  "Laptops":"💻",
+  "Headphones":"🎧",
+  "Smart Watches":"⌚",
+  "Gaming Consoles":"🎮",
+
+  "Women’s Clothing":"👗",
+  "Men’s Clothing":"👕",
+  "Shoes":"👟",
+  "Bags":"👜",
+  "Wigs & Hair Extensions":"💇",
+  "Watches":"⌚",
+  "Jewelry":"💍",
+  "Perfumes":"🌸",
+  "Beauty Accessories":"💄",
+
+  "TVs":"📺",
+  "Fridges":"🧊",
+  "Fans":"🌀",
+  "Air Conditioners":"❄️",
+
+  "Graphic Design":"🎨",
+  "Website Design":"🌐",
+  "Plumbing":"🔧",
+  "Electricians":"💡",
+  "Cleaning Services":"🧹"
+};
+
+const params = new URLSearchParams(window.location.search);
+const category = params.get("category") || "Categories";
+
+const pageTitle = document.getElementById("pageTitle");
+const categoryList = document.getElementById("categoryList");
+const categorySearch = document.getElementById("categorySearch");
+
+pageTitle.textContent = category;
+
+let currentItems = data[category] || [];
+
+function renderList(items){
+  if(items.length === 0){
+    categoryList.innerHTML = `
+      <div class="empty">
+        No subcategory found.
+      </div>
+    `;
+    return;
+  }
+
+  categoryList.innerHTML = items.map(item => `
+    <div class="cat-row" onclick="openProducts('${category}', '${item}')">
+      <div class="cat-icon">${icons[item] || "🛍️"}</div>
+
+      <div class="cat-info">
+        <strong>${item}</strong>
+        <small>View ${item} products</small>
+      </div>
+
+      <div class="arrow">›</div>
+    </div>
+  `).join("");
+}
+
+function openProducts(category, subCategory){
+  window.location.href =
+    `index.html?category=${encodeURIComponent(category)}&search=${encodeURIComponent(subCategory)}`;
+}
+
+categorySearch.addEventListener("input", function(){
+  const text = this.value.toLowerCase().trim();
+
+  const filtered = currentItems.filter(item =>
+    item.toLowerCase().includes(text)
+  );
+
+  renderList(filtered);
+});
+
+renderList(currentItems);
+</script>
+
+</body>
+</html>
