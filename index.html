@@ -378,26 +378,7 @@
       box-shadow: 0 18px 35px rgba(217,119,6,.25);
     }
 
-    .protection-card {
-      position: absolute;
-      right: 18px;
-      top: 35px;
-      background: #fff;
-      padding: 18px;
-      border-radius: 18px;
-      box-shadow: 0 18px 40px rgba(0,0,0,.12);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 900;
-      font-size: .9rem;
-      animation: popIn .8s ease;
-    }
-
-    .protection-card span {
-      color: var(--green);
-      font-size: 2rem;
-    }
+ 
 
     .trust-grid {
   grid-template-columns: 1fr !important;
@@ -530,19 +511,6 @@
     .shop-cat small {
       color: var(--muted);
       line-height: 1.4;
-    }
-
-    .featured-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: #fff1e6;
-      color: var(--primary);
-      padding: 4px 9px;
-      border-radius: 999px;
-      font-size: .75rem;
-      font-weight: 900;
-      margin-left: 6px;
     }
 
     .products {
@@ -955,12 +923,7 @@
         right: 2px;
       }
 
-      .protection-card {
-        top: 10px;
-        right: 0;
-        padding: 12px;
-        font-size: .72rem;
-      }
+    
 
       .trust-grid {
         grid-template-columns: 1fr;
@@ -1102,20 +1065,6 @@
     z-index: 2 !important;
   }
 
-  .protection-card {
-    top: 25px !important;
-    right: 3px !important;
-    width: 78px !important;
-    padding: 6px !important;
-    font-size: .38rem !important;
-    border-radius: 9px !important;
-    gap: 4px !important;
-    z-index: 6 !important;
-  }
-
-  .protection-card span {
-    font-size: .75rem !important;
-  }
 }
 
 
@@ -1512,28 +1461,7 @@ onclick="window.location.href='categories.html?category=Services'">
     </a>
   </nav> 
 
-  <script>
-    const offerSlides = document.querySelectorAll(".offer-slide");
-    const privacySlides = document.querySelectorAll(".privacy-slide");
 
-    let offerIndex = 0;
-    let privacyIndex = 0;
-
-    function rotateOffers() {
-      offerSlides[offerIndex].classList.remove("active");
-      offerIndex = (offerIndex + 1) % offerSlides.length;
-      offerSlides[offerIndex].classList.add("active");
-    }
-
-    function rotatePrivacy() {
-      privacySlides[privacyIndex].classList.remove("active");
-      privacyIndex = (privacyIndex + 1) % privacySlides.length;
-      privacySlides[privacyIndex].classList.add("active");
-    }
-
-    setInterval(rotateOffers, 2000);
-    setInterval(rotatePrivacy, 2000);
-  </script>
 
   <script>
     const API_BASE =
@@ -1715,7 +1643,7 @@ const selectedSearch = pageParams.get("search") || "";
       }
     });
 
- document.addEventListener("DOMContentLoaded", function() {
+window.addEventListener("load", function() {
   currentCategory = selectedCategory || "All";
 
   const searchInput = document.getElementById("searchInput");
@@ -1724,6 +1652,7 @@ const selectedSearch = pageParams.get("search") || "";
     searchInput.value = selectedSearch;
     loadProducts(currentCategory, selectedSearch);
   } else {
+    currentCategory = "All";
     loadProducts("All", "");
   }
 
