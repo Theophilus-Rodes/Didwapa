@@ -1643,12 +1643,11 @@ const selectedSearch = pageParams.get("search") || "";
       }
     });
 
-window.addEventListener("load", function() {
-  currentCategory = selectedCategory || "All";
-
+function startHomeProducts() {
   const searchInput = document.getElementById("searchInput");
 
   if (selectedSearch && searchInput) {
+    currentCategory = selectedCategory || "All";
     searchInput.value = selectedSearch;
     loadProducts(currentCategory, selectedSearch);
   } else {
@@ -1656,8 +1655,16 @@ window.addEventListener("load", function() {
     loadProducts("All", "");
   }
 
-  loadCartCount();
-});
+  if (typeof loadCartCount === "function") {
+    loadCartCount();
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startHomeProducts);
+} else {
+  startHomeProducts();
+}
   </script>
 
   <script>
