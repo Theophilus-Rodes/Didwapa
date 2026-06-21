@@ -1643,27 +1643,15 @@ const selectedSearch = pageParams.get("search") || "";
       }
     });
 
-function startHomeProducts() {
-  const searchInput = document.getElementById("searchInput");
+const searchInputBox = document.getElementById("searchInput");
 
-  if (selectedSearch && searchInput) {
-    currentCategory = selectedCategory || "All";
-    searchInput.value = selectedSearch;
-    loadProducts(currentCategory, selectedSearch);
-  } else {
-    currentCategory = "All";
-    loadProducts("All", "");
-  }
-
-  if (typeof loadCartCount === "function") {
-    loadCartCount();
-  }
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", startHomeProducts);
+if (selectedSearch && searchInputBox) {
+  currentCategory = selectedCategory || "All";
+  searchInputBox.value = selectedSearch;
+  loadProducts(currentCategory, selectedSearch);
 } else {
-  startHomeProducts();
+  currentCategory = "All";
+  loadProducts("All", "");
 }
   </script>
 
@@ -1690,8 +1678,6 @@ if (document.readyState === "loading") {
         window.location.href = "userlogin.html";
       }
     }
-
-    loadCartCount();
   </script>
 
   <script>
@@ -1721,6 +1707,7 @@ if (document.readyState === "loading") {
         console.error("Cart count error:", error);
       }
     }
+    loadCartCount();
   </script>
 
 </body>
