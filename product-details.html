@@ -311,22 +311,42 @@
 
 .spec-grid{
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:10px;
-  margin-top:12px;
+  grid-template-columns:repeat(5, 1fr);
+  gap:7px;
+  margin-top:10px;
 }
 
 .spec-item{
   background:#f3f6fb;
-  padding:12px;
-  border-radius:14px;
+  padding:8px 6px;
+  border-radius:11px;
+  min-height:58px;
+  text-align:center;
+  border:1px solid #e5e7eb;
 }
 
 .spec-item small{
   display:block;
   color:#6b7280;
   font-weight:900;
-  margin-bottom:5px;
+  font-size:.62rem;
+  margin-bottom:4px;
+  line-height:1.1;
+}
+
+.spec-item span{
+  display:block;
+  color:#111827;
+  font-weight:800;
+  font-size:.72rem;
+  line-height:1.15;
+  word-break:break-word;
+}
+
+@media(max-width:480px){
+  .spec-grid{
+    grid-template-columns:repeat(3, 1fr);
+  }
 }
 
 .offer-box{
@@ -531,7 +551,7 @@ function renderSpecifications(specData){
 
   return `
     <div class="info">
-      <strong>More Product Details</strong>
+      <strong style="margin-bottom:8px;">More Product Details</strong>
       <div class="spec-grid">
         ${entries.map(([key,value]) => `
           <div class="spec-item">
