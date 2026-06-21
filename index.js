@@ -3340,6 +3340,93 @@ function loadConversation(product, currentUserId, otherUserId, res) {
 }
 
 
+app.post("/api/products/:id/price-offer", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const buyerId = req.session.user.id;
+  const productId = req.params.id;
+  const { suggested_amount, message } = req.body;
+
+  if (!suggested_amount || Number(suggested_amount) <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Enter a valid suggested amount."
+    });
+  }
+
+  const findProductSql = `
+    SELECT id, product_name, price, posted_by
+    FROM products
+    WHERE id = ?
+    LIMIT 1
+  `;
+
+  db.query(findProductSql, [productId], (err, rows) => {
+    if (err) {
+      console.error("Find product for offer error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Server error."
+      });
+    }
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found."
+      });
+    }
+
+    const product = rows[0];
+    const sellerId = product.posted_by;
+
+    if (Number(buyerId) === Number(sellerId)) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot suggest price on your own product."
+      });
+    }
+
+    const offerMessage =
+      `💰 Price Suggestion\n` +
+      `Product: ${product.product_name}\n` +
+      `Original Price: GH₵${Number(product.price).toFixed(2)}\n` +
+      `Suggested Price: GH₵${Number(suggested_amount).toFixed(2)}` +
+      `${message ? `\nMessage: ${message}` : ""}`;
+
+    const insertSql = `
+      INSERT INTO product_messages
+      (product_id, sender_id, receiver_id, message, status, read_status)
+      VALUES (?, ?, ?, ?, 'sent', 'unread')
+    `;
+
+    db.query(
+      insertSql,
+      [productId, buyerId, sellerId, offerMessage],
+      (insertErr) => {
+        if (insertErr) {
+          console.error("Insert price suggestion message error:", insertErr);
+          return res.status(500).json({
+            success: false,
+            message: insertErr.sqlMessage || "Failed to send price suggestion."
+          });
+        }
+
+        res.json({
+          success: true,
+          message: "Price suggestion sent to seller."
+        });
+      }
+    );
+  });
+});
+
+
 app.post("/api/product-message/send", (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ success: false, message: "Please login first." });
