@@ -1715,16 +1715,18 @@ const selectedSearch = pageParams.get("search") || "";
       }
     });
 
-  document.addEventListener("DOMContentLoaded", function() {
+ document.addEventListener("DOMContentLoaded", function() {
   currentCategory = selectedCategory || "All";
 
   const searchInput = document.getElementById("searchInput");
 
   if (selectedSearch && searchInput) {
     searchInput.value = selectedSearch;
+    loadProducts(currentCategory, selectedSearch);
+  } else {
+    loadProducts("All", "");
   }
 
-  loadProducts(currentCategory, selectedSearch);
   loadCartCount();
 });
   </script>
