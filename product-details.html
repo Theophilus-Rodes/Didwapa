@@ -309,36 +309,51 @@
   font-weight:900;
 }
 
+.spec-section{
+  background:#fff;
+  margin:14px -16px 12px;
+  padding:16px 18px;
+  border-top:8px solid #edf4ff;
+  border-bottom:8px solid #edf4ff;
+}
+
+.spec-title{
+  font-size:1rem;
+  font-weight:900;
+  color:#0a2d73;
+  margin-bottom:14px;
+}
+
 .spec-grid{
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:14px;
-  margin-top:12px;
+  grid-template-columns:1fr 1fr;
+  column-gap:34px;
+  row-gap:14px;
 }
 
 .spec-item{
-  background:white;
-  border:none;
+  background:transparent;
   padding:0;
-  min-height:auto;
+  border:none;
   text-align:left;
-}
-
-.spec-item small{
-  display:block;
-  color:#9ca3af;
-  font-size:.72rem;
-  font-weight:700;
-  text-transform:uppercase;
-  margin-top:4px;
 }
 
 .spec-item span{
   display:block;
   color:#111827;
-  font-size:1rem;
-  font-weight:700;
-  margin-bottom:8px;
+  font-size:.95rem;
+  font-weight:500;
+  line-height:1.25;
+  margin-bottom:3px;
+}
+
+.spec-item small{
+  display:block;
+  color:#78909c;
+  font-size:.66rem;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.2px;
 }
 
 .spec-hidden{
@@ -347,17 +362,11 @@
 
 .show-more-btn{
   color:#ff6600;
+  font-size:.85rem;
   font-weight:900;
-  cursor:pointer;
-  margin-top:10px;
   text-align:right;
-}
-
-
-@media(max-width:480px){
-  .spec-grid{
-    grid-template-columns:repeat(3, 1fr);
-  }
+  margin-top:16px;
+  cursor:pointer;
 }
 
 .offer-box{
@@ -549,39 +558,28 @@ function renderSpecifications(specData){
   let specs = {};
 
   try{
-    specs = typeof specData === "string"
-      ? JSON.parse(specData)
-      : specData;
+    specs = typeof specData === "string" ? JSON.parse(specData) : specData;
   }catch(e){
     return "";
   }
 
-  const entries = Object.entries(specs).filter(([k,v]) =>
-    v !== null &&
-    v !== undefined &&
-    String(v).trim() !== ""
+  const entries = Object.entries(specs).filter(([key,value]) =>
+    value !== null &&
+    value !== undefined &&
+    String(value).trim() !== ""
   );
 
   if(!entries.length) return "";
 
-  const firstSix = entries.slice(0,6);
-  const remaining = entries.slice(6);
+  const firstTen = entries.slice(0,10);
+  const remaining = entries.slice(10);
 
   return `
-    <div class="info">
-
-      <strong style="
-        display:block;
-        margin-bottom:14px;
-        color:#0a2d73;
-        font-size:1.05rem;
-      ">
-        Product Details
-      </strong>
+    <div class="spec-section">
+      <div class="spec-title">Product Details</div>
 
       <div class="spec-grid">
-
-        ${firstSix.map(([key,value]) => `
+        ${firstTen.map(([key,value]) => `
           <div class="spec-item">
             <span>${safeText(value)}</span>
             <small>${safeText(niceLabel(key))}</small>
@@ -594,44 +592,27 @@ function renderSpecifications(specData){
             <small>${safeText(niceLabel(key))}</small>
           </div>
         `).join("")}
-
       </div>
 
       ${
         remaining.length
-        ? `
-        <div
-          class="show-more-btn"
-          onclick="toggleSpecs(this)"
-        >
-          Show More ▼
-        </div>
-        `
+        ? `<div class="show-more-btn" onclick="toggleSpecs(this)">Show more⌄</div>`
         : ""
       }
-
     </div>
   `;
 }
 
 
 function toggleSpecs(btn){
+  const hidden = document.querySelectorAll(".extra-spec");
+  const showing = hidden[0]?.style.display === "block";
 
-  const hidden =
-    document.querySelectorAll(".extra-spec");
-
-  const showing =
-    hidden[0]?.style.display === "block";
-
-  hidden.forEach(el=>{
-    el.style.display =
-      showing ? "none" : "block";
+  hidden.forEach(el => {
+    el.style.display = showing ? "none" : "block";
   });
 
-  btn.innerHTML =
-    showing
-      ? "Show More ▼"
-      : "Show Less ▲";
+  btn.innerHTML = showing ? "Show more⌄" : "Hide⌃";
 }
 
 function isNegotiableProduct(){
