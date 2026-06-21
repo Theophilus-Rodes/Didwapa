@@ -1616,7 +1616,10 @@ app.get("/api/products/:id", (req, res) => {
   const sql = `
     SELECT 
       id,
+      category,
+      subcategory,
       region,
+      district,
       product_name,
       product_type,
       price,
@@ -1625,11 +1628,27 @@ app.get("/api/products/:id", (req, res) => {
       status,
       phone_number,
       instructions,
+      description,
       item_condition,
       images,
-      posted_by
+      specifications,
+      seller_name,
+      youtube_link,
+      registered_car,
+      exchange_possible,
+      negotiable,
+      bulk_min_qty,
+      bulk_price,
+      delivery_available,
+      delivery_fee_type,
+      delivery_time,
+      pickup_available,
+      promotion_type,
+      posted_by,
+      created_at
     FROM products
-    WHERE id = ? AND status = 'approved'
+    WHERE id = ? 
+      AND status = 'approved'
     LIMIT 1
   `;
 
@@ -1638,7 +1657,7 @@ app.get("/api/products/:id", (req, res) => {
       console.error("Fetch product details error:", err);
       return res.status(500).json({
         success: false,
-        message: "Failed to load product details"
+        message: err.sqlMessage || "Failed to load product details"
       });
     }
 
@@ -1655,7 +1674,6 @@ app.get("/api/products/:id", (req, res) => {
     });
   });
 });
-
 
 
 
