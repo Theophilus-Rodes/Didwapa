@@ -1572,9 +1572,10 @@ onclick="window.location.href='categories.html?category=Services'">
 
     let currentCategory = "All";
 
-    const pageParams = new URLSearchParams(window.location.search);
-    const selectedRegion = pageParams.get("region") || "All Ghana";
-   const selectedSearch = pageParams.get("search") || "";
+   const pageParams = new URLSearchParams(window.location.search);
+const selectedRegion = pageParams.get("region") || "All Ghana";
+const selectedCategory = pageParams.get("category") || "All";
+const selectedSearch = pageParams.get("search") || "";
 
     async function loadProducts(category = "All", searchText = "") {
       try {
