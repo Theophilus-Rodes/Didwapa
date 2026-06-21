@@ -308,6 +308,49 @@
   color:white;
   font-weight:900;
 }
+
+.spec-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  margin-top:12px;
+}
+
+.spec-item{
+  background:#f3f6fb;
+  padding:12px;
+  border-radius:14px;
+}
+
+.spec-item small{
+  display:block;
+  color:#6b7280;
+  font-weight:900;
+  margin-bottom:5px;
+}
+
+.offer-box{
+  margin-top:14px;
+  background:#fff7f0;
+  padding:14px;
+  border-radius:16px;
+  display:none;
+}
+
+.suggest-btn{
+  width:100%;
+  height:48px;
+  border:none;
+  border-radius:16px;
+  background:#0a2d73;
+  color:white;
+  font-weight:900;
+  margin-top:12px;
+}
+
+@media(max-width:480px){
+  .spec-grid{grid-template-columns:1fr}
+}
   </style>
 </head>
 
@@ -454,6 +497,106 @@ function getProductImages(images) {
   }
 }
 
+function safeText(value){
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function niceLabel(key){
+  return String(key || "")
+    .replaceAll("_"," ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function renderSpecifications(specData){
+  if(!specData) return "";
+
+  let specs = {};
+
+  try{
+    specs = typeof specData === "string" ? JSON.parse(specData) : specData;
+  }catch(e){
+    return "";
+  }
+
+  const entries = Object.entries(specs).filter(([k,v]) =>
+    v !== null && v !== undefined && String(v).trim() !== ""
+  );
+
+  if(!entries.length) return "";
+
+  return `
+    <div class="info">
+      <strong>More Product Details</strong>
+      <div class="spec-grid">
+        ${entries.map(([key,value]) => `
+          <div class="spec-item">
+            <small>${safeText(niceLabel(key))}</small>
+            <span>${safeText(value)}</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function isNegotiableProduct(){
+  return String(product?.negotiable || "").toLowerCase() === "yes";
+}
+
+function toggleOfferBox(){
+  const box = document.getElementById("offerBox");
+  box.style.display = box.style.display === "block" ? "none" : "block";
+}
+
+async function sendPriceOffer(){
+  if(!buyerInfo){
+    alert("Please login first.");
+    window.location.href = "userlogin.html";
+    return;
+  }
+
+  const amount = Number(document.getElementById("suggestedAmount").value || 0);
+  const message = document.getElementById("offerMessage").value || "";
+
+  if(!amount || amount <= 0){
+    alert("Enter a valid suggested amount.");
+    return;
+  }
+
+  try{
+    const res = await fetch(`${API_BASE}/api/products/${productId}/price-offer`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      credentials:"include",
+      body:JSON.stringify({
+        suggested_amount: amount,
+        message
+      })
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      alert(data.message);
+      return;
+    }
+
+    alert("Your suggested price has been sent to the seller.");
+    document.getElementById("suggestedAmount").value = "";
+    document.getElementById("offerMessage").value = "";
+    toggleOfferBox();
+
+  }catch(error){
+    console.error(error);
+    alert("Failed to send suggested price.");
+  }
+}
+
 async function loadProduct() {
   try {
     const res = await fetch(`${API_BASE}/api/products/${productId}`);
@@ -503,6 +646,30 @@ const image = productImages[0] || "";
   <strong>Area / District</strong>
   ${product.district || "N/A"}
 </div>
+
+${renderSpecifications(product.specifications)}
+
+${isNegotiableProduct() ? `
+  <button class="suggest-btn" onclick="toggleOfferBox()">💬 Suggest Pay</button>
+
+  <div class="offer-box" id="offerBox">
+    <strong>Suggest your price</strong>
+    <p style="font-size:.85rem;color:#6b7280;margin:7px 0;">
+      Original price: GH₵${Number(product.price).toFixed(2)}
+    </p>
+
+    <input type="number" id="suggestedAmount" placeholder="Enter your suggested amount">
+
+    <input 
+      type="text" 
+      id="offerMessage" 
+      placeholder="Message to seller, optional"
+      style="margin-top:10px;"
+    >
+
+    <button class="suggest-btn" onclick="sendPriceOffer()">Send Suggestion</button>
+  </div>
+` : ""}
 
 <a 
   href="tel:${product.phone_number}" 
