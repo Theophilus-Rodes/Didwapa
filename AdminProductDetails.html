@@ -605,6 +605,65 @@
       modalImage.src = "";
     }
 
+function escapeHtml(value){
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function niceLabel(key){
+  return String(key || "")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function renderSpecifications(specData){
+  if(!specData){
+    return "";
+  }
+
+  let specs = {};
+
+  try{
+    specs = typeof specData === "string" ? JSON.parse(specData) : specData;
+  }catch(e){
+    return `
+      <div class="item full">
+        <small>More Product Details</small>
+        <strong>${escapeHtml(specData)}</strong>
+      </div>
+    `;
+  }
+
+  const entries = Object.entries(specs).filter(([key, value]) =>
+    value !== null &&
+    value !== undefined &&
+    String(value).trim() !== ""
+  );
+
+  if(!entries.length){
+    return "";
+  }
+
+  return `
+    <div class="item full" style="background:#06152f;color:white;">
+      <small style="color:#20e070;">More Product Details</small>
+      <strong>${escapeHtml(entries.length)} extra field(s)</strong>
+    </div>
+
+    ${entries.map(([key, value]) => `
+      <div class="item">
+        <small>${escapeHtml(niceLabel(key))}</small>
+        <strong>${escapeHtml(value)}</strong>
+      </div>
+    `).join("")}
+  `;
+}
+
+
     async function loadProductDetails() {
       try {
         const res = await fetch(`${API_BASE}/api/admin/products/${productId}`);
@@ -650,6 +709,8 @@
               <small>Product Type</small>
               <strong>${p.product_type || "N/A"}</strong>
             </div>
+
+            ${renderSpecifications(p.specifications)}
 
             <div class="item">
               <small>Price</small>
