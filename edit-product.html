@@ -320,6 +320,11 @@
         </div>
 
         <div class="form-group full">
+  <label>Extra Product Details</label>
+  <div class="form-grid" id="dynamicFieldsBox"></div>
+</div>
+
+        <div class="form-group full">
           <label>Product Images</label>
 
           <div class="upload-box" id="uploadBox">
@@ -449,6 +454,100 @@ function removeNewImage(index){
   renderImages();
 }
 
+const dynamicFieldsBox =
+document.getElementById("dynamicFieldsBox");
+
+function formatLabel(key){
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function createDynamicField(key, value = ""){
+  dynamicFieldsBox.innerHTML += `
+    <div class="form-group">
+      <label>${formatLabel(key)}</label>
+      <input
+        type="text"
+        class="dynamic-field"
+        data-key="${key}"
+        value="${value || ""}">
+    </div>
+  `;
+}
+
+function loadDynamicFields(product){
+  dynamicFieldsBox.innerHTML = "";
+
+  const normalDynamicFields = [
+    "region",
+    "district",
+    "subcategory",
+    "negotiable",
+    "delivery_available",
+    "delivery_fee_type",
+    "delivery_time",
+    "pickup_available",
+    "exchange_possible",
+    "bulk_price",
+    "bulk_min_qty",
+    "promotion_type",
+    "registered_car",
+    "seller_name",
+    "youtube_link"
+  ];
+
+  normalDynamicFields.forEach(key => {
+    createDynamicField(key, product[key] || "");
+  });
+
+  if(product.specifications){
+    try{
+      const specs =
+        typeof product.specifications === "string"
+          ? JSON.parse(product.specifications)
+          : product.specifications;
+
+      Object.keys(specs).forEach(key => {
+        createDynamicField(`spec_${key}`, specs[key]);
+      });
+
+    }catch(error){
+      console.log("Specs parse error:", error);
+    }
+  }
+}
+
+function collectDynamicFields(formData){
+  const specs = {};
+
+  document
+    .querySelectorAll(".dynamic-field")
+    .forEach(input => {
+
+      const key =
+        input.dataset.key;
+
+      const value =
+        input.value.trim();
+
+      if(key.startsWith("spec_")){
+        const specKey =
+          key.replace("spec_", "");
+
+        specs[specKey] = value;
+      }else{
+        formData.append(key, value);
+      }
+
+    });
+
+  formData.append(
+    "specifications",
+    JSON.stringify(specs)
+  );
+}
+
 async function loadProduct(){
   try{
     const res = await fetch(`${API_BASE}/api/product-details/${productId}`, {
@@ -463,6 +562,7 @@ async function loadProduct(){
     }
 
     const p = data.product;
+    loadDynamicFields(p);
 
     document.getElementById("category").value = p.category || "";
     document.getElementById("product_name").value = p.product_name || "";
@@ -504,8 +604,11 @@ document.getElementById("editForm").addEventListener("submit", async (e) => {
   formData.append("phone_number", document.getElementById("phone_number").value);
   formData.append("instructions", document.getElementById("instructions").value);
   formData.append("description", document.getElementById("description").value);
-  formData.append("item_condition", document.getElementById("item_condition").value);
-  formData.append("old_images", JSON.stringify(oldImages));
+formData.append("item_condition", document.getElementById("item_condition").value);
+
+collectDynamicFields(formData);
+
+formData.append("old_images", JSON.stringify(oldImages));
 
   newFiles.forEach(file => {
     formData.append("images", file);
