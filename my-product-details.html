@@ -312,6 +312,11 @@ id="productStatus">
 
 <div class="action-buttons">
 
+  <div class="section">
+  <h3>Specifications</h3>
+  <div class="info-grid" id="dynamicSpecs"></div>
+</div>
+
 <button
 class="btn edit-btn"
 id="editBtn">
@@ -348,6 +353,96 @@ params.get("id");
 
 let currentProduct = null;
 
+
+function formatLabel(key){
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function renderDynamicSpecs(product){
+
+  const specsBox =
+    document.getElementById("dynamicSpecs");
+
+  specsBox.innerHTML = "";
+
+  const normalFields = {
+    region: "Region",
+    district: "District",
+    subcategory: "Subcategory",
+    negotiable: "Negotiable",
+    delivery_available: "Delivery Available",
+    delivery_fee_type: "Delivery Fee Type",
+    delivery_time: "Delivery Time",
+    pickup_available: "Pickup Available",
+    exchange_possible: "Exchange Possible",
+    bulk_price: "Bulk Price",
+    bulk_min_qty: "Bulk Minimum Quantity",
+    promotion_type: "Promotion Type",
+    registered_car: "Registered Car",
+    seller_name: "Seller Name",
+    youtube_link: "YouTube Link"
+  };
+
+  Object.keys(normalFields).forEach(key => {
+    const value = product[key];
+
+    if(
+      value === null ||
+      value === undefined ||
+      value === "" ||
+      value === "null"
+    ) return;
+
+    specsBox.innerHTML += `
+      <div class="info-card">
+        <span>${normalFields[key]}</span>
+        <strong>${value}</strong>
+      </div>
+    `;
+  });
+
+  if(product.specifications){
+    try{
+      const specs =
+        typeof product.specifications === "string"
+          ? JSON.parse(product.specifications)
+          : product.specifications;
+
+      Object.keys(specs).forEach(key => {
+        const value = specs[key];
+
+        if(
+          value === null ||
+          value === undefined ||
+          value === "" ||
+          value === "null"
+        ) return;
+
+        specsBox.innerHTML += `
+          <div class="info-card">
+            <span>${formatLabel(key)}</span>
+            <strong>${value}</strong>
+          </div>
+        `;
+      });
+
+    }catch(error){
+      console.log("Specifications parse error:", error);
+    }
+  }
+
+  if(specsBox.innerHTML.trim() === ""){
+    specsBox.innerHTML = `
+      <p style="color:#777;font-size:.9rem;">
+        No extra specifications available.
+      </p>
+    `;
+  }
+}
+
+
 async function loadProduct(){
 
 try{
@@ -370,6 +465,7 @@ return;
 const p = data.product;
 
 currentProduct = p;
+renderDynamicSpecs(p);
 
 let images=[];
 
