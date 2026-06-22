@@ -715,24 +715,23 @@
       box-shadow: 0 8px 20px rgba(0,0,0,.08);
     }
 
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      max-width: 1180px;
-      width: 100%;
-      background: rgba(255,255,255,.96);
-      backdrop-filter: blur(14px);
-      border-top: 1px solid var(--border);
-      display: grid;
-      grid-template-columns: repeat(4, 1fr) 1.8fr;
-      align-items: center;
-      gap: 5px;
-      padding: 10px 18px;
-      z-index: 120;
-      animation: slideUp .5s ease;
-    }
+   .bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 1180px;
+  width: 100%;
+  background: rgba(255,255,255,.96);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr) 1.5fr;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  z-index: 120;
+}
 
     .nav-item {
       text-align: center;
@@ -960,9 +959,17 @@
       }
 
       .bottom-nav {
-        grid-template-columns: repeat(4, 1fr);
-        padding: 8px 5px;
-      }
+  grid-template-columns: repeat(5, 1fr);
+  padding: 7px 4px;
+}
+
+.bottom-nav .sell-btn {
+  position: fixed;
+  right: 12px;
+  bottom: 82px;
+  padding: 12px 18px;
+  z-index: 130;
+}
 
       .sell-btn {
         position: fixed;
@@ -1293,6 +1300,43 @@
   font-weight:800;
   line-height:1.25;
 }
+
+.login-popup{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#fff;
+  border-left:5px solid #ff6600;
+  border-radius:14px;
+  padding:14px 18px;
+  box-shadow:0 15px 35px rgba(0,0,0,.15);
+  z-index:99999;
+  min-width:280px;
+  animation:slideDown .3s ease;
+}
+
+.login-popup-title{
+  font-weight:900;
+  color:#ff6600;
+  margin-bottom:4px;
+}
+
+.login-popup-text{
+  font-size:.9rem;
+  color:#555;
+}
+
+@keyframes slideDown{
+  from{
+    opacity:0;
+    transform:translateX(-50%) translateY(-20px);
+  }
+  to{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+}
   </style>
 </head>
 
@@ -1336,11 +1380,17 @@
 </div>
 
         <div class="header-actions">
-          <button class="header-icon" type="button">💬</button>
+          <button
+  class="header-icon"
+  type="button"
+  onclick="openMessagesPage(event)">
+  💬
+  <span class="mini-badge" id="messageBadge">0</span>
+</button>
           <button class="header-icon" type="button">
-            🔔
-            <span class="mini-badge">3</span>
-          </button>
+  🔔
+  <span class="mini-badge" id="notificationBadge">0</span>
+</button>
         </div>
       </div>
 
@@ -1456,26 +1506,28 @@
         </div>
       </section>
 
-  <section class="quick-actions">
-  <div class="quick-card" onclick="window.location.href='intelligence.html'">
+ <section class="quick-actions">
+
+  <div class="quick-card" onclick="comingSoon()">
     <div class="quick-icon">🔎</div>
     <p>The Intelligence</p>
   </div>
 
-  <div class="quick-card" onclick="window.location.href='jobs.html'">
+  <div class="quick-card" onclick="comingSoon()">
     <div class="quick-icon">💻</div>
     <p>Apply for Job</p>
   </div>
 
-  <div class="quick-card" onclick="window.location.href='how-to-sell.html'">
+  <div class="quick-card" onclick="comingSoon()">
     <div class="quick-icon">💸</div>
     <p>How to Sell</p>
   </div>
 
-  <div class="quick-card" onclick="window.location.href='how-to-buy.html'">
+  <div class="quick-card" onclick="comingSoon()">
     <div class="quick-icon">🛒</div>
     <p>How to Buy</p>
   </div>
+
 </section>
 
 <div class="section-head" id="categoryHead">
@@ -1578,33 +1630,39 @@ onclick="openCategoryPage('Services')">
     </section>
   </main>
 
-  <nav class="bottom-nav">
-    <a href="index.html" class="nav-item active">
-      <div>🏠</div>
-      Home
-    </a>
+ <nav class="bottom-nav">
+  <a href="index.html" class="nav-item active">
+    <div>🏠</div>
+    Home
+  </a>
 
-    <a href="loc.html" class="nav-item">
-      <div>▦</div>
-      Categories
-    </a>
+  <a href="#" class="nav-item" onclick="goToBrowseCategories(event)">
+    <div>▦</div>
+    Categories
+  </a>
 
-    <a href="" class="nav-item" onclick="openYouPage(event)">
-      <span class="badge">0</span>
-      <div>👤</div>
-      You
-    </a>
+  <a href="" class="nav-item" onclick="openYouPage(event)">
+    <span class="badge">0</span>
+    <div>👤</div>
+    You
+  </a>
 
-    <a href="cart.html" class="nav-item">
-      <span class="badge" id="cartCountBadge">0</span>
-      <div>🛒</div>
-      Cart
-    </a>
+<a href="#" class="nav-item" onclick="openMessagesPage(event)">
+  <div>💬</div>
+  Message
+</a>
 
-    <a href="upload-product.html" class="sell-btn">
-      Sell on Didwapa →
-    </a>
-  </nav> 
+
+ <a href="#" class="nav-item" onclick="openCartPage(event)">
+  <span class="badge" id="cartCountBadge">0</span>
+  <div>🛒</div>
+  Cart
+</a>
+
+  <a href="upload-product.html" class="sell-btn">
+    Sell →
+  </a>
+</nav> 
 
 
 
@@ -1616,6 +1674,42 @@ onclick="openCategoryPage('Services')">
         : "";
 
     const productsContainer = document.getElementById("productsContainer");
+
+
+    function updateNotificationBadge(){
+
+  let total = 0;
+
+  const cartBadge =
+    document.getElementById("cartCountBadge");
+
+  const messageBadge =
+    document.getElementById("messageBadge");
+
+  const reportBadge =
+    document.getElementById("reportBadge");
+
+  if(cartBadge){
+    total += parseInt(cartBadge.textContent) || 0;
+  }
+
+  if(messageBadge){
+    total += parseInt(messageBadge.textContent) || 0;
+  }
+
+  if(reportBadge){
+    total += parseInt(reportBadge.textContent) || 0;
+  }
+
+  const notificationBadge =
+    document.getElementById("notificationBadge");
+
+  notificationBadge.textContent = total;
+
+  notificationBadge.style.display =
+    total > 0 ? "inline-grid" : "none";
+}
+
 
     function getFirstImage(images) {
       try {
@@ -2148,13 +2242,143 @@ if(
         if (data.success) {
           badge.textContent = data.count || 0;
           badge.style.display = Number(data.count) > 0 ? "inline-grid" : "none";
+
+          updateNotificationBadge();
         }
       } catch (error) {
         console.error("Cart count error:", error);
       }
     }
     loadCartCount();
+    updateNotificationBadge();
   </script>
+
+<script>
+function comingSoon(){
+  alert("🚀 This feature is coming soon to DIDWAPA. Stay tuned!");
+}
+
+
+function goToBrowseCategories(event){
+  event.preventDefault();
+
+  window.location.href = "index.html#categoryHead";
+
+  setTimeout(() => {
+    const categoryHead = document.getElementById("categoryHead");
+
+    if(categoryHead){
+      categoryHead.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+  }, 200);
+}
+
+
+async function openMessagesPage(event){
+  event.preventDefault();
+
+  try{
+    const res = await fetch(`${API_BASE}/api/check-user-login`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if(data.loggedIn){
+      window.location.href = "product-message.html";
+    }else{
+    showLoginPopup(
+  "Login to access your DIDWAPA messages."
+);
+
+setTimeout(() => {
+  window.location.href = "userlogin.html";
+}, 1500);
+    }
+
+  }catch(error){
+    console.error(error);
+    showLoginPopup(
+  "Login to access your DIDWAPA messages."
+);
+    window.location.href = "userlogin.html";
+  }
+}
+
+async function openCartPage(event){
+  event.preventDefault();
+
+  try{
+    const res = await fetch(`${API_BASE}/api/check-user-login`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if(data.loggedIn){
+
+      window.location.href = "cart.html";
+
+    }else{
+
+      showLoginPopup(
+        "Please login first to access your cart."
+      );
+
+      setTimeout(() => {
+        window.location.href = "userlogin.html";
+      }, 1500);
+
+    }
+
+  }catch(error){
+
+    showLoginPopup(
+      "Please login first to access your cart."
+    );
+
+    setTimeout(() => {
+      window.location.href = "userlogin.html";
+    }, 1500);
+
+  }
+}
+
+
+function showLoginPopup(message){
+
+  const oldPopup =
+    document.querySelector(".login-popup");
+
+  if(oldPopup){
+    oldPopup.remove();
+  }
+
+  const popup =
+    document.createElement("div");
+
+  popup.className = "login-popup";
+
+  popup.innerHTML = `
+    <div class="login-popup-title">
+      🔒 Login Required
+    </div>
+
+    <div class="login-popup-text">
+      ${message}
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  setTimeout(() => {
+    popup.remove();
+  }, 3000);
+}
+</script>
 
 </body>
 </html>
