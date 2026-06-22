@@ -306,6 +306,16 @@ function renderList(items){
     </div>
   `).join("");
 }
+const searchKeywords = {
+  "Headphones": "Headphone",
+  "iPhones": "iPhone",
+  "Gaming Consoles": "Console",
+  "Smart Watches": "Smart Watch",
+  "TVs": "TV",
+  "Fridges": "Fridge",
+  "Fans": "Fan",
+  "Air Conditioners": "Air Conditioner"
+};
 
 
 function openProducts(category, subCategory){
@@ -314,10 +324,13 @@ function openProducts(category, subCategory){
   const region = oldParams.get("region") || "";
   const district = oldParams.get("district") || "";
 
+  const keyword = searchKeywords[subCategory] || subCategory;
+
   const url = new URL("index.html", window.location.href);
 
   url.searchParams.set("category", category);
-  url.searchParams.set("search", subCategory);
+  url.searchParams.set("search", keyword);
+  url.searchParams.set("subcategory", subCategory);
   url.searchParams.set("scroll", "products");
 
   if(region) url.searchParams.set("region", region);
