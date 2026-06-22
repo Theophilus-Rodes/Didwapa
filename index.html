@@ -1315,7 +1315,7 @@
 
 <div class="location-filters">
 
-<select id="regionSelect" onchange="loadDistricts(false); changeLocation();"></select>
+<select id="regionSelect" onchange="loadDistricts(false); changeLocation();">
     <option value="All Ghana">📍 All Ghana</option>
     <option value="Ashanti">Ashanti</option>
     <option value="Greater Accra">Greater Accra</option>
@@ -1485,32 +1485,32 @@
 <section id="mainCategories" class="shop-cats">
 
 <div class="shop-cat"
-onclick="window.location.href='categories.html?category=Phones%20%26%20Tablets'">
+onclick="openCategoryPage('Phones & Tablets')">
     <div class="shop-img">📱</div>
     <strong>Phones & Tablets</strong>
   </div>
 
 <div class="shop-cat"
-onclick="window.location.href='categories.html?category=Electronics'">
+onclick="openCategoryPage('Electronics')">
     <div class="shop-img">💻</div>
     <strong>Electronics</strong>
   </div>
 
 <div class="shop-cat"
-onclick="window.location.href='categories.html?category=Fashion'">
+onclick="openCategoryPage('Fashion')">
     <div class="shop-img">👗</div>
     <strong>Fashion</strong>
   </div>
 
 
   <div class="shop-cat"
-onclick="window.location.href='categories.html?category=Home Appliances'">
+onclick="openCategoryPage('Home Appliances')">
     <div class="shop-img">📺</div>
     <strong>Home Appliances</strong>
   </div>
 
   <div class="shop-cat"
-onclick="window.location.href='categories.html?category=Services'">
+onclick="openCategoryPage('Services')">
     <div class="shop-img">🛠️</div>
     <strong>Services</strong>
   </div>
@@ -1811,6 +1811,7 @@ function loadDistricts(keepDistrict = true) {
   }
 }
 
+
 function changeLocation() {
 
   loadProducts(
@@ -1818,15 +1819,31 @@ function changeLocation() {
     document.getElementById("searchInput").value.trim()
   );
 
-  setTimeout(() => {
+}
 
-    document.getElementById("productsContainer")
-      .scrollIntoView({
-        behavior:"smooth",
-        block:"start"
-      });
 
-  },300);
+function openCategoryPage(category){
+
+  const region =
+    document.getElementById("regionSelect").value;
+
+  const district =
+    document.getElementById("districtSelect").value;
+
+  const url =
+    new URL("categories.html", window.location.href);
+
+  url.searchParams.set("category", category);
+
+  if(region && region !== "All Ghana"){
+    url.searchParams.set("region", region);
+  }
+
+  if(district){
+    url.searchParams.set("district", district);
+  }
+
+  window.location.href = url.toString();
 }
 
     async function loadProducts(category = "All", searchText = "") {
@@ -1859,7 +1876,7 @@ if (selectedDistrict) {
     "district",
     selectedDistrict
   );
-}f
+}
 
         if (searchText && searchText.trim() !== "") {
           params.append("search", searchText.trim());
@@ -1967,18 +1984,64 @@ if (selectedDistrict) {
       loadProducts(category);
     }
 
-    function searchProducts() {
-      const searchInput = document.getElementById("searchInput");
-      const searchText = searchInput.value.trim();
+  function searchProducts() {
+  const searchInput =
+    document.getElementById("searchInput");
 
-      productsContainer.innerHTML = `
-        <p style="grid-column:1/-1;padding:15px;">
-          Searching...
-        </p>
-      `;
+  const searchText =
+    searchInput.value.trim();
 
-      loadProducts(currentCategory, searchText);
-    }
+  const region =
+    document.getElementById("regionSelect").value;
+
+  const district =
+    document.getElementById("districtSelect").value;
+
+  const url =
+    new URL(window.location.href);
+
+  if(searchText){
+    url.searchParams.set("search", searchText);
+  }else{
+    url.searchParams.delete("search");
+  }
+
+  if(region && region !== "All Ghana"){
+    url.searchParams.set("region", region);
+  }else{
+    url.searchParams.delete("region");
+  }
+
+  if(district){
+    url.searchParams.set("district", district);
+  }else{
+    url.searchParams.delete("district");
+  }
+
+  url.searchParams.delete("category");
+
+  history.replaceState(null, "", url.toString());
+
+  currentCategory = "All";
+
+  productsContainer.innerHTML = `
+    <p style="grid-column:1/-1;padding:15px;">
+      Searching...
+    </p>
+  `;
+
+  loadProducts(currentCategory, searchText);
+
+  if(searchText){
+    setTimeout(() => {
+      document.getElementById("productsContainer")
+        .scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+    }, 300);
+  }
+}
 
     document.getElementById("searchInput").addEventListener("keydown", function(e) {
       if (e.key === "Enter") {
@@ -2011,7 +2074,10 @@ if(selectedDistrict){
   selectedDistrict;
 }
 
-if(selectedSearch){
+if(
+  selectedSearch &&
+  selectedCategory === "All"
+){
   searchInputBox.value =
   selectedSearch;
 }
@@ -2022,7 +2088,7 @@ loadProducts(
 );
 
 if(
-  selectedCategory !== "All" ||
+  selectedCategory !== "All" &&
   selectedSearch
 ){
   setTimeout(()=>{
