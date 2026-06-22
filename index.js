@@ -4269,6 +4269,7 @@ app.get("/api/product-details/:id", (req, res) => {
   );
 });
 
+
 app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
   const productId = req.params.id;
 
@@ -4283,7 +4284,24 @@ app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
     instructions,
     description,
     item_condition,
-    old_images
+    old_images,
+
+    region,
+    district,
+    subcategory,
+    negotiable,
+    delivery_available,
+    delivery_fee_type,
+    delivery_time,
+    pickup_available,
+    exchange_possible,
+    bulk_price,
+    bulk_min_qty,
+    promotion_type,
+    registered_car,
+    seller_name,
+    youtube_link,
+    specifications
   } = req.body;
 
   let existingImages = [];
@@ -4294,11 +4312,21 @@ app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
     existingImages = [];
   }
 
-  const newImages = req.files.map(file => {
+  const newImages = (req.files || []).map(file => {
     return `/uploads/products/${file.filename}`;
   });
 
   const finalImages = [...existingImages, ...newImages];
+
+  let cleanSpecifications = {};
+
+  try {
+    cleanSpecifications = specifications
+      ? JSON.parse(specifications)
+      : {};
+  } catch {
+    cleanSpecifications = {};
+  }
 
   const sql = `
     UPDATE products SET
@@ -4312,6 +4340,22 @@ app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
       instructions = ?,
       description = ?,
       item_condition = ?,
+      region = ?,
+      district = ?,
+      subcategory = ?,
+      negotiable = ?,
+      delivery_available = ?,
+      delivery_fee_type = ?,
+      delivery_time = ?,
+      pickup_available = ?,
+      exchange_possible = ?,
+      bulk_price = ?,
+      bulk_min_qty = ?,
+      promotion_type = ?,
+      registered_car = ?,
+      seller_name = ?,
+      youtube_link = ?,
+      specifications = ?,
       images = ?
     WHERE id = ?
   `;
@@ -4329,6 +4373,22 @@ app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
       instructions,
       description,
       item_condition,
+      region || null,
+      district || null,
+      subcategory || null,
+      negotiable || null,
+      delivery_available || null,
+      delivery_fee_type || null,
+      delivery_time || null,
+      pickup_available || null,
+      exchange_possible || null,
+      bulk_price || null,
+      bulk_min_qty || null,
+      promotion_type || null,
+      registered_car || null,
+      seller_name || null,
+      youtube_link || null,
+      JSON.stringify(cleanSpecifications),
       JSON.stringify(finalImages),
       productId
     ],
@@ -4348,7 +4408,6 @@ app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
     }
   );
 });
-
 
 app.post("/api/wallet/load", (req, res) => {
   if (!req.session.user) {
