@@ -4271,6 +4271,16 @@ app.get("/api/product-details/:id", (req, res) => {
 
 
 app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
+
+  console.log("\n========== PRODUCT UPDATE START ==========");
+  console.log("Product ID:", req.params.id);
+
+  console.log("\nBODY:");
+  console.log(req.body);
+
+  console.log("\nFILES:");
+  console.log(req.files);
+
   const productId = req.params.id;
 
   const {
@@ -4307,8 +4317,11 @@ app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
   let existingImages = [];
 
   try {
-    existingImages = old_images ? JSON.parse(old_images) : [];
-  } catch {
+    existingImages = old_images
+      ? JSON.parse(old_images)
+      : [];
+  } catch (err) {
+    console.log("Old images parse error:", err);
     existingImages = [];
   }
 
@@ -4316,7 +4329,10 @@ app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
     return `/uploads/products/${file.filename}`;
   });
 
-  const finalImages = [...existingImages, ...newImages];
+  const finalImages = [
+    ...existingImages,
+    ...newImages
+  ];
 
   let cleanSpecifications = {};
 
@@ -4324,9 +4340,45 @@ app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
     cleanSpecifications = specifications
       ? JSON.parse(specifications)
       : {};
-  } catch {
+  } catch (err) {
+    console.log("Specifications parse error:", err);
     cleanSpecifications = {};
   }
+
+  console.log("\n========== FINAL VALUES ==========");
+  console.log({
+    category,
+    product_name,
+    product_type,
+    price,
+    product_color,
+    quantity_in_stock,
+    phone_number,
+    instructions,
+    description,
+    item_condition,
+    region,
+    district,
+    subcategory,
+    negotiable,
+    delivery_available,
+    delivery_fee_type,
+    delivery_time,
+    pickup_available,
+    exchange_possible,
+    bulk_price,
+    bulk_min_qty,
+    promotion_type,
+    registered_car,
+    seller_name,
+    youtube_link
+  });
+
+  console.log("\nSpecifications:");
+  console.log(cleanSpecifications);
+
+  console.log("\nImages:");
+  console.log(finalImages);
 
   const sql = `
     UPDATE products SET
@@ -4360,53 +4412,71 @@ app.put("/api/products/update/:id", upload.array("images", 10), (req, res) => {
     WHERE id = ?
   `;
 
-  db.query(
-    sql,
-    [
-      category,
-      product_name,
-      product_type,
-      price,
-      product_color,
-      quantity_in_stock,
-      phone_number,
-      instructions,
-      description,
-      item_condition,
-      region || null,
-      district || null,
-      subcategory || null,
-      negotiable || null,
-      delivery_available || null,
-      delivery_fee_type || null,
-      delivery_time || null,
-      pickup_available || null,
-      exchange_possible || null,
-      bulk_price || null,
-      bulk_min_qty || null,
-      promotion_type || null,
-      registered_car || null,
-      seller_name || null,
-      youtube_link || null,
-      JSON.stringify(cleanSpecifications),
-      JSON.stringify(finalImages),
-      productId
-    ],
-    (err) => {
-      if (err) {
-        console.error("Update product error:", err);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to update product."
-        });
-      }
+  const values = [
+    category,
+    product_name,
+    product_type,
+    price,
+    product_color,
+    quantity_in_stock,
+    phone_number,
+    instructions,
+    description,
+    item_condition,
 
-      res.json({
-        success: true,
-        message: "Product updated successfully."
+    region || null,
+    district || null,
+    subcategory || null,
+    negotiable || null,
+    delivery_available || null,
+    delivery_fee_type || null,
+    delivery_time || null,
+    pickup_available || null,
+    exchange_possible || null,
+    bulk_price || null,
+    bulk_min_qty || null,
+    promotion_type || null,
+    registered_car || null,
+    seller_name || null,
+    youtube_link || null,
+
+    JSON.stringify(cleanSpecifications),
+    JSON.stringify(finalImages),
+
+    productId
+  ];
+
+  console.log("\n========== SQL VALUES ==========");
+  console.log(values);
+
+  db.query(sql, values, (err, result) => {
+
+    if (err) {
+
+      console.log("\n========== MYSQL ERROR ==========");
+      console.error(err);
+
+      console.log("SQL Message:", err.sqlMessage);
+      console.log("SQL Code:", err.code);
+      console.log("SQL State:", err.sqlState);
+
+      return res.status(500).json({
+        success: false,
+        message: err.sqlMessage || "Failed to update product."
       });
     }
-  );
+
+    console.log("\n========== PRODUCT UPDATED ==========");
+    console.log("Affected Rows:", result.affectedRows);
+    console.log("Product ID:", productId);
+
+    res.json({
+      success: true,
+      message: "Product updated successfully."
+    });
+
+  });
+
 });
 
 app.post("/api/wallet/load", (req, res) => {
