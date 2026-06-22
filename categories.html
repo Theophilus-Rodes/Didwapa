@@ -307,9 +307,23 @@ function renderList(items){
   `).join("");
 }
 
+
 function openProducts(category, subCategory){
-  window.location.href =
-    `index.html?category=${encodeURIComponent(category)}&search=${encodeURIComponent(subCategory)}`;
+  const oldParams = new URLSearchParams(window.location.search);
+
+  const region = oldParams.get("region") || "";
+  const district = oldParams.get("district") || "";
+
+  const url = new URL("index.html", window.location.href);
+
+  url.searchParams.set("category", category);
+  url.searchParams.set("search", subCategory);
+  url.searchParams.set("scroll", "products");
+
+  if(region) url.searchParams.set("region", region);
+  if(district) url.searchParams.set("district", district);
+
+  window.location.href = url.toString();
 }
 
 categorySearch.addEventListener("input", function(){

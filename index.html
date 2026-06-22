@@ -1315,7 +1315,7 @@
 
 <div class="location-filters">
 
-  <select id="regionSelect" onchange="loadDistricts()">
+<select id="regionSelect" onchange="loadDistricts(false); changeLocation();"></select>
     <option value="All Ghana">📍 All Ghana</option>
     <option value="Ashanti">Ashanti</option>
     <option value="Greater Accra">Greater Accra</option>
@@ -1643,28 +1643,26 @@ onclick="window.location.href='categories.html?category=Services'">
       }
     }
 
-    let currentCategory = "All";
+   
 
-   const pageParams = new URLSearchParams(window.location.search);
-const selectedRegion = pageParams.get("region") || "All Ghana";
+ const pageParams = new URLSearchParams(window.location.search);
 
-const selectedDistrict =
-pageParams.get("district") || "";
-function changeRegion() {
-  const region = document.getElementById("regionSelect").value;
+let currentCategory =
+pageParams.get("category") || "All";
 
-  const url = new URL(window.location.href);
+const selectedCategory =
+pageParams.get("category") || "All";
 
-  if(region === "All Ghana"){
-    url.searchParams.delete("region");
-  }else{
-    url.searchParams.set("region", region);
-  }
+const selectedSearch =
+pageParams.get("search") || "";
 
-  window.location.href = url.toString();
+function getSelectedRegion(){
+  return document.getElementById("regionSelect").value || "All Ghana";
 }
-const selectedCategory = pageParams.get("category") || "All";
-const selectedSearch = pageParams.get("search") || "";
+
+function getSelectedDistrict(){
+  return document.getElementById("districtSelect").value || "";
+}
 
 
 
@@ -1780,13 +1778,18 @@ const regionAreas = {
 };
 
 
-function loadDistricts() {
+function loadDistricts(keepDistrict = true) {
 
   const region =
     document.getElementById("regionSelect").value;
 
   const districtSelect =
     document.getElementById("districtSelect");
+
+  const oldDistrict =
+    keepDistrict
+      ? (pageParams.get("district") || districtSelect.value)
+      : "";
 
   districtSelect.innerHTML =
     '<option value="">All Districts</option>';
@@ -1802,31 +1805,28 @@ function loadDistricts() {
     `;
 
   });
+
+  if(oldDistrict){
+    districtSelect.value = oldDistrict;
+  }
 }
 
 function changeLocation() {
 
-  const region =
-    document.getElementById("regionSelect").value;
+  loadProducts(
+    currentCategory,
+    document.getElementById("searchInput").value.trim()
+  );
 
-  const district =
-    document.getElementById("districtSelect").value;
+  setTimeout(() => {
 
-  const url = new URL(window.location.href);
+    document.getElementById("productsContainer")
+      .scrollIntoView({
+        behavior:"smooth",
+        block:"start"
+      });
 
-  if(region === "All Ghana"){
-    url.searchParams.delete("region");
-  }else{
-    url.searchParams.set("region", region);
-  }
-
-  if(district){
-    url.searchParams.set("district", district);
-  }else{
-    url.searchParams.delete("district");
-  }
-
-  window.location.href = url.toString();
+  },300);
 }
 
     async function loadProducts(category = "All", searchText = "") {
@@ -1838,13 +1838,28 @@ function changeLocation() {
           params.append("category", category);
         }
 
-        if (selectedRegion && selectedRegion !== "All Ghana") {
-          params.append("region", selectedRegion);
-        }
+      const selectedRegion =
+getSelectedRegion();
 
-        if (selectedDistrict) {
-  params.append("district", selectedDistrict);
+const selectedDistrict =
+getSelectedDistrict();
+
+if (selectedRegion &&
+    selectedRegion !== "All Ghana") {
+
+  params.append(
+    "region",
+    selectedRegion
+  );
 }
+
+if (selectedDistrict) {
+
+  params.append(
+    "district",
+    selectedDistrict
+  );
+}f
 
         if (searchText && searchText.trim() !== "") {
           params.append("search", searchText.trim());
@@ -1971,15 +1986,52 @@ function changeLocation() {
       }
     });
 
-const searchInputBox = document.getElementById("searchInput");
+const searchInputBox =
+document.getElementById("searchInput");
 
-if (selectedSearch && searchInputBox) {
-  currentCategory = selectedCategory || "All";
-  searchInputBox.value = selectedSearch;
-  loadProducts(currentCategory, selectedSearch);
-} else {
-  currentCategory = "All";
-  loadProducts("All", "");
+const regionSelect =
+document.getElementById("regionSelect");
+
+const districtSelect =
+document.getElementById("districtSelect");
+
+const selectedRegion =
+pageParams.get("region") || "All Ghana";
+
+const selectedDistrict =
+pageParams.get("district") || "";
+
+regionSelect.value =
+selectedRegion;
+
+loadDistricts(true);
+
+if(selectedDistrict){
+  districtSelect.value =
+  selectedDistrict;
+}
+
+if(selectedSearch){
+  searchInputBox.value =
+  selectedSearch;
+}
+
+loadProducts(
+  selectedCategory,
+  selectedSearch
+);
+
+if(
+  selectedCategory !== "All" ||
+  selectedSearch
+){
+  setTimeout(()=>{
+    document
+      .getElementById("productsContainer")
+      .scrollIntoView({
+        behavior:"smooth"
+      });
+  },300);
 }
   </script>
 
