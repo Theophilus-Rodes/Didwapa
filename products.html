@@ -344,11 +344,10 @@ async function loadProducts(extraSearch = ""){
     if(subcategory){
       query.append("subcategory", subcategory);
     }
-
-    if(region){
-      query.append("region", region);
-    }
-
+    
+if(region && region !== "All Ghana"){
+  query.append("region", region);
+}
     if(district){
       query.append("district", district);
     }

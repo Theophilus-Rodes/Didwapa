@@ -1576,9 +1576,15 @@ app.get("/api/products", (req, res) => {
     values.push(category);
   }
 
-  if (subcategory && subcategory.trim() !== "") {
-  sql += ` AND product_type = ?`;
+ if (subcategory && subcategory.trim() !== "") {
+  sql += `
+    AND (
+      product_type = ?
+      OR product_name LIKE ?
+    )
+  `;
   values.push(subcategory.trim());
+  values.push(`%${subcategory.trim()}%`);
 }
 
   if (region && region !== "All Ghana") {
