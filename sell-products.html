@@ -1006,7 +1006,15 @@ const API_BASE =
 
 
 
-const PHONE_BRANDS = ["Apple","Samsung","Tecno","Infinix","Itel","Huawei","Xiaomi","Oppo","Nokia","Google","Lenovo","Amazon","Other"];
+const PHONE_BRANDS = ["Samsung", "Apple", "Google", "Huawei", "Xiaomi", "Other", "2E", "Acer", "AEG", 
+"Afrione", "AGM", "AirTab", "Alba", "Alcatel", "Energizer", "Enix", "Equator", "Ericsson", "Essential", 
+"Fero", "Fly", "Flytouch", "Fossibot", "Freetel", "FreeYond", "Fujitsu", "G-Tide", "GDL", "Gretel", "H-mobile", 
+"Haier", "Hammer", "Hasee", "Helio", "HiCyber", "Himax", "Hisense", "HMD", "HomTom", "Honor", "Hotwav", "HTC", 
+"Lumigon", "M-Horse", "Malata", "Mango Phone", "MANN", "MaPan", "Marcel", "Maxfone", "Maximus", "Maxwest", 
+"MeanIT", "Meizu", "MEZ", "Mi-Tribe", "XCute", "XOLO", "Xtra", "Yezz", "Yota", "YU", "Yu Fly", "Zinox", 
+"Zopo", "ZTE", "umi", "Umidigi", "Unnecto", "Urbest", "VAIB", "Vernee", "Vertu", "Verykool", "Vestel", 
+"Vfone", "Villaon", "Vitu", "Vivo", "VK Mobile", "Symphony", "Synox", "T-Mobile", "Taiwan Mobile", "TCL", 
+"Tecno", "Tel.Me.", "Telefunken", "Telit", "Tesla", "THL", "Thuraya", "Tinmo", "Titanic"];
 
 const PHONE_CONDITIONS = ["Brand New","Used","Refurbished","For Parts or Not Working"];
 
@@ -1099,7 +1107,14 @@ const CATEGORY_DATA = {
   fieldsBySubcategory: {
     "Laptops & Computers": [
       {name:"type",label:"Type*",type:"select",options:["Laptop","Desktop Computer","Mini PC","All-in-One","Server","Other"]},
-      {name:"brand",label:"Brand*",type:"select",options:["Apple","Samsung","Sony","HP","Dell","Lenovo","Asus","Acer","MSI","LG","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["HP", "Dell", "Lenovo", "Apple", "Asus", "Other", "3XS", "Acer", 
+      "Advent", "Airis", "Alienware", "Avantis", "Avell", "Avita", "BAK", "Blackview", "Brian", "ByteSpeed", "Casper Excalibur", 
+      "Chuwi", "Clevo", "Compaq", "Craig", "Cyberpower", "Digital Storm", "E-System", "Infinix", "Innjoo", "Irulu", "Itel", 
+      "iView", "Kogan", "LG", "Linx", "Logiq", "Maingear", "Mecer", "Medion", "Metabox", "Microsoft", "Porsche Design", "Prime", 
+      "Prostar", "Razer", "RLG", "RM Minibook", "Sager", "Samsung", "Sony", "Stone", "Tecno", "Toshiba", "Touchmate", "Trekstor",
+       "Vinovo", "Vision Computer", "Waafox", "Wipro", "Xiaomi", "XMG", "XPG Adata", "Yepo", "Yoga", "Zinox", "Zoostorm", "Zyrex",
+        "Minisonic", "Monster", "Motile", "MSI", "Multicom", "NEC", "Neo", "Nextbook", "Nokia", "Novatech", "Olevia", "Ollee", 
+        "Omatek", "One-Netbook", "Onkyo", "Onn", "Origin PC", "Over Powered", "Packard Bell", "Panasonic"]},
       {name:"model",label:"Model*",type:"text"},
       {name:"subtype",label:"Subtype*",type:"select",options:["Traditional Laptops","Gaming Laptops","Ultrabooks","Netbooks","Workstations","2-in-1 Laptops","Chromebooks","Other"]},
       {name:"condition",label:"Condition*",type:"select",options:["Brand New","Used","Refurbished","For Parts or Not Working"]},
@@ -1117,7 +1132,12 @@ const CATEGORY_DATA = {
 
        "Smart Watchs": [
       {name:"title",label:"Title*",type:"text"},
-      {name:"brand",label:"Brand*",type:"select",options:["Apple","Samsung","Huawei","Xiaomi","Oraimo","Fitbit","Garmin","Amazfit","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Apple", "Ultra Smart Watch", "Smart Watch", "Samsung", "Oraimo", "Other", 
+      "Zeblaze", "Z68 Ultra", "Z59 Ultra", "Yihou", "Xxxx", "Xiaomi", "X9", "Ws92", "Tecno", "Techcode", "T900Ultra", "T900Pro Max", 
+      "T900", "T800 Ultra", "T500", "Szbxd", "Sst", "Sony", "Skytech", "Shinco", "Ronshin", "Redmi", "Huawei", "Htc", "Hryfine", "Hp", 
+      "Hot Watch", "Honor", "Hongyu", "Hiwatch", "Hermes", "Haylou", "Havit", "Hangang", "Haino Teko", "Guess", "Gt3", "Green Lion", 
+      "Cawono", "Burg", "Bond", "Blackview", "Black", "Belkin", "Bandini", "Awei", "Audemars Piguet", "Atouch", "Asus", "Ashata", 
+      "Aplus", "Antimi", "Aneken", "Amazfit", "Alpina", "Allcall", "Alician", "Alcatel", "Achicoo", "Acer", "Abyx"]},
       {name:"model",label:"Model*",type:"text"},
       {name:"type",label:"Type*",type:"select",options:WATCH_TYPES},
       {name:"band_color",label:"Band Color",type:"select",options:BAND_COLORS},
@@ -1127,7 +1147,11 @@ const CATEGORY_DATA = {
 
     "Headphones": [
       {name:"title",label:"Title*",type:"text"},
-      {name:"brand",label:"Brand*",type:"select",options:["Sony","JBL","Oraimo","Apple","Samsung","Beats","Bose","Anker","Lenovo","HP","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Apple", "Oraimo", "Sony", "Beats", "Other", "1More", "A-Audio", "Abingo", 
+      "Accering", "Accessonico", "Accessory House", "Acctrend", "Accutone", "Acekool", "Acellories", "Ailun", "Aimitek", "Aimus", 
+      "Ainope", "Air Pro", "Air Six", "Airbuds", "Aircom", "Airpod Skins", "Airsounds", "Airvly", "Aisam", "Aisuo", "Aita", "Anqier", 
+      "Anris", "Ansin", "Anskp", "Antec", "Antiee", "Antopm", "Anyfun", "Aoer", "Aokeo", "Aosang", "Apelkx", "Apexjoy", "Apollo'S",
+       "Blaupunkt", "Bliiq", "Blitzwolf", "Blobfish", "Blucoil", "Blue", ]},
       {name:"model",label:"Model*",type:"text"},
       {name:"type",label:"Type*",type:"select",options:["In-Ear","On-Ear","Over-Ear","Earbuds","Gaming Headset","Other"]},
       {name:"form_factor",label:"Form Factor*",type:"select",options:["In-Ear","On-Ear","Over-Ear","Portable","Other"]},
@@ -1175,13 +1199,23 @@ const CATEGORY_DATA = {
 
   fieldsBySubcategory:{
     "TVs":[
-      {name:"brand",label:"Brand*",type:"select",options:["Samsung","LG","Sony","Hisense","TCL","Nasco","Midea","Philips","Panasonic","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Samsung", "LG", "TCL", "Nasco", "Allyons", "Other", "Zum", "Zkteco", "ZEG", 
+      "Yayi", "Xiaomi", "XGA", "Wyninx", "Wilson", "Vision TV", "ViewSonic", "Viewsat", "Videocon", "Venturer", "VDIGI", "Vankyo",
+       "Universal", "Unic", "UKA", "Twin", "TsTV", "Transparent", "Transcend", "Neco", "NEC", "Nablink", "MXQ Pro", "Murano", "MultiStar", 
+       "Multichoice", "Movin Star", "Mooka (Haier)", "Mitsui", "Mitsubishi", "Mi+", "MG", "Mewe", "Dexter", "Dell", "Deboss", "DBPower", "Dametek", 
+       "Dahua", "D-Marc", "CTC", "Creation", "Coocaa", "Contex", "Cocopico", "Coby", "Clearco", "IDGLAX", "Icone", "ICA", "Humax", "HP", "HomeFlower", 
+       "Hiview", "Hitachi", "Hisense", "Hikvision", "Havit", "Hanseatic", "Hanns-G", "Hako Pro", "Altius", "Alphabox", "Alba", "Akira", "Akai", "Aiwa",
+        "Aida", "Aeon", "Acoustic Solutions", "ACL", "Acer", "3M"]},
       {name:"model",label:"Model*",type:"text"},
       {name:"type",label:"Type*",type:"select",options:["TVs","Projector","Decoders"]}
     ],
 
     "Fridge":[
-      {name:"brand",label:"Brand*",type:"select",options:["Samsung","LG","Nasco","Midea","Hisense","Bruhm","Binatone","Philips","Panasonic","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Hisense","Nasco", "TCL", "Midea", "Pearl", "LG", "Other", "2gig", "3M", "3Q", "4walls", 
+      "A&BT", "A&E Dunamis", "Abro", "Accubrush", "Accumualair", "Accuride", "Accuspray", "ACE", "Acme", "AcuRite", "Adams", "ADEMCO", "ADT", 
+      "Advantage", "AEG", "AEON", "Aero-Flo", "Aerus", "African Master", "Afrione", "AG", "Agri-Fab", "AIMS Power", "Air King", "Air Vent", 
+      "Air Wick", "Airfree", "Airlessco", "Aiwa", "Akai", "Akira", "Akt", "Arius", "ARK", "Arlington", "Arm & Hammer", "Armstrong", "Arnold", 
+      "Aroma Coffee", "Arrow", "Ashley Norton", "Aspero", "Astro", "Atlantic", "Atlas Homewares", "Atwood"]},
       {name:"color",label:"Color",type:"select",options:COLORS},
       {name:"power_source",label:"Power Source",type:"select",options:["Electric","Solar","Gas","Battery","Others"]},
       {name:"refrigerator_type",label:"Refrigerator Type*",type:"select",options:["Single Door","Double Door","Side-by-Side","French Door","Chest Freezer","Upright Freezer","Other"]},
@@ -1198,7 +1232,11 @@ const CATEGORY_DATA = {
     ],
 
     "Fans":[
-      {name:"brand",label:"Brand*",type:"select",options:["Binatone","Nasco","Midea","Hisense","Samsung","LG","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Hisense","Nasco", "TCL", "Midea", "Pearl", "LG", "Other", "2gig", "3M", "3Q", "4walls", 
+      "A&BT", "A&E Dunamis", "Abro", "Accubrush", "Accumualair", "Accuride", "Accuspray", "ACE", "Acme", "AcuRite", "Adams", "ADEMCO", "ADT", 
+      "Advantage", "AEG", "AEON", "Aero-Flo", "Aerus", "African Master", "Afrione", "AG", "Agri-Fab", "AIMS Power", "Air King", "Air Vent", 
+      "Air Wick", "Airfree", "Airlessco", "Aiwa", "Akai", "Akira", "Akt", "Arius", "ARK", "Arlington", "Arm & Hammer", "Armstrong", "Arnold", 
+      "Aroma Coffee", "Arrow", "Ashley Norton", "Aspero", "Astro", "Atlantic", "Atlas Homewares", "Atwood"]},
       {name:"type",label:"Type*",type:"select",options:["Fans"]},
       {name:"power_source",label:"Power Source",type:"select",options:["Electric","Rechargeable","Solar","Battery","Other"]},
       {name:"voltage",label:"Voltage",type:"text"},
@@ -1208,7 +1246,11 @@ const CATEGORY_DATA = {
     ],
 
     "Air Conditioners":[
-      {name:"brand",label:"Brand*",type:"select",options:["Samsung","LG","Midea","Hisense","Nasco","TCL","Panasonic","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Hisense","Nasco", "TCL", "Midea", "Pearl", "LG", "Other", "2gig", "3M", "3Q", "4walls", 
+      "A&BT", "A&E Dunamis", "Abro", "Accubrush", "Accumualair", "Accuride", "Accuspray", "ACE", "Acme", "AcuRite", "Adams", "ADEMCO", "ADT", 
+      "Advantage", "AEG", "AEON", "Aero-Flo", "Aerus", "African Master", "Afrione", "AG", "Agri-Fab", "AIMS Power", "Air King", "Air Vent", 
+      "Air Wick", "Airfree", "Airlessco", "Aiwa", "Akai", "Akira", "Akt", "Arius", "ARK", "Arlington", "Arm & Hammer", "Armstrong", "Arnold", 
+      "Aroma Coffee", "Arrow", "Ashley Norton", "Aspero", "Astro", "Atlantic", "Atlas Homewares", "Atwood"]},
       {name:"type",label:"Type*",type:"select",options:["Air Conditioners"]},
       {name:"ac_type",label:"AC Type*",type:"select",options:["Split AC","Window AC","Portable AC","Standing AC","Cassette AC","Other"]},
       {name:"inverter_technology",label:"Inverter Technology*",type:"select",options:["Yes","No","Not Sure"]},
@@ -1268,7 +1310,15 @@ const CATEGORY_DATA = {
   fieldsBySubcategory:{
 
     "Men's Clothing":[
-      {name:"brand",label:"Brand*",type:"select",options:["Nike","Adidas","Puma","Zara","H&M","Gucci","Louis Vuitton","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Zara", "Adidas", "A&D", "Nike", "4F", "Other", "100K", "11Kn", "Abc", "Abraham Moon", "Ace Couture", 
+      "Acqua di Stresa", "Actuel", "Adire", "Adolwine", "Amiri", "Andacava", "Andrea Fenzi", "Angelo Galasso", "Angelsdot Clothing", "Ann Taylor", "Anna Rachele", 
+      "Anna'Sdesign", "Aomei", "Aptonia", "Arare", "Aries", "Armani", "Armstrong Idoko", "Atorka", "Atos Lombardini", "Attic and Barn", "Avogan", "Backwoods", "Bale Fabrics", 
+      "Balenciaga", "Ballantyne", "Balmain", "Banana Moon", "Banana Republic", "Barba", "Barbie", "Barena", "Birkenstock", "Bk", "Black Air", "Black Icon", "Blauer", "Blend", 
+      "Blugirl", "Blumarine", "Bodycon", "Boglioli", "Bogner", "Boohoo", "Boohooman", "Boss", "Boss Orange by Hugo Boss", "Bottega Veneta", "Braccialini", "Brave Soul", 
+      "Brax", "Brian Dales", "Brittany Black", "Brocade Lace", "Broken Planet", "Brooklyn", "Brooksfield", "Brunello Cucinelli", "Btwin", "Christian Louboutin", 
+      "Christie Brown", "Christofle", "Christopher & Banks", "chrome hearts", "Churchs", "Clarks", "Clavis Fashion Hub", "Coccinelle", "Comma", "Converse", "Copaya", 
+      "Cornez", "Coskme National", "Deperlu", "Derek Lam", "Desigual", "Dezayah", "Diadora", "Diana Gallesi", "Diana Rose", "Dibor", "Dibrera", "Dickies", "Die Capri", "Diesel", 
+      "Dimattia", "Dino Man"]},
       {name:"type",label:"Type*",type:"select",options:["Shirts","T-Shirts","Jeans","Trousers","Suits","Jackets","Shorts","Traditional Wear","Sportswear","Other"]},
       {name:"gender",label:"Gender*",type:"select",options:["Men","Boys","Unisex"]},
       {name:"size",label:"Size*",type:"select",options:["XS","S","M","L","XL","XXL","XXXL","Other"]},
@@ -1278,7 +1328,15 @@ const CATEGORY_DATA = {
     ],
 
     "Women's Clothing":[
-      {name:"brand",label:"Brand*",type:"select",options:["Nike","Adidas","Puma","Zara","H&M","Gucci","Louis Vuitton","Shein","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Zara", "Adidas", "A&D", "Nike", "4F", "Other", "100K", "11Kn", "Abc", "Abraham Moon", "Ace Couture", 
+      "Acqua di Stresa", "Actuel", "Adire", "Adolwine", "Amiri", "Andacava", "Andrea Fenzi", "Angelo Galasso", "Angelsdot Clothing", "Ann Taylor", "Anna Rachele", 
+      "Anna'Sdesign", "Aomei", "Aptonia", "Arare", "Aries", "Armani", "Armstrong Idoko", "Atorka", "Atos Lombardini", "Attic and Barn", "Avogan", "Backwoods", "Bale Fabrics", 
+      "Balenciaga", "Ballantyne", "Balmain", "Banana Moon", "Banana Republic", "Barba", "Barbie", "Barena", "Birkenstock", "Bk", "Black Air", "Black Icon", "Blauer", "Blend", 
+      "Blugirl", "Blumarine", "Bodycon", "Boglioli", "Bogner", "Boohoo", "Boohooman", "Boss", "Boss Orange by Hugo Boss", "Bottega Veneta", "Braccialini", "Brave Soul", 
+      "Brax", "Brian Dales", "Brittany Black", "Brocade Lace", "Broken Planet", "Brooklyn", "Brooksfield", "Brunello Cucinelli", "Btwin", "Christian Louboutin", 
+      "Christie Brown", "Christofle", "Christopher & Banks", "chrome hearts", "Churchs", "Clarks", "Clavis Fashion Hub", "Coccinelle", "Comma", "Converse", "Copaya", 
+      "Cornez", "Coskme National", "Deperlu", "Derek Lam", "Desigual", "Dezayah", "Diadora", "Diana Gallesi", "Diana Rose", "Dibor", "Dibrera", "Dickies", "Die Capri", "Diesel", 
+      "Dimattia", "Dino Man"]},
       {name:"type",label:"Type*",type:"select",options:["Dresses","Tops","Skirts","Jeans","Trousers","Jumpsuits","Jackets","Traditional Wear","Sportswear","Other"]},
       {name:"gender",label:"Gender*",type:"select",options:["Women","Girls","Unisex"]},
       {name:"size",label:"Size*",type:"select",options:["XS","S","M","L","XL","XXL","XXXL","Other"]},
@@ -1288,7 +1346,13 @@ const CATEGORY_DATA = {
     ],
 
     "Shoes":[
-      {name:"brand",label:"Brand*",type:"select",options:["Nike","Adidas","Puma","Vans","Converse","Clarks","Balenciaga","Gucci","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Akube", "Alagzi", "Alberta Zizi", "Alberto Fellini", "Alberto Gilardino", 
+      "Alberto Nardelli", "Aldo", "Alessandro Dell'Acqua", "Alexander McQueen", "Alexander Wang", "Alfani", "Altama", "Amblers Safety", "American Eagle", 
+      "Barracuda", "Bata", "Bates", "BCBG", "Bebe", "Beckett Simonon", "Bella Marie", "Belle", "Belluxe", "Bench.", "Berger Fino", "Berluti", "Bershka", 
+      "Bertinni", "Chrisbeno", "Christian Dior", "Christian Louboutin", "Christian Siriano", "Chrome Hearts", "Cinak", "City Chic", "Clark", "Clarks",
+       "Clavis Fashion Hub", "Clowse", "Cloxx", "Coach", "Cochise", "Cole Haan", "Comfort Plus", "Comfy", "Common Projects", "Converse", "Coperni", "Quechua", 
+       "Red Mountain", "Rimowa", "River Island", "Riverside", "Roberto Cavalli", "ROWDY", "Saint Laurent", "Salvatore Ferragamo", "Samsonite", "Sandro Ferrone", 
+       "Sannea", "Scarleton", "Sensamite"]},
       {name:"type",label:"Type*",type:"select",options:["Sneakers","Heels","Sandals","Slippers","Boots","Loafers","Formal Shoes","Sports Shoes","Other"]},
       {name:"gender",label:"Gender*",type:"select",options:["Men","Women","Unisex","Boys","Girls"]},
       {name:"size",label:"Shoe Size*",type:"select",options:["35","36","37","38","39","40","41","42","43","44","45","46","47","Other"]},
@@ -1298,7 +1362,13 @@ const CATEGORY_DATA = {
     ],
 
     "Bags":[
-      {name:"brand",label:"Brand*",type:"select",options:["Gucci","Louis Vuitton","Chanel","Dior","Nike","Adidas","Puma","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Gucci", "Louis Vuitton", "Goyard", "Omaya", "Mont Blanc", "Other", "AAKS", "Adidas", 
+      "Adrienne Vittadini", "Akube", "Alba Handbags", "Aldo", "Alexander Wang", "Amazon", "Artengo", "Az Pro", "Baellerry", "Bagco", "Bags 4 U", 
+      "Balenciaga", "Bally", "Bange", "Barbara Milano", "Bb", "Bead", "Bella", "Berluti", "Bethelmendels", "Guess", "Guji", "H & M", "Hello Kitty",
+       "Hermes", "Hesey Designs", "Hobo", "HP", "Hugo Boss", "Inesis", "Itiwit", "J'Adior", "Jacquemus", "Jansport", "Missibaba", "MiuMiu", "Mk", 
+       "Moschino", "Moyo", "Nabaiji", "Naked Wolfe", "New Balance", "New Look", "New York", "Newfeel", "Nike", "Nill", "Nuo Sha", "UnoEth", "Urban Expressions", 
+       "Valentino", "Versace", "Versse", "Vesasan", "Via La Moda", "Victoria Beckham", "Vihus", "Viviq", "Wanda", "Wanda Polo", "Wang", "Watch Box", "WOLF & MAIDEN", 
+       "YSL", "Zannoti", "Zara", "ZEMP", "ZEMP Leathers", "Other Brand"]},
       {name:"type",label:"Type*",type:"select",options:["Handbag","Backpack","Travel Bag","Laptop Bag","School Bag","Clutch","Wallet","Crossbody Bag","Other"]},
       {name:"gender",label:"Gender*",type:"select",options:["Men","Women","Unisex"]},
       {name:"material",label:"Material",type:"select",options:["Leather","Faux Leather","Canvas","Nylon","Polyester","Rubber","Other"]},
@@ -1334,7 +1404,13 @@ const CATEGORY_DATA = {
     ],
 
     "Perfume":[
-      {name:"brand",label:"Brand*",type:"select",options:["Dior","Chanel","Versace","Tom Ford","Creed","Lattafa","Armaf","Other"]},
+      {name:"brand",label:"Brand*",type:"select",options:["Fragrance World", "Lattafa", "Armaf", "Afnan", "FA Paris", "Other", "Accendis", "Accra Scent Studio", 
+      "Acqua Di Parisis", "Acqua di Parma", "Adidas", "Adinkra Scents", "Agent Provocateur", "Ajmal", "Avanti", "Aventos", "Avon", "Azzaro", "Baldessarini",
+       "Banana Republic", "Bebe", "Benetton", "Bentley", "Berries Weekend", "Betres", "Beyonce", "Bijan", "Blend Oud", "Children Perfumes", "Chloe", "Chopard", 
+       "Chris Adams", "Christian Audiger", "Christian Dior", "Christian Lacroix", "Christine Darvin", "Cien", "Clarins", "Classic Creation", "Clinique", 
+       "Clive Christian", "Coach", "French Connection", "French Oil", "Fuse", "G-Black", "Gale Hayman", "Gandour", "Garden", "Gdk", "Genie", "Genie Collection", 
+       "Geoffrey Beene", "Ghost", "Gianfranco Ferre", "Giorgio Armani", "Giorgio Black", "Givana", "Givanas", "Givenchy", "Grey De Kouroun", "Gucci", "Guerlain",
+        "Guess", "Guy Laroche"]},
       {name:"type",label:"Type*",type:"select",options:["Eau de Parfum","Eau de Toilette","Body Spray","Oil Perfume","Other"]},
       {name:"gender",label:"Gender*",type:"select",options:["Men","Women","Unisex"]},
       {name:"volume",label:"Volume*",type:"select",options:["30ml","50ml","75ml","100ml","150ml","200ml","Other"]},
