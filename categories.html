@@ -209,34 +209,35 @@ function getSavedRegion(){
 function getSavedDistrict(){
   return localStorage.getItem("didwapa_district") || "";
 }
+
 const data = {
-"Phones & Tablets":[
-  "Phone",
-  "Tablet"
-],
+  "Phones & Tablets":[
+    "Mobile Phones",
+    "Tablets"
+  ],
 
   "Electronics":[
-    "Laptops",
+    "Laptops & Computers",
     "Headphones",
-    "Smart Watches",
-    "Gaming Consoles"
+    "Smart Watchs",
+    "Video Game Consoles"
   ],
 
   "Fashion":[
-    "Women’s Clothing",
-    "Men’s Clothing",
+    "Men's Clothing",
+    "Women's Clothing",
     "Shoes",
     "Bags",
     "Wigs & Hair Extensions",
     "Watches",
     "Jewelry",
-    "Perfumes",
+    "Perfume",
     "Beauty Accessories"
   ],
 
   "Home Appliances":[
     "TVs",
-    "Fridges",
+    "Fridge",
     "Fans",
     "Air Conditioners"
   ],
@@ -250,27 +251,28 @@ const data = {
   ]
 };
 
+
 const icons = {
-  "Phone":"📱",
-"Tablet":"📲",
+  "Mobile Phones":"📱",
+  "Tablets":"📲",
 
-  "Laptops":"💻",
+  "Laptops & Computers":"💻",
   "Headphones":"🎧",
-  "Smart Watches":"⌚",
-  "Gaming Consoles":"🎮",
+  "Smart Watchs":"⌚",
+  "Video Game Consoles":"🎮",
 
-  "Women’s Clothing":"👗",
-  "Men’s Clothing":"👕",
+  "Men's Clothing":"👕",
+  "Women's Clothing":"👗",
   "Shoes":"👟",
   "Bags":"👜",
   "Wigs & Hair Extensions":"💇",
   "Watches":"⌚",
   "Jewelry":"💍",
-  "Perfumes":"🌸",
+  "Perfume":"🌸",
   "Beauty Accessories":"💄",
 
   "TVs":"📺",
-  "Fridges":"🧊",
+  "Fridge":"🧊",
   "Fans":"🌀",
   "Air Conditioners":"❄️",
 
@@ -315,16 +317,7 @@ function renderList(items){
     </div>
   `).join("");
 }
-const searchKeywords = {
-  "Headphones": "Headphone",
-  "iPhones": "iPhone",
-  "Gaming Consoles": "Console",
-  "Smart Watches": "Smart Watch",
-  "TVs": "TV",
-  "Fridges": "Fridge",
-  "Fans": "Fan",
-  "Air Conditioners": "Air Conditioner"
-};
+
 
 
 function openProducts(category, subCategory){
