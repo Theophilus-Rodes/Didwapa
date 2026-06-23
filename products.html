@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>DIDWAPA Products</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+:root{
+  --primary:#ff6600;
+  --primary-dark:#e95600;
+  --green:#16a34a;
+  --bg:#f7f8fb;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --soft:#fff4ea;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:20px;
+}
+
+.app{
+  max-width:1180px;
+  margin:0 auto;
+  background:#fff;
+  min-height:100vh;
+}
+
+.header{
+  background:#fff;
+  position:sticky;
+  top:0;
+  z-index:20;
+  padding:14px;
+  border-bottom:1px solid var(--border);
+  box-shadow:0 6px 20px rgba(0,0,0,.05);
+}
+
+.top-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.back{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  border:none;
+  background:var(--soft);
+  color:var(--primary);
+  font-size:22px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.title-box{
+  flex:1;
+}
+
+.title-box small{
+  color:var(--muted);
+  font-weight:700;
+}
+
+.title-box h2{
+  font-size:1.25rem;
+  margin-top:2px;
+}
+
+.search-box{
+  height:46px;
+  background:#f9fafb;
+  border:1px solid var(--border);
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 12px;
+}
+
+.search-box input{
+  width:100%;
+  border:none;
+  outline:none;
+  background:transparent;
+  font-size:.9rem;
+}
+
+.search-box button{
+  border:none;
+  background:var(--primary);
+  color:#fff;
+  padding:9px 14px;
+  border-radius:10px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.filter-note{
+  padding:12px 14px;
+  background:#fff7ed;
+  color:#444;
+  font-size:.85rem;
+  border-bottom:1px solid #ffe0c7;
+}
+
+.products{
+  padding:14px;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:14px;
+}
+
+.product-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  cursor:pointer;
+  box-shadow:0 8px 20px rgba(0,0,0,.035);
+  transition:.25s ease;
+}
+
+.product-card:hover{
+  transform:translateY(-5px);
+}
+
+.product-img{
+  height:160px;
+  background:#f3f4f6;
+  display:grid;
+  place-items:center;
+  font-size:3rem;
+  position:relative;
+  overflow:hidden;
+}
+
+.product-img img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.verified-badge{
+  position:absolute;
+  left:7px;
+  bottom:7px;
+  background:var(--green);
+  color:#fff;
+  border-radius:999px;
+  padding:4px 7px;
+  font-size:.68rem;
+  font-weight:900;
+}
+
+.product-info{
+  padding:10px;
+}
+
+.product-name{
+  font-size:.92rem;
+  font-weight:900;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  margin-bottom:7px;
+}
+
+.product-price{
+  font-size:1rem;
+  font-weight:900;
+  margin-bottom:6px;
+}
+
+.product-meta{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  color:var(--muted);
+  font-size:.75rem;
+}
+
+.empty{
+  grid-column:1/-1;
+  padding:30px;
+  text-align:center;
+  color:var(--muted);
+}
+
+@media(max-width:900px){
+  .products{
+    grid-template-columns:repeat(3,1fr);
+  }
+}
+
+@media(max-width:600px){
+  .app{
+    max-width:480px;
+  }
+
+  .products{
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    padding:10px;
+  }
+
+  .product-img{
+    height:145px;
+  }
+
+  .product-name{
+    font-size:.82rem;
+  }
+
+  .product-price{
+    font-size:.9rem;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header class="header">
+    <div class="top-row">
+      <button class="back" onclick="history.back()">←</button>
+
+      <div class="title-box">
+        <small id="subTitle">Products</small>
+        <h2 id="pageTitle">Loading...</h2>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <input id="searchInput" type="text" placeholder="Search within this category...">
+      <button onclick="searchProducts()">Search</button>
+    </div>
+  </header>
+
+  <div class="filter-note" id="filterNote"></div>
+
+  <section id="productsContainer" class="products">
+    <div class="empty">Loading products...</div>
+  </section>
+
+</div>
+
+<script>
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
+
+const params = new URLSearchParams(window.location.search);
+
+const category = params.get("category") || "";
+const subcategory = params.get("subcategory") || "";
+const region = params.get("region") || "";
+const district = params.get("district") || "";
+
+const pageTitle = document.getElementById("pageTitle");
+const subTitle = document.getElementById("subTitle");
+const filterNote = document.getElementById("filterNote");
+const productsContainer = document.getElementById("productsContainer");
+const searchInput = document.getElementById("searchInput");
+
+pageTitle.textContent = subcategory || category || "Products";
+subTitle.textContent = category || "DIDWAPA Products";
+
+filterNote.textContent =
+  `${subcategory || category || "All Products"} ${
+    region ? " • " + region : ""
+  } ${
+    district ? " • " + district : ""
+  }`;
+
+function getFirstImage(images){
+  try{
+    const parsed = JSON.parse(images);
+
+    if(Array.isArray(parsed) && parsed.length > 0){
+      let img = parsed[0].replace(/\\/g, "/");
+
+      if(img.startsWith("http")){
+        return img;
+      }
+
+      if(img.startsWith("/")){
+        return `${API_BASE}${img}`;
+      }
+
+      return `${API_BASE}/${img}`;
+    }
+
+    return "";
+  }catch{
+    return "";
+  }
+}
+
+async function loadProducts(extraSearch = ""){
+  try{
+    let url = `${API_BASE}/api/products`;
+    const query = new URLSearchParams();
+
+    if(category){
+      query.append("category", category);
+    }
+
+    if(subcategory){
+      query.append("subcategory", subcategory);
+    }
+
+    if(region){
+      query.append("region", region);
+    }
+
+    if(district){
+      query.append("district", district);
+    }
+
+    if(extraSearch){
+      query.append("search", extraSearch);
+    }
+
+    if(query.toString()){
+      url += `?${query.toString()}`;
+    }
+
+    const res = await fetch(url, {
+      method:"GET",
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      productsContainer.innerHTML = `
+        <div class="empty" style="color:red;">
+          Failed to load products.
+        </div>
+      `;
+      return;
+    }
+
+    if(!data.products || data.products.length === 0){
+      productsContainer.innerHTML = `
+        <div class="empty">
+          No product found for this selection.
+        </div>
+      `;
+      return;
+    }
+
+    productsContainer.innerHTML = data.products.map(product => {
+      const firstImage = getFirstImage(product.images);
+
+      return `
+        <div class="product-card" onclick="openProduct(${product.id})">
+          <div class="product-img">
+            ${
+              firstImage
+                ? `<img src="${firstImage}" alt="${product.product_name || "Product"}">`
+                : `<span>🛍️</span>`
+            }
+
+            <span class="verified-badge">✓ Verified</span>
+          </div>
+
+          <div class="product-info">
+            <div class="product-name">
+              ${product.product_name || "Product"}
+            </div>
+
+            <div class="product-price">
+              GH₵${Number(product.price || 0).toFixed(2)}
+            </div>
+
+            <div class="product-meta">
+              <span>${product.item_condition || "Good"}</span>
+              <span>${product.region || "Ghana"}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  }catch(error){
+    console.error(error);
+
+    productsContainer.innerHTML = `
+      <div class="empty" style="color:red;">
+        Failed to load products.
+      </div>
+    `;
+  }
+}
+
+function searchProducts(){
+  const text = searchInput.value.trim();
+
+  productsContainer.innerHTML = `
+    <div class="empty">
+      Searching...
+    </div>
+  `;
+
+  loadProducts(text);
+}
+
+searchInput.addEventListener("keydown", function(e){
+  if(e.key === "Enter"){
+    searchProducts();
+  }
+});
+
+function openProduct(id){
+  window.location.href = `product-details.html?id=${id}`;
+}
+
+loadProducts();
+</script>
+
+</body>
+</html>

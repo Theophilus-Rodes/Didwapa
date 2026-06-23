@@ -1546,7 +1546,7 @@ app.put("/api/admin/products/:id/status", (req, res) => {
 
 ///// Index Display
 app.get("/api/products", (req, res) => {
-  const { category, search, region, district } = req.query;
+ const { category, subcategory, search, region, district } = req.query;
 
   let sql = `
     SELECT 
@@ -1575,6 +1575,11 @@ app.get("/api/products", (req, res) => {
     sql += ` AND category = ?`;
     values.push(category);
   }
+
+  if (subcategory && subcategory.trim() !== "") {
+  sql += ` AND product_type = ?`;
+  values.push(subcategory.trim());
+}
 
   if (region && region !== "All Ghana") {
     sql += ` AND region = ?`;

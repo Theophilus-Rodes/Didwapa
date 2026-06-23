@@ -318,23 +318,58 @@ const searchKeywords = {
 };
 
 
+const pageRoutes = {
+  "iPhones": "phones.html",
+  "Samsung": "phones.html",
+  "Tecno": "phones.html",
+  "Infinix": "phones.html",
+  "iPads": "tablets.html",
+
+  "Laptops": "laptops.html",
+  "Headphones": "headphones.html",
+  "Smart Watches": "smart-watches.html",
+  "Gaming Consoles": "gaming-consoles.html",
+
+  "Women’s Clothing": "fashion.html",
+  "Men’s Clothing": "fashion.html",
+  "Shoes": "shoes.html",
+  "Bags": "bags.html",
+  "Wigs & Hair Extensions": "wigs.html",
+  "Watches": "watches.html",
+  "Jewelry": "jewelry.html",
+  "Perfumes": "perfumes.html",
+  "Beauty Accessories": "beauty-accessories.html",
+
+  "TVs": "tvs.html",
+  "Fridges": "fridges.html",
+  "Fans": "fans.html",
+  "Air Conditioners": "air-conditioners.html",
+
+  "Graphic Design": "services.html",
+  "Website Design": "services.html",
+  "Plumbing": "services.html",
+  "Electricians": "services.html",
+  "Cleaning Services": "services.html"
+};
+
 function openProducts(category, subCategory){
   const oldParams = new URLSearchParams(window.location.search);
 
   const region = oldParams.get("region") || "";
   const district = oldParams.get("district") || "";
 
-  const keyword = searchKeywords[subCategory] || subCategory;
-
-  const url = new URL("index.html", window.location.href);
+  const url = new URL("products.html", window.location.href);
 
   url.searchParams.set("category", category);
-  url.searchParams.set("search", keyword);
   url.searchParams.set("subcategory", subCategory);
-  url.searchParams.set("scroll", "products");
 
-  if(region) url.searchParams.set("region", region);
-  if(district) url.searchParams.set("district", district);
+  if(region){
+    url.searchParams.set("region", region);
+  }
+
+  if(district){
+    url.searchParams.set("district", district);
+  }
 
   window.location.href = url.toString();
 }
