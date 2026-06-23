@@ -30,14 +30,19 @@
   background:#fff;
   border:1px solid #e5e7eb;
   border-radius:10px;
-  padding:8px;
-  min-height:55px;
+  padding:10px;
+  min-height:72px;
   box-shadow:0 3px 10px rgba(10,45,115,.04);
 }
 
 .info strong{
-  font-size:.55rem;
-  margin-bottom:2px;
+  display:block;
+  color:#0a2d73;
+  font-size:.65rem;
+  font-weight:900;
+  text-transform:uppercase;
+  margin-bottom:6px;
+  letter-spacing:.3px;
 }
 
 @media(max-width:620px){
@@ -405,11 +410,13 @@
   .spec-item span{
     font-size:.68rem;
   }
+.info strong{
+  font-size:.62rem;
+}
 
-  .info strong,
-  .spec-item small{
-    font-size:.45rem;
-  }
+.spec-item small{
+  font-size:.45rem;
+}
 }
 
 
@@ -767,9 +774,9 @@ const image = productImages[0] || "";
 
      <div class="product-info-grid">
 
-  <div class="info">
-    <strong>Stock</strong>
-    ${product.quantity_in_stock} item(s)
+ <div class="info">
+    <strong>Region</strong>
+    ${product.region || "N/A"}
   </div>
 
   <div class="info">
@@ -782,10 +789,6 @@ const image = productImages[0] || "";
     ${product.item_condition || "N/A"}
   </div>
 
-  <div class="info">
-    <strong>Region</strong>
-    ${product.region || "N/A"}
-  </div>
 
   <div class="info">
     <strong>District</strong>
