@@ -1571,10 +1571,15 @@ app.get("/api/products", (req, res) => {
 
   const values = [];
 
-  if (category && category !== "All") {
+if (category && category !== "All") {
+  if (category === "Phones & Tablets") {
+    sql += ` AND category IN (?, ?)`;
+    values.push("Phones & Tablets", "Phones and Accessories");
+  } else {
     sql += ` AND category = ?`;
     values.push(category);
   }
+}
 
   if (subcategory && subcategory.trim() !== "") {
     sql += `
