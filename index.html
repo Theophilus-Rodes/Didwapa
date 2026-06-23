@@ -1399,6 +1399,11 @@
     <span>🏠</span> All
   </button>
 
+
+<button class="cat-tab" onclick="loadTrending(this)">
+  <span>🔥</span> Trending
+</button>
+
   <button class="cat-tab" onclick="filterByCategory('Phones & Tablets', this)">
     <span>📱</span> Phones & Tablets
   </button>
@@ -2097,6 +2102,38 @@ if (selectedDistrict) {
       loadProducts(category);
     }
 
+    function loadTrending(clickedTab){
+  currentCategory = "All";
+
+  document.querySelectorAll(".cat-tab").forEach(tab => {
+    tab.classList.remove("active");
+  });
+
+  if(clickedTab){
+    clickedTab.classList.add("active");
+  }
+
+  const searchInput = document.getElementById("searchInput");
+  if(searchInput){
+    searchInput.value = "";
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("d", "trending");
+  url.searchParams.delete("category");
+  url.searchParams.delete("search");
+
+  history.replaceState(null, "", url.toString());
+
+  productsContainer.innerHTML = `
+    <p style="grid-column:1/-1;padding:15px;">
+      Loading trending products...
+    </p>
+  `;
+
+  loadProducts("All", "");
+}
+
   function searchProducts() {
   const searchInput =
     document.getElementById("searchInput");
@@ -2195,10 +2232,31 @@ if(
   selectedSearch;
 }
 
-loadProducts(
-  selectedCategory,
-  selectedSearch
-);
+const selectedDisplay =
+  pageParams.get("d") || "";
+
+if(selectedDisplay === "trending"){
+  currentCategory = "All";
+
+  document.querySelectorAll(".cat-tab").forEach(tab => {
+    tab.classList.remove("active");
+  });
+
+  const trendingTab =
+    [...document.querySelectorAll(".cat-tab")]
+      .find(tab => tab.textContent.includes("Trending"));
+
+  if(trendingTab){
+    trendingTab.classList.add("active");
+  }
+
+  loadProducts("All", "");
+}else{
+  loadProducts(
+    selectedCategory,
+    selectedSearch
+  );
+}
 
 if(
   selectedCategory !== "All" &&
