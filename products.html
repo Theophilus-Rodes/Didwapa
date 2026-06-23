@@ -268,12 +268,29 @@ const API_BASE =
     ? "http://localhost:5000"
     : "";
 
+
+function saveLocation(region, district){
+  localStorage.setItem("didwapa_region", region || "All Ghana");
+  localStorage.setItem("didwapa_district", district || "");
+}
+
+function getSavedRegion(){
+  return localStorage.getItem("didwapa_region") || "All Ghana";
+}
+
+function getSavedDistrict(){
+  return localStorage.getItem("didwapa_district") || "";
+}
+
+
 const params = new URLSearchParams(window.location.search);
 
 const category = params.get("category") || "";
 const subcategory = params.get("subcategory") || "";
-const region = params.get("region") || "";
-const district = params.get("district") || "";
+const region = params.get("region") || getSavedRegion();
+const district = params.get("district") || getSavedDistrict();
+
+saveLocation(region, district);
 
 const pageTitle = document.getElementById("pageTitle");
 const subTitle = document.getElementById("subTitle");

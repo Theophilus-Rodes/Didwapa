@@ -1673,9 +1673,26 @@ onclick="openCategoryPage('Services')">
         ? "http://localhost:5000"
         : "";
 
+
+
+
+        function saveLocation(region, district){
+  localStorage.setItem("didwapa_region", region || "All Ghana");
+  localStorage.setItem("didwapa_district", district || "");
+}
+
+function getSavedRegion(){
+  return localStorage.getItem("didwapa_region") || "All Ghana";
+}
+
+function getSavedDistrict(){
+  return localStorage.getItem("didwapa_district") || "";
+}
     const productsContainer = document.getElementById("productsContainer");
 
 
+
+    
     function updateNotificationBadge(){
 
   let total = 0;
@@ -1905,14 +1922,16 @@ function loadDistricts(keepDistrict = true) {
   }
 }
 
-
 function changeLocation() {
+  const region = document.getElementById("regionSelect").value;
+  const district = document.getElementById("districtSelect").value;
+
+  saveLocation(region, district);
 
   loadProducts(
     currentCategory,
     document.getElementById("searchInput").value.trim()
   );
-
 }
 
 
@@ -2153,10 +2172,10 @@ const districtSelect =
 document.getElementById("districtSelect");
 
 const selectedRegion =
-pageParams.get("region") || "All Ghana";
+pageParams.get("region") || getSavedRegion();
 
 const selectedDistrict =
-pageParams.get("district") || "";
+pageParams.get("district") || getSavedDistrict();
 
 regionSelect.value =
 selectedRegion;

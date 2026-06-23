@@ -194,6 +194,21 @@ body{
 </div>
 
 <script>
+
+
+
+function saveLocation(region, district){
+  localStorage.setItem("didwapa_region", region || "All Ghana");
+  localStorage.setItem("didwapa_district", district || "");
+}
+
+function getSavedRegion(){
+  return localStorage.getItem("didwapa_region") || "All Ghana";
+}
+
+function getSavedDistrict(){
+  return localStorage.getItem("didwapa_district") || "";
+}
 const data = {
 "Phones & Tablets":[
   "Phone",
@@ -315,15 +330,20 @@ const searchKeywords = {
 function openProducts(category, subCategory){
   const oldParams = new URLSearchParams(window.location.search);
 
-  const region = oldParams.get("region") || "";
-  const district = oldParams.get("district") || "";
+  const region =
+    oldParams.get("region") || getSavedRegion();
+
+  const district =
+    oldParams.get("district") || getSavedDistrict();
+
+  saveLocation(region, district);
 
   const url = new URL("products.html", window.location.href);
 
   url.searchParams.set("category", category);
   url.searchParams.set("subcategory", subCategory);
 
-  if(region){
+  if(region && region !== "All Ghana"){
     url.searchParams.set("region", region);
   }
 
