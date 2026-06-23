@@ -369,8 +369,8 @@
 
 .spec-grid{
   display:grid;
-  grid-template-columns:repeat(4, 1fr);
-  gap:12px;
+  grid-template-columns:repeat(3, 1fr);
+  gap:10px;
 }
 
 .spec-item{
@@ -402,15 +402,24 @@
 
 @media(max-width:620px){
   .spec-grid{
-    grid-template-columns:repeat(2, 1fr);
+    grid-template-columns:repeat(3, 1fr);
+    gap:8px;
+  }
+
+  .spec-item{
+    padding:10px;
+    min-height:65px;
+  }
+
+  .spec-item span{
+    font-size:.85rem;
+  }
+
+  .spec-item small{
+    font-size:.6rem;
   }
 }
 
-@media(max-width:380px){
-  .spec-grid{
-    grid-template-columns:1fr;
-  }
-}
 
 .spec-item span{
   display:block;
