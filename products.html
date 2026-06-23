@@ -337,24 +337,28 @@ async function loadProducts(extraSearch = ""){
     let url = `${API_BASE}/api/products`;
     const query = new URLSearchParams();
 
-    if(category){
-      query.append("category", category);
-    }
+   if(category){
+  query.append("category", category);
+}
 
-    if(subcategory){
-      query.append("subcategory", subcategory);
-    }
-    
+/* IMPORTANT:
+   Phone and Tablet are not always saved as product_type,
+   so let backend search by name instead.
+*/
+if(subcategory){
+  query.append("search", subcategory);
+}
+
 if(region && region !== "All Ghana"){
   query.append("region", region);
 }
-    if(district){
-      query.append("district", district);
-    }
+   if(district && district !== "All Districts"){
+  query.append("district", district);
+}
 
-    if(extraSearch){
-      query.append("search", extraSearch);
-    }
+ if(extraSearch){
+  query.set("search", extraSearch);
+}
 
     if(query.toString()){
       url += `?${query.toString()}`;

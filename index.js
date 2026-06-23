@@ -1546,7 +1546,7 @@ app.put("/api/admin/products/:id/status", (req, res) => {
 
 ///// Index Display
 app.get("/api/products", (req, res) => {
- const { category, subcategory, search, region, district } = req.query;
+  const { category, subcategory, search, region, district } = req.query;
 
   let sql = `
     SELECT 
@@ -1576,16 +1576,16 @@ app.get("/api/products", (req, res) => {
     values.push(category);
   }
 
- if (subcategory && subcategory.trim() !== "") {
-  sql += `
-    AND (
-      product_type = ?
-      OR product_name LIKE ?
-    )
-  `;
-  values.push(subcategory.trim());
-  values.push(`%${subcategory.trim()}%`);
-}
+  if (subcategory && subcategory.trim() !== "") {
+    sql += `
+      AND (
+        LOWER(TRIM(product_type)) = LOWER(TRIM(?))
+        OR LOWER(product_name) LIKE LOWER(?)
+      )
+    `;
+    values.push(subcategory.trim());
+    values.push(`%${subcategory.trim()}%`);
+  }
 
   if (region && region !== "All Ghana") {
     sql += ` AND region = ?`;
@@ -1604,6 +1604,16 @@ app.get("/api/products", (req, res) => {
 
   sql += ` ORDER BY id DESC`;
 
+  console.log("========== PRODUCT SEARCH ==========");
+  console.log("Category:", category);
+  console.log("Subcategory:", subcategory);
+  console.log("Search:", search);
+  console.log("Region:", region);
+  console.log("District:", district);
+  console.log("SQL:", sql);
+  console.log("VALUES:", values);
+  console.log("====================================");
+
   db.query(sql, values, (err, results) => {
     if (err) {
       console.error("Fetch products error:", err);
@@ -1613,13 +1623,26 @@ app.get("/api/products", (req, res) => {
       });
     }
 
+    console.log("Products found:", results.length);
+
+    if (results.length > 0) {
+      console.log("First product:", {
+        id: results[0].id,
+        category: results[0].category,
+        product_name: results[0].product_name,
+        product_type: results[0].product_type,
+        region: results[0].region,
+        district: results[0].district,
+        status: results[0].status
+      });
+    }
+
     res.json({
       success: true,
       products: results
     });
   });
 });
-
 
 app.get("/api/products/:id", (req, res) => {
   const productId = req.params.id;
