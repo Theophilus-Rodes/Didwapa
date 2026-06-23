@@ -1408,9 +1408,10 @@
   </button>
 
 
-<button class="cat-tab" onclick="loadTrending(this)">
-  <span>🔥</span> Trending
-</button>
+  <div class="shop-cat" onclick="loadTrendingFromCategory()">
+  <div class="shop-img">🔥</div>
+  <strong>Trending</strong>
+</div>
 
   <button class="cat-tab" onclick="filterByCategory('Phones & Tablets', this)">
     <span>📱</span> Phones & Tablets
@@ -2215,6 +2216,13 @@ if(
         window.location.href = "userlogin.html";
       }
     }
+
+
+    function loadTrendingFromCategory(){
+  const url = new URL("index.html", window.location.href);
+  url.searchParams.set("d", "trending");
+  window.location.href = url.toString();
+}
   </script>
 
   <script>
