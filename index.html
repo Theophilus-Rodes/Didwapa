@@ -1659,7 +1659,7 @@ onclick="openCategoryPage('Services')">
   Cart
 </a>
 
-  <a href="upload-product.html" class="sell-btn">
+  <a href="sell-products.html" class="sell-btn">
     Sell →
   </a>
 </nav> 
@@ -2288,7 +2288,7 @@ async function openMessagesPage(event){
     const data = await res.json();
 
     if(data.loggedIn){
-      window.location.href = "product-message.html";
+      window.location.href = "product-messages.html";
     }else{
     showLoginPopup(
   "Login to access your DIDWAPA messages."
