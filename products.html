@@ -337,17 +337,14 @@ async function loadProducts(extraSearch = ""){
     let url = `${API_BASE}/api/products`;
     const query = new URLSearchParams();
 
-   if(category){
+if(category){
   query.append("category", category);
 }
 
-/* IMPORTANT:
-   Phone and Tablet are not always saved as product_type,
-   so let backend search by name instead.
-*/
 if(subcategory){
-  query.append("search", subcategory);
+  query.append("subcategory", subcategory);
 }
+
 
 if(region && region !== "All Ghana"){
   query.append("region", region);

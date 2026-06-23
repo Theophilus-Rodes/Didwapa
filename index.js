@@ -1545,9 +1545,64 @@ app.put("/api/admin/products/:id/status", (req, res) => {
 
 
 ///// Index Display
-
 app.get("/api/products", (req, res) => {
   const { category, subcategory, search, region, district } = req.query;
+
+  const categoryAliases = {
+    "Phones & Tablets": [
+      "Phones & Tablets",
+      "Phones and Accessories",
+      "Phones & Accessories"
+    ],
+    "Electronics": ["Electronics"],
+    "Fashion": ["Fashion"],
+    "Home Appliances": ["Home Appliances"],
+    "Services": ["Services"]
+  };
+
+  const subcategoryAliases = {
+    "Mobile Phones": ["Mobile Phones", "Mobile Phone", "Phone", "Phones"],
+    "Tablets": ["Tablets", "Tablet"],
+
+    "Laptops & Computers": [
+      "Laptops & Computers",
+      "Laptop",
+      "Laptops",
+      "Computers",
+      "Desktop Computer"
+    ],
+    "Headphones": ["Headphones", "Headphone", "Earphones", "Earbuds"],
+    "Smart Watchs": ["Smart Watchs", "Smart Watches", "Smart Watch"],
+    "Video Game Consoles": [
+      "Video Game Consoles",
+      "Gaming Consoles",
+      "Game Consoles",
+      "Game Controllers",
+      "Console",
+      "Controller"
+    ],
+
+    "Men's Clothing": ["Men's Clothing", "Mens Clothing", "Men Clothing"],
+    "Women's Clothing": ["Women's Clothing", "Womens Clothing", "Women Clothing"],
+    "Shoes": ["Shoes", "Shoe"],
+    "Bags": ["Bags", "Bag"],
+    "Wigs & Hair Extensions": ["Wigs & Hair Extensions", "Wigs", "Hair Extensions"],
+    "Watches": ["Watches", "Watch"],
+    "Jewelry": ["Jewelry", "Jewellery"],
+    "Perfume": ["Perfume", "Perfumes"],
+    "Beauty Accessories": ["Beauty Accessories"],
+
+    "TVs": ["TVs", "TV", "Television", "Televisions"],
+    "Fridge": ["Fridge", "Fridges", "Refrigerator", "Refrigerators"],
+    "Fans": ["Fans", "Fan"],
+    "Air Conditioners": ["Air Conditioners", "Air Conditioner", "AC"],
+
+    "Graphic Design": ["Graphic Design"],
+    "Website Design": ["Website Design", "Web Design"],
+    "Plumbing": ["Plumbing", "Plumber"],
+    "Electricians": ["Electricians", "Electrician"],
+    "Cleaning Services": ["Cleaning Services", "Cleaning"]
+  };
 
   let sql = `
     SELECT 
@@ -1573,41 +1628,42 @@ app.get("/api/products", (req, res) => {
 
   const values = [];
 
+  function addLikeGroup(fields, words) {
+    const conditions = [];
+
+    words.forEach(word => {
+      fields.forEach(field => {
+        conditions.push(`LOWER(${field}) LIKE LOWER(?)`);
+        values.push(`%${word.trim()}%`);
+      });
+    });
+
+    sql += ` AND (${conditions.join(" OR ")})`;
+  }
+
   if (category && category !== "All") {
-    sql += `
-      AND (
-        LOWER(category) = LOWER(?)
-        OR LOWER(category) LIKE LOWER(?)
-      )
-    `;
-    values.push(category.trim());
-    values.push(`%${category.trim()}%`);
+    const cats = categoryAliases[category] || [category];
+
+    addLikeGroup(
+      ["category"],
+      cats
+    );
   }
 
   if (subcategory && subcategory.trim() !== "") {
-    sql += `
-      AND (
-        LOWER(subcategory) LIKE LOWER(?)
-        OR LOWER(product_type) LIKE LOWER(?)
-        OR LOWER(product_name) LIKE LOWER(?)
-      )
-    `;
-    values.push(`%${subcategory.trim()}%`);
-    values.push(`%${subcategory.trim()}%`);
-    values.push(`%${subcategory.trim()}%`);
+    const subs = subcategoryAliases[subcategory] || [subcategory];
+
+    addLikeGroup(
+      ["subcategory", "product_type", "product_name"],
+      subs
+    );
   }
 
   if (search && search.trim() !== "") {
-    sql += `
-      AND (
-        LOWER(product_name) LIKE LOWER(?)
-        OR LOWER(product_type) LIKE LOWER(?)
-        OR LOWER(subcategory) LIKE LOWER(?)
-      )
-    `;
-    values.push(`%${search.trim()}%`);
-    values.push(`%${search.trim()}%`);
-    values.push(`%${search.trim()}%`);
+    addLikeGroup(
+      ["product_name", "subcategory", "product_type", "category"],
+      [search]
+    );
   }
 
   if (region && region !== "All Ghana") {
@@ -1615,7 +1671,7 @@ app.get("/api/products", (req, res) => {
     values.push(region.trim());
   }
 
-  if (district && district.trim() !== "") {
+  if (district && district.trim() !== "" && district !== "All Districts") {
     sql += ` AND LOWER(district) = LOWER(?)`;
     values.push(district.trim());
   }
@@ -1649,6 +1705,9 @@ app.get("/api/products", (req, res) => {
     });
   });
 });
+
+
+
 
 app.get("/api/products/:id", (req, res) => {
   const productId = req.params.id;
