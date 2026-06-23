@@ -1362,10 +1362,18 @@
 <select id="regionSelect" onchange="loadDistricts(false); changeLocation();">
     <option value="All Ghana">📍 All Ghana</option>
     <option value="Ashanti">Ashanti</option>
+    <option value="Ahafo Region">Ahafo Region</option>
+    <option value="Bono Region">Bono Region</option>
+    <option value="Bono East Region">Bono East Region</option>
+    <option value="Central Region">Central Region</option>
+    <option value="North East Region">North East Region</option>
+    <option value="Oti Region">Oti Region</option>
+    <option value="Savannah Region">Savannah Region</option>
     <option value="Greater Accra">Greater Accra</option>
     <option value="Central Region">Central Region</option>
     <option value="Eastern Region">Eastern Region</option>
     <option value="Western Region">Western Region</option>
+    <option value="Western North Region">Western North Region</option>
     <option value="Northern Region">Northern Region</option>
     <option value="Upper East Region">Upper East Region</option>
     <option value="Upper West Region">Upper West Region</option>
@@ -1784,113 +1792,25 @@ function getSelectedDistrict(){
 
 
 const regionAreas = {
-  "Ashanti": [
-    "Atwima Kwanwoma", "Atwima Nwabiagya", "Ejisu-Juaben Municipal",
-    "Kumasi Metropolitan", "Kwabre", "OTHER", "Adansi North",
-    "Adansi South", "Afigya-Kwabre", "Ahafo Ano North", "Ahafo Ano South",
-    "Amansie Central", "Amansie West", "Asante Akim Central Municipal",
-    "Asante Akim North", "Asante Akim South", "Asokore Mampong Municipal",
-    "Atwima Mponua", "Bekwai Municipal", "Bosome Freho", "Bosomtwe",
-    "Ejura/Sekyedumase", "Mampong Municipal", "Obuasi Municipal",
-    "Offinso Municipal", "Offinso North", "Sekyere Afram Plains",
-    "Sekyere Central", "Sekyere East", "Sekyere Kumawu", "Sekyere South"
-  ],
 
-  "Central Region": [
-    "Awutu Senya East Municipal", "Cape Coast Metropolitan", "Effutu Municipal",
-    "Gomoa East", "OTHER", "Abura/Asebu/Kwamankese", "Agona East",
-    "Agona West Municipal", "Ajumako/Enyan/Essiam", "Asikuma/Odoben/Brakwa",
-    "Assin North Municipal", "Assin South", "Awutu Senya West", "Ekumfi",
-    "Gomoa West", "Komenda/Edina/Eguafo/Abirem Municipal",
-    "Mfantsiman Municipal", "Potsin", "Twifo-Ati Morkwa",
-    "Twifo/Heman/Lower Denkyira", "Upper Denkyira East", "Upper Denkyira West"
-  ],
+"All Ghana":["All Areas"],
+  "Ahafo Region":["Goaso","Hwidiem","Kenyasi","Mim","Bechem","Duayaw Nkwanta","OTHER"],
+  "Ashanti":["Kumasi Metropolitan","Asokore Mampong Municipal","Ejisu","Obuasi Municipal","Bekwai Municipal","Mampong Municipal","Offinso Municipal","Atwima Kwanwoma","Atwima Nwabiagya","Afigya-Kwabre","Bosomtwe","Kwabre East","Konongo","Asante Akim Central","Sekyere East","Sekyere South","OTHER"],
+  "Bono Region":["Sunyani Municipal","Berekum Municipal","Dormaa Municipal","Wenchi Municipal","Jaman North","Jaman South","OTHER"],
+  "Bono East Region":["Techiman Municipal","Atebubu-Amantin","Kintampo North","Nkoranza South","Sene East","Sene West","OTHER"],
+  "Central Region":["Cape Coast Metropolitan","Kasoa","Awutu Senya East Municipal","Effutu Municipal","Mfantsiman Municipal","Agona West Municipal","Komenda/Edina/Eguafo/Abirem","Gomoa East","Gomoa West","Assin North","Assin South","OTHER"],
+  "Eastern Region":["Koforidua","New Juaben","Nsawam","Akim Oda","Nkawkaw","Suhum","Aburi","Akropong","Kibi","Asamankese","OTHER"],
+  "Greater Accra":["Accra Metropolitan","Achimota","Adabraka","Adenta","Tema Metropolitan","Ashaiman Municipal","Ablekuma","Abelemkpe","Abossey Okai","Airport Residential Area","Ashaley Botwe","Awoshie","Cantonments","Circle","Dansoman","Darkuman","Dome","Dzorwulu","East Legon","Gbawe","Haatso","Kaneshie","Kasoa","Labadi","Labone","Lapaz","Madina","Mamprobi","Nima","North Legon","Nungua","Odorkor","Ofankor","Osu","Oyarifa","Pokuase","Ridge","Spintex","Tesano","Teshie","Weija","West Legon","OTHER"],
+  "North East Region":["Nalerigu","Walewale","Gambaga","Bunkpurugu","Chereponi","OTHER"],
+  "Northern Region":["Tamale Metropolitan","Savelugu","Yendi","Tolon","Gushegu","Karaga","Kpandai","OTHER"],
+  "Oti Region":["Dambai","Nkwanta","Kete Krachi","Jasikan","Kadjebi","Biakoye","OTHER"],
+  "Savannah Region":["Damongo","Bole","Salaga","Buipe","Sawla","OTHER"],
+  "Upper East Region":["Bolgatanga Municipal","Bawku Municipal","Navrongo","Paga","Zebilla","Sandema","OTHER"],
+  "Upper West Region":["Wa Municipal","Tumu","Lawra","Nandom","Jirapa","OTHER"],
+  "Volta Region":["Ho Municipal","Hohoe","Keta","Aflao","Sogakope","Kpando","Akatsi","OTHER"],
+  "Western Region":["Takoradi","Sekondi","Tarkwa","Axim","Shama","Prestea","Agona Nkwanta","OTHER"],
+  "Western North Region":["Sefwi Wiawso","Bibiani","Enchi","Aowin","Juaboso","OTHER"]
 
-  "Greater Accra": [
-    "Accra Metropolitan", "Achimota", "Adabraka", "Adenta",
-    "Tema Metropolitan", "OTHER", "Abelemkpe", "Ablekuma", "Abofu",
-    "Abokobi", "Abossey Okai", "Accra New Town", "Adjiriganor",
-    "Agbogba", "Agbogbloshie", "Airport Residential Area", "Akweteyman",
-    "Alajo", "Amrahia", "Anyaa", "Apenkwa", "Ashaiman Municipal",
-    "Ashaley Botwe", "Ashomang Estate", "Asylum Down", "Avenor Area",
-    "Awoshie", "Banana Inn", "Bubuashie", "BurmaCamp", "Cantonments",
-    "Chorkor", "Circle", "Control", "Danfa", "Dansoman", "Darkuman",
-    "Dodowa", "Dome", "Dworwulu", "Dzorwulu", "East Legon",
-    "GaEast Municipal", "Ga South Municipal", "Ga West Municipal",
-    "Gbawe", "Haatso", "James Town", "Kaneshie", "Kasoa", "Kokomlemle",
-    "Korle Gonno", "Kotobabi", "Kwashieman", "Labadi", "Labone",
-    "Lapaz", "Lartebiokorshie", "Lartebiokoshie", "Ledzokuku-Krowor",
-    "Little Legon", "Madina", "Mamobi", "Mamprobi", "Mataheko",
-    "McCarthy Hill", "Nii Boi Town", "Nima", "Ningo-Prampram",
-    "North Industrial Area", "North Legon", "Nungua", "Odorkor",
-    "Ofankor", "Okaishie", "Okponglo", "Old Ashomang", "Osu",
-    "Oyarifa", "Oyibi", "Pokuase", "Ridge", "Roman Ridge",
-    "SSNIT Flats", "Santa Maria", "Sege", "Sempe New Town",
-    "South La", "Shiashie", "Sowutwuom", "Spintex", "Sukura",
-    "Taifa-Burkina", "Tantra Hills", "Tesano", "Teshie", "Weija",
-    "West Legon", "Zoti Area"
-  ],
-
-  "Brong Ahafo": [
-    "Atebubu-Amantin", "Berekum Municipal", "Sunyani Municipal",
-    "Techiman Municipal", "OTHER", "Asunafo North Municipal",
-    "Asunafo South", "Asutifi North", "Asutifi South", "Banda",
-    "Dormaa East", "Dormaa Municipal", "Dormaa West", "Jaman North",
-    "Jaman South", "Kintampo North Municipal", "Kintampo South",
-    "Nkoranza North", "Nkoranza South", "Pru", "Sene East",
-    "Sene West", "Sunyani West", "Tain", "Tano North", "Tano South",
-    "Techiman South", "Wenchi Municipal"
-  ],
-
-  "Eastern Region": [
-    "Akuapim South", "Asuogyaman", "East Akim Municipal",
-    "New-Juaben Municipal", "OTHER", "Akuapim North", "Akyemansar",
-    "Atiwa", "Ayensuano", "Birim Central Municipal", "Birim North",
-    "Birim South", "Denkyembour", "Fanteakwa", "Kwaebibirem",
-    "Kwahu Afram Plains North", "Kwahu Afram Plains South", "Kwahu East",
-    "Kwahu South", "Kwahu West", "Lower Manya Krobo",
-    "Nsawam Adoagyiri Municipal", "Suhum/Kraboa/Coaltar",
-    "Upper Manya Krobo", "Upper West Akim", "West Akim Municipal",
-    "Yilo Krobo"
-  ],
-
-  "Northern Region": [
-    "Tamale Municipal", "OTHER", "Bole", "Bunkpurugu-Yunyoo",
-    "Central Gonja", "Chereponi", "East Gonja", "East Mamprusi",
-    "Gushegu", "Karaga", "Kpandai", "Nanumba North", "Nanumba South",
-    "Saboba", "Savelugu-Nanton", "Sawla-Tuna-Kalba", "Tolon/Kumbungu",
-    "West Gonja", "West Mamprusi", "Yendi", "Zabzugu/Tatale"
-  ],
-
-  "Upper East Region": [
-    "Bawku Municipal", "Bolgatanga Municipal", "OTHER", "Bawku West",
-    "Bongo District", "Builsa", "Garu-Tempane", "Kassena Nankana East",
-    "Kassena Nankana West", "Talensi-Nabdam"
-  ],
-
-  "Upper West Region": [
-    "Jirapa/Lambussie District", "Lawra District", "Nadowli District",
-    "Sissala East District", "Wa East District", "Wa Municipal District",
-    "Wa West District"
-  ],
-
-  "Volta Region": [
-    "POPULAR", "Ho Municipal", "Hohoe Municipal", "Keta Municipal",
-    "Ketu South Municipal", "Kpando Municipal", "OTHER", "Adaklu",
-    "Afadjato South", "Agotime Ziope", "Akatsi North", "Akatsi South",
-    "Biakoye", "Central Tongu", "Ho West", "Jasikan", "Kadjebi",
-    "Ketu North Municipal", "Krachi East", "Krachi Nchumuru",
-    "Krachi West", "Nkwanta North", "Nkwanta South", "North Dayi",
-    "North Tongu", "South Dayi", "South Tongu"
-  ],
-
-  "Western Region": [
-    "Ahanta West", "Shama Ahanta East Metropolitan", "Wassa West",
-    "OTHER", "Aowin/Suaman", "Bia", "Bibiani/Anhwiaso/Bekwai",
-    "Jomoro", "Juabeso", "Mpohor/Wassa East", "Nzema East",
-    "Prestea-Huni Valley", "Sefwi-Wiawso", "Takoradi",
-    "Tarkwa Nsuaem", "Wasa Amenfi East", "Wasa Amenfi"
-  ]
 };
 
 
