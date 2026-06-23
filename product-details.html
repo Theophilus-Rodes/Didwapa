@@ -650,8 +650,8 @@ function renderSpecifications(specData){
 
   if(!entries.length) return "";
 
-  const firstTen = entries.slice(0,10);
-  const remaining = entries.slice(10);
+const firstTen = entries.slice(0,4);
+const remaining = entries.slice(4);
 
   return `
     <div class="spec-section">
@@ -779,6 +779,11 @@ const image = productImages[0] || "";
     ${product.region || "N/A"}
   </div>
 
+    <div class="info">
+    <strong>District</strong>
+    ${product.district || "N/A"}
+  </div>
+
   <div class="info">
     <strong>Phone</strong>
     ${product.phone_number || "N/A"}
@@ -789,11 +794,6 @@ const image = productImages[0] || "";
     ${product.item_condition || "N/A"}
   </div>
 
-
-  <div class="info">
-    <strong>District</strong>
-    ${product.district || "N/A"}
-  </div>
 
 </div>
 
