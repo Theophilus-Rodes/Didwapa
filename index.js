@@ -1545,6 +1545,7 @@ app.put("/api/admin/products/:id/status", (req, res) => {
 
 
 ///// Index Display
+
 app.get("/api/products", (req, res) => {
   const { category, subcategory, search, region, district } = req.query;
 
@@ -1555,6 +1556,7 @@ app.get("/api/products", (req, res) => {
       district,
       product_name,
       category,
+      subcategory,
       product_type,
       price,
       product_color,
@@ -1571,47 +1573,52 @@ app.get("/api/products", (req, res) => {
 
   const values = [];
 
-if (category && category !== "All") {
-  if (category === "Phones & Tablets") {
-    sql += ` AND category IN (?, ?)`;
-    values.push("Phones & Tablets", "Phones and Accessories");
-  } else {
-    sql += ` AND category = ?`;
-    values.push(category);
+  if (category && category !== "All") {
+    sql += `
+      AND (
+        LOWER(category) = LOWER(?)
+        OR LOWER(category) LIKE LOWER(?)
+      )
+    `;
+    values.push(category.trim());
+    values.push(`%${category.trim()}%`);
   }
-}
 
   if (subcategory && subcategory.trim() !== "") {
     sql += `
       AND (
-        LOWER(TRIM(product_type)) = LOWER(TRIM(?))
+        LOWER(subcategory) LIKE LOWER(?)
+        OR LOWER(product_type) LIKE LOWER(?)
         OR LOWER(product_name) LIKE LOWER(?)
       )
     `;
-    values.push(subcategory.trim());
+    values.push(`%${subcategory.trim()}%`);
+    values.push(`%${subcategory.trim()}%`);
     values.push(`%${subcategory.trim()}%`);
   }
 
+  if (search && search.trim() !== "") {
+    sql += `
+      AND (
+        LOWER(product_name) LIKE LOWER(?)
+        OR LOWER(product_type) LIKE LOWER(?)
+        OR LOWER(subcategory) LIKE LOWER(?)
+      )
+    `;
+    values.push(`%${search.trim()}%`);
+    values.push(`%${search.trim()}%`);
+    values.push(`%${search.trim()}%`);
+  }
+
   if (region && region !== "All Ghana") {
-    sql += ` AND region = ?`;
-    values.push(region);
+    sql += ` AND LOWER(region) = LOWER(?)`;
+    values.push(region.trim());
   }
 
   if (district && district.trim() !== "") {
-    sql += ` AND district = ?`;
+    sql += ` AND LOWER(district) = LOWER(?)`;
     values.push(district.trim());
   }
-
-if (search && search.trim() !== "") {
-  sql += `
-    AND (
-      product_name LIKE ?
-      OR product_type LIKE ?
-    )
-  `;
-  values.push(`%${search.trim()}%`);
-  values.push(`%${search.trim()}%`);
-}
 
   sql += ` ORDER BY id DESC`;
 
@@ -1635,18 +1642,6 @@ if (search && search.trim() !== "") {
     }
 
     console.log("Products found:", results.length);
-
-    if (results.length > 0) {
-      console.log("First product:", {
-        id: results[0].id,
-        category: results[0].category,
-        product_name: results[0].product_name,
-        product_type: results[0].product_type,
-        region: results[0].region,
-        district: results[0].district,
-        status: results[0].status
-      });
-    }
 
     res.json({
       success: true,
