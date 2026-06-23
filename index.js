@@ -1597,10 +1597,16 @@ app.get("/api/products", (req, res) => {
     values.push(district.trim());
   }
 
-  if (search && search.trim() !== "") {
-    sql += ` AND product_name LIKE ?`;
-    values.push(`%${search.trim()}%`);
-  }
+if (search && search.trim() !== "") {
+  sql += `
+    AND (
+      product_name LIKE ?
+      OR product_type LIKE ?
+    )
+  `;
+  values.push(`%${search.trim()}%`);
+  values.push(`%${search.trim()}%`);
+}
 
   sql += ` ORDER BY id DESC`;
 
