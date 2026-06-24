@@ -28,7 +28,7 @@
 body{
   background:var(--bg);
   color:var(--text);
-  padding-bottom:20px;
+  padding-bottom:90px;
 }
 
 .app{
@@ -230,6 +230,103 @@ body{
     font-size:.9rem;
   }
 }
+
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  max-width:1180px;
+  width:100%;
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+  display:grid;
+  grid-template-columns:repeat(5,1fr) 1.5fr;
+  align-items:center;
+  gap:4px;
+  padding:8px 10px;
+  z-index:120;
+}
+
+.nav-item{
+  text-align:center;
+  text-decoration:none;
+  color:#111;
+  font-size:.76rem;
+  font-weight:800;
+  position:relative;
+}
+
+.nav-item div{
+  font-size:1.45rem;
+  margin-bottom:3px;
+}
+
+.nav-item.active,
+.nav-item:hover{
+  color:var(--primary);
+}
+
+.badge{
+  position:absolute;
+  top:-3px;
+  right:30%;
+  background:var(--primary);
+  color:#fff;
+  font-size:.65rem;
+  min-width:18px;
+  height:18px;
+  border-radius:999px;
+  display:inline-grid;
+  place-items:center;
+  font-weight:900;
+}
+
+.sell-btn{
+  background:var(--green);
+  color:#fff;
+  border-radius:999px;
+  padding:14px 20px;
+  text-decoration:none;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+@media(max-width:600px){
+  .bottom-nav{
+    grid-template-columns:repeat(5,1fr);
+    padding:7px 4px;
+  }
+
+  .bottom-nav .sell-btn{
+    position:fixed;
+    right:12px;
+    bottom:82px;
+    padding:12px 18px;
+    z-index:130;
+  }
+}
+
+.brand-filter{
+  padding:10px 14px;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+}
+
+.brand-filter select{
+  width:100%;
+  height:44px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:0 12px;
+  background:#fff;
+  font-weight:800;
+  outline:none;
+}
 </style>
 </head>
 
@@ -254,6 +351,12 @@ body{
   </header>
 
   <div class="filter-note" id="filterNote"></div>
+
+  <div class="brand-filter">
+  <select id="brandSelect" onchange="searchProducts()">
+    <option value="">All Brands</option>
+  </select>
+</div>
 
   <section id="productsContainer" class="products">
     <div class="empty">Loading products...</div>
@@ -297,6 +400,64 @@ const subTitle = document.getElementById("subTitle");
 const filterNote = document.getElementById("filterNote");
 const productsContainer = document.getElementById("productsContainer");
 const searchInput = document.getElementById("searchInput");
+const brandSelect = document.getElementById("brandSelect");
+
+const brandOptions = {
+  "Phones & Tablets": [
+    "Apple", "Samsung", "Tecno", "Infinix", "Itel", "Huawei",
+    "Xiaomi", "Oppo", "Vivo", "Nokia", "Google Pixel", "Sony",
+    "LG", "Motorola", "OnePlus"
+  ],
+
+  "Mobile Phones": [
+    "Apple", "Samsung", "Tecno", "Infinix", "Itel", "Huawei",
+    "Xiaomi", "Oppo", "Vivo", "Nokia", "Google Pixel"
+  ],
+
+  "Tablets": [
+    "Apple", "Samsung", "Huawei", "Lenovo", "Amazon", "Microsoft",
+    "Xiaomi", "Tecno", "Infinix"
+  ],
+
+  "Electronics": [
+    "Samsung", "LG", "Sony", "Hisense", "TCL", "Nasco", "Binatone",
+    "Philips", "Panasonic", "JBL", "Oraimo", "Lenovo", "HP", "Dell"
+  ],
+
+  "Home Appliances": [
+    "Samsung", "LG", "Hisense", "Nasco", "Midea", "TCL", "Binatone",
+    "Philips", "Panasonic", "Bruhm", "Haier Thermocool"
+  ],
+
+  "Fashion": [
+    "Nike", "Adidas", "Puma", "Gucci", "Zara", "H&M", "Louis Vuitton",
+    "Balenciaga", "Dior", "Prada"
+  ],
+
+  "Vehicles": [
+    "Toyota", "Honda", "Hyundai", "Kia", "Nissan", "Mercedes-Benz",
+    "BMW", "Ford", "Volkswagen", "Mazda", "Lexus"
+  ]
+};
+
+function loadBrandOptions(){
+  const key = subcategory || category;
+  const brands = brandOptions[key] || brandOptions[category] || [];
+
+  brandSelect.innerHTML = `<option value="">All Brands</option>`;
+
+  brands.forEach(brand => {
+    brandSelect.innerHTML += `
+      <option value="${brand}">
+        ${brand}
+      </option>
+    `;
+  });
+
+  if(brands.length === 0){
+    document.querySelector(".brand-filter").style.display = "none";
+  }
+}
 
 pageTitle.textContent = subcategory || category || "Products";
 subTitle.textContent = category || "DIDWAPA Products";
@@ -353,10 +514,19 @@ if(region && region !== "All Ghana"){
   query.append("district", district);
 }
 
- if(extraSearch){
-  query.set("search", extraSearch);
+const selectedBrand = brandSelect.value;
+
+let finalSearch = extraSearch || "";
+
+if(selectedBrand){
+  finalSearch = finalSearch
+    ? `${finalSearch} ${selectedBrand}`
+    : selectedBrand;
 }
 
+if(finalSearch){
+  query.set("search", finalSearch);
+}
     if(query.toString()){
       url += `?${query.toString()}`;
     }
@@ -452,8 +622,116 @@ function openProduct(id){
   window.location.href = `product-details.html?id=${id}`;
 }
 
+loadBrandOptions();
 loadProducts();
+
+async function openYouPage(event){
+  event.preventDefault();
+
+  try{
+    const res = await fetch(`${API_BASE}/api/check-user-login`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    window.location.href = data.loggedIn ? "you.html" : "userlogin.html";
+
+  }catch(error){
+    window.location.href = "userlogin.html";
+  }
+}
+
+async function openMessagesPage(event){
+  event.preventDefault();
+
+  try{
+    const res = await fetch(`${API_BASE}/api/check-user-login`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    window.location.href = data.loggedIn ? "product-messages.html" : "userlogin.html";
+
+  }catch(error){
+    window.location.href = "userlogin.html";
+  }
+}
+
+async function openCartPage(event){
+  event.preventDefault();
+
+  try{
+    const res = await fetch(`${API_BASE}/api/check-user-login`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    window.location.href = data.loggedIn ? "cart.html" : "userlogin.html";
+
+  }catch(error){
+    window.location.href = "userlogin.html";
+  }
+}
+
+async function loadCartCount(){
+  try{
+    const badge = document.getElementById("cartCountBadge");
+    if(!badge) return;
+
+    const res = await fetch(`${API_BASE}/api/cart/count`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(data.success){
+      badge.textContent = data.count || 0;
+      badge.style.display = Number(data.count) > 0 ? "inline-grid" : "none";
+    }
+  }catch(error){
+    console.error(error);
+  }
+}
+
+loadCartCount();
 </script>
+
+
+<nav class="bottom-nav">
+  <a href="index.html" class="nav-item">
+    <div>🏠</div>
+    Home
+  </a>
+
+  <a href="index.html#categoryHead" class="nav-item active">
+    <div>▦</div>
+    Categories
+  </a>
+
+  <a href="#" class="nav-item" onclick="openYouPage(event)">
+    <span class="badge">0</span>
+    <div>👤</div>
+    You
+  </a>
+
+  <a href="#" class="nav-item" onclick="openMessagesPage(event)">
+    <div>💬</div>
+    Message
+  </a>
+
+  <a href="#" class="nav-item" onclick="openCartPage(event)">
+    <span class="badge" id="cartCountBadge">0</span>
+    <div>🛒</div>
+    Cart
+  </a>
+
+  <a href="sell-products.html" class="sell-btn">
+    Sell →
+  </a>
+</nav>
 
 </body>
 </html>
