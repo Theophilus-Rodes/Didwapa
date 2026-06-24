@@ -1613,7 +1613,7 @@ app.get("/api/products", (req, res) => {
       category,
       subcategory,
       product_type,
-      product_brand,
+      
       price,
       product_color,
       quantity_in_stock,
@@ -1622,6 +1622,7 @@ app.get("/api/products", (req, res) => {
       instructions,
       item_condition,
       images,
+      specifications,
       posted_by
     FROM products
     WHERE status = 'approved'
@@ -1660,8 +1661,14 @@ app.get("/api/products", (req, res) => {
     );
   }
 
-  if (brand && brand.trim() !== "") {
-  sql += ` AND LOWER(product_brand) = LOWER(?)`;
+if (brand && brand.trim() !== "") {
+  sql += `
+    AND LOWER(
+      JSON_UNQUOTE(
+        JSON_EXTRACT(specifications, '$.brand')
+      )
+    ) = LOWER(?)
+  `;
   values.push(brand.trim());
 }
 
