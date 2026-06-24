@@ -1546,7 +1546,7 @@ app.put("/api/admin/products/:id/status", (req, res) => {
 
 ///// Index Display
 app.get("/api/products", (req, res) => {
-  const { category, subcategory, search, region, district } = req.query;
+ const { category, subcategory, search, region, district, brand } = req.query;
 
   const categoryAliases = {
     "Phones & Tablets": [
@@ -1613,6 +1613,7 @@ app.get("/api/products", (req, res) => {
       category,
       subcategory,
       product_type,
+      product_brand,
       price,
       product_color,
       quantity_in_stock,
@@ -1659,6 +1660,11 @@ app.get("/api/products", (req, res) => {
     );
   }
 
+  if (brand && brand.trim() !== "") {
+  sql += ` AND LOWER(product_brand) = LOWER(?)`;
+  values.push(brand.trim());
+}
+
   if (search && search.trim() !== "") {
     addLikeGroup(
       ["product_name", "subcategory", "product_type", "category"],
@@ -1682,6 +1688,7 @@ app.get("/api/products", (req, res) => {
   console.log("Category:", category);
   console.log("Subcategory:", subcategory);
   console.log("Search:", search);
+  console.log("Brand:", brand);
   console.log("Region:", region);
   console.log("District:", district);
   console.log("SQL:", sql);

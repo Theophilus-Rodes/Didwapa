@@ -514,20 +514,18 @@ if(region && region !== "All Ghana"){
   query.append("district", district);
 }
 
+
 const selectedBrand = brandSelect.value;
 
-let finalSearch = extraSearch || "";
+if(extraSearch){
+  query.set("search", extraSearch);
+}
 
 if(selectedBrand){
-  finalSearch = finalSearch
-    ? `${finalSearch} ${selectedBrand}`
-    : selectedBrand;
+  query.set("brand", selectedBrand);
 }
 
-if(finalSearch){
-  query.set("search", finalSearch);
-}
-    if(query.toString()){
+if(query.toString()){
       url += `?${query.toString()}`;
     }
 
