@@ -2026,7 +2026,8 @@ if (selectedDistrict) {
       loadProducts(category);
     }
 
-    function loadTrending(clickedTab){
+ function loadTrending(clickedTab){
+
   currentCategory = "All";
 
   document.querySelectorAll(".cat-tab").forEach(tab => {
@@ -2037,25 +2038,16 @@ if (selectedDistrict) {
     clickedTab.classList.add("active");
   }
 
-  const searchInput = document.getElementById("searchInput");
-  if(searchInput){
-    searchInput.value = "";
-  }
-
-  const url = new URL(window.location.href);
-  url.searchParams.set("d", "trending");
-  url.searchParams.delete("category");
-  url.searchParams.delete("search");
-
-  history.replaceState(null, "", url.toString());
-
-  productsContainer.innerHTML = `
-    <p style="grid-column:1/-1;padding:15px;">
-      Loading trending products...
-    </p>
-  `;
-
   loadProducts("All", "");
+
+  setTimeout(() => {
+    document.getElementById("productsContainer")
+      .scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+  }, 300);
+
 }
 
   function searchProducts() {
@@ -2221,11 +2213,20 @@ if(
     }
 
 
-    function loadTrendingFromCategory(){
-  const url = new URL("index.html", window.location.href);
-  url.searchParams.set("d", "trending");
-  window.location.href = url.toString();
+function loadTrendingFromCategory(){
+
+  loadProducts("All", "");
+
+  setTimeout(() => {
+    document.getElementById("productsContainer")
+      .scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+  }, 300);
+
 }
+
   </script>
 
   <script>
