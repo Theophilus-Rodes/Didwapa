@@ -305,7 +305,7 @@ function renderList(items){
   }
 
 categoryList.innerHTML = items.map(item => `
-  <div class="cat-row" onclick='openProducts(${JSON.stringify(category)}, ${JSON.stringify(item)})'>
+  <div class="cat-row" onclick="openProductsSafe('${encodeURIComponent(category)}', '${encodeURIComponent(item)}')">
       <div class="cat-icon">${icons[item] || "🛍️"}</div>
 
       <div class="cat-info">
@@ -318,6 +318,12 @@ categoryList.innerHTML = items.map(item => `
   `).join("");
 }
 
+function openProductsSafe(categoryEncoded, subCategoryEncoded){
+  const realCategory = decodeURIComponent(categoryEncoded);
+  const realSubCategory = decodeURIComponent(subCategoryEncoded);
+
+  openProducts(realCategory, realSubCategory);
+}
 
 
 function openProducts(category, subCategory){
