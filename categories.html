@@ -304,8 +304,8 @@ function renderList(items){
     return;
   }
 
-  categoryList.innerHTML = items.map(item => `
-    <div class="cat-row" onclick="openProducts('${category}', '${item}')">
+categoryList.innerHTML = items.map(item => `
+  <div class="cat-row" onclick='openProducts(${JSON.stringify(category)}, ${JSON.stringify(item)})'>
       <div class="cat-icon">${icons[item] || "🛍️"}</div>
 
       <div class="cat-info">
