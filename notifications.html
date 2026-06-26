@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DIDWAPA Notifications</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+:root{
+  --primary:#ff6600;
+  --green:#16a34a;
+  --bg:#f7f8fb;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --soft:#fff4ea;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:90px;
+}
+
+.app{
+  max-width:480px;
+  margin:0 auto;
+  min-height:100vh;
+  background:#fff;
+}
+
+.header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:#fff;
+  padding:14px;
+  border-bottom:1px solid var(--border);
+  box-shadow:0 6px 20px rgba(0,0,0,.05);
+}
+
+.top-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.back{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  border:none;
+  background:var(--soft);
+  color:var(--primary);
+  font-size:22px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.title-box small{
+  color:var(--muted);
+  font-weight:700;
+}
+
+.title-box h2{
+  font-size:1.25rem;
+  margin-top:2px;
+}
+
+.notification-list{
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.notification-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:13px;
+  display:flex;
+  gap:12px;
+  box-shadow:0 8px 20px rgba(0,0,0,.035);
+  cursor:pointer;
+}
+
+.icon{
+  width:45px;
+  height:45px;
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  background:var(--soft);
+  font-size:22px;
+  flex-shrink:0;
+}
+
+.info{
+  flex:1;
+}
+
+.info strong{
+  display:block;
+  font-size:.92rem;
+  margin-bottom:4px;
+}
+
+.info p{
+  font-size:.78rem;
+  color:var(--muted);
+  line-height:1.35;
+}
+
+.info small{
+  display:block;
+  margin-top:6px;
+  color:#999;
+  font-size:.7rem;
+}
+
+.empty{
+  padding:35px 20px;
+  text-align:center;
+  color:var(--muted);
+}
+
+.empty-icon{
+  font-size:45px;
+  margin-bottom:10px;
+}
+
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  max-width:480px;
+  width:100%;
+  background:#fff;
+  border-top:1px solid var(--border);
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  padding:7px 4px;
+  z-index:100;
+}
+
+.nav-item{
+  text-align:center;
+  text-decoration:none;
+  color:#111;
+  font-size:.72rem;
+  font-weight:800;
+}
+
+.nav-item div{
+  font-size:1.35rem;
+  margin-bottom:3px;
+}
+
+.nav-item.active{
+  color:var(--primary);
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="header">
+  <div class="top-row">
+    <button class="back" onclick="history.back()">←</button>
+
+    <div class="title-box">
+      <small>DIDWAPA Marketplace</small>
+      <h2>Notifications</h2>
+    </div>
+  </div>
+</header>
+
+<section id="notificationList" class="notification-list">
+  <div class="empty">Loading notifications...</div>
+</section>
+
+</div>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="nav-item">
+    <div>🏠</div>
+    Home
+  </a>
+
+  <a href="categorylist.html" class="nav-item">
+    <div>▦</div>
+    Categories
+  </a>
+
+  <a href="you.html" class="nav-item">
+    <div>👤</div>
+    You
+  </a>
+
+  <a href="product-messages.html" class="nav-item">
+    <div>💬</div>
+    Message
+  </a>
+
+  <a href="cart.html" class="nav-item">
+    <div>🛒</div>
+    Cart
+  </a>
+</nav>
+
+<script>
+const API_BASE =
+  location.hostname === "localhost" ||
+  location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
+
+const notificationList =
+  document.getElementById("notificationList");
+
+async function loadNotifications(){
+  try{
+    const notifications = [];
+
+    const cartRes = await fetch(`${API_BASE}/api/cart/count`, {
+      credentials:"include"
+    });
+
+    const cartData = await cartRes.json();
+
+    if(cartData.success && Number(cartData.count) > 0){
+      notifications.push({
+        icon:"🛒",
+        title:"Cart items waiting",
+        message:`You have ${cartData.count} item(s) in your cart that have not been checked out yet.`,
+        link:"cart.html",
+        time:"Pending"
+      });
+    }
+
+    const msgRes = await fetch(`${API_BASE}/api/product-message/inbox`, {
+      credentials:"include"
+    });
+
+    const msgData = await msgRes.json();
+
+    if(msgData.success){
+      const unreadMessages = (msgData.inbox || msgData.messages || [])
+        .filter(item =>
+          Number(item.unread_count || item.unread || item.total_unread || 0) > 0
+        );
+
+      if(unreadMessages.length > 0){
+        notifications.push({
+          icon:"💬",
+          title:"Unread product messages",
+          message:`You have ${unreadMessages.length} message conversation(s) that need attention.`,
+          link:"product-messages.html",
+          time:"Unread"
+        });
+      }
+    }
+
+    if(notifications.length === 0){
+      notificationList.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">🔔</div>
+          <strong>No pending notifications</strong>
+          <p style="margin-top:6px;">
+            Everything looks attended to for now.
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    notificationList.innerHTML = notifications.map(item => `
+      <div class="notification-card" onclick="location.href='${item.link}'">
+        <div class="icon">${item.icon}</div>
+
+        <div class="info">
+          <strong>${item.title}</strong>
+          <p>${item.message}</p>
+          <small>${item.time}</small>
+        </div>
+      </div>
+    `).join("");
+
+  }catch(error){
+    console.error(error);
+
+    notificationList.innerHTML = `
+      <div class="empty">
+        Failed to load notifications.
+      </div>
+    `;
+  }
+}
+
+loadNotifications();
+</script>
+
+</body>
+</html>
