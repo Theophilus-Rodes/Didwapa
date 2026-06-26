@@ -304,8 +304,8 @@ function renderList(items){
     return;
   }
 
-categoryList.innerHTML = items.map(item => `
-  <div class="cat-row" onclick="openProductsSafe('${encodeURIComponent(category)}', '${encodeURIComponent(item)}')">
+  categoryList.innerHTML = items.map((item, index) => `
+    <div class="cat-row" data-index="${index}">
       <div class="cat-icon">${icons[item] || "🛍️"}</div>
 
       <div class="cat-info">
@@ -316,14 +316,16 @@ categoryList.innerHTML = items.map(item => `
       <div class="arrow">›</div>
     </div>
   `).join("");
+
+  document.querySelectorAll(".cat-row").forEach(row => {
+    row.addEventListener("click", function(){
+      const item = items[this.dataset.index];
+      openProducts(category, item);
+    });
+  });
 }
 
-function openProductsSafe(categoryEncoded, subCategoryEncoded){
-  const realCategory = decodeURIComponent(categoryEncoded);
-  const realSubCategory = decodeURIComponent(subCategoryEncoded);
 
-  openProducts(realCategory, realSubCategory);
-}
 
 
 function openProducts(category, subCategory){
