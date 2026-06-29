@@ -1402,13 +1402,18 @@
         </div>
       </div>
 
-    <nav class="category-nav">
+   <nav class="category-nav">
   <button class="cat-tab active" onclick="filterByCategory('All', this)">
     <span>🏠</span> All
   </button>
 
+  <button class="cat-tab" onclick="filterByCategory('Vehicles', this)">
+    <span>🚗</span> Vehicles
+  </button>
 
-  
+  <button class="cat-tab" onclick="filterByCategory('Property', this)">
+    <span>🏠</span> Property
+  </button>
 
   <button class="cat-tab" onclick="filterByCategory('Phones & Tablets', this)">
     <span>📱</span> Phones & Tablets
@@ -1429,7 +1434,7 @@
   <button class="cat-tab" onclick="filterByCategory('Services', this)">
     <span>🛠️</span> Services
   </button>
-</nav> 
+</nav>
     
     </header>
 
@@ -1550,6 +1555,18 @@
 <div class="shop-cat" onclick="loadTrendingFromCategory()">
   <div class="shop-img">🔥</div>
   <strong>Trending</strong>
+</div>
+
+<div class="shop-cat" onclick="openCategoryPage('Vehicles')">
+  <div class="shop-img">🚗</div>
+  <strong>Vehicles</strong>
+  <small>Cars, buses, trucks</small>
+</div>
+
+<div class="shop-cat" onclick="openCategoryPage('Property')">
+  <div class="shop-img">🏠</div>
+  <strong>Property</strong>
+  <small>Houses, land, shops</small>
 </div>
 
 
@@ -2231,6 +2248,8 @@ function loadTrendingFromCategory(){
   }, 300);
 
 }
+
+
 
   </script>
 

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DIDWAPA Terms & Conditions</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+:root{
+  --primary:#ff6600;
+  --primary-dark:#e95600;
+  --green:#16a34a;
+  --bg:#f7f8fb;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --soft:#fff4ea;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:40px;
+}
+
+.app{
+  max-width:780px;
+  margin:0 auto;
+  background:#fff;
+  min-height:100vh;
+}
+
+.header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,.05);
+}
+
+.top-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.back{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  border:none;
+  background:var(--soft);
+  color:var(--primary);
+  font-size:22px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.logo-box{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.logo-box img{
+  width:42px;
+  height:42px;
+  object-fit:contain;
+  border-radius:10px;
+}
+
+.logo-text small{
+  display:block;
+  color:var(--muted);
+  font-weight:800;
+  font-size:.75rem;
+}
+
+.logo-text strong{
+  display:block;
+  font-size:1.1rem;
+  color:#111;
+}
+
+.hero{
+  background:linear-gradient(135deg,#fff4ea,#ffffff);
+  padding:28px 18px;
+  border-bottom:1px solid #ffe0c7;
+}
+
+.hero-card{
+  border:1px solid #ffe0c7;
+  border-radius:22px;
+  padding:24px 18px;
+  background:#fff;
+  box-shadow:0 15px 35px rgba(255,102,0,.08);
+  text-align:center;
+}
+
+.hero-card img{
+  width:82px;
+  height:82px;
+  object-fit:contain;
+  margin-bottom:12px;
+}
+
+.hero-card h1{
+  font-size:1.55rem;
+  line-height:1.25;
+  margin-bottom:8px;
+}
+
+.hero-card h1 span{
+  color:var(--primary);
+}
+
+.hero-card p{
+  color:var(--muted);
+  font-size:.88rem;
+  line-height:1.5;
+}
+
+.meta{
+  margin-top:16px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.meta-card{
+  background:var(--soft);
+  border-radius:14px;
+  padding:10px;
+  font-size:.78rem;
+  font-weight:800;
+}
+
+.meta-card span{
+  display:block;
+  color:var(--primary);
+  margin-bottom:3px;
+}
+
+.content{
+  padding:18px;
+}
+
+.section{
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:16px;
+  margin-bottom:14px;
+  background:#fff;
+  box-shadow:0 8px 20px rgba(0,0,0,.035);
+}
+
+.section h2{
+  font-size:1rem;
+  color:#111827;
+  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.section h2::before{
+  content:"";
+  width:8px;
+  height:22px;
+  background:var(--primary);
+  border-radius:999px;
+  display:inline-block;
+}
+
+.section p{
+  color:#333;
+  font-size:.9rem;
+  line-height:1.7;
+  margin-bottom:8px;
+}
+
+.section ul{
+  padding-left:20px;
+  margin-top:8px;
+}
+
+.section li{
+  color:#333;
+  font-size:.9rem;
+  line-height:1.7;
+  margin-bottom:6px;
+}
+
+.divider{
+  height:1px;
+  background:linear-gradient(90deg,transparent,#ffd1ad,transparent);
+  margin:18px 0;
+}
+
+.acceptance{
+  background:linear-gradient(135deg,#fff4ea,#ffffff);
+  border:1px solid #ffe0c7;
+}
+
+.contact-card{
+  background:#f9fafb;
+  border-radius:14px;
+  padding:12px;
+  margin-top:8px;
+}
+
+.contact-card strong{
+  display:block;
+  margin-bottom:4px;
+}
+
+.contact-card a{
+  color:var(--primary);
+  font-weight:900;
+  text-decoration:none;
+}
+
+.footer-note{
+  text-align:center;
+  padding:18px;
+  color:var(--muted);
+  font-size:.78rem;
+}
+
+@media(max-width:600px){
+  .app{
+    max-width:480px;
+  }
+
+  .hero-card h1{
+    font-size:1.32rem;
+  }
+
+  .meta{
+    grid-template-columns:1fr;
+  }
+
+  .section{
+    padding:14px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="header">
+  <div class="top-row">
+    <button class="back" onclick="history.back()">←</button>
+
+    <div class="logo-box">
+      <img src="didwapa.png" alt="Didwapa Logo">
+
+      <div class="logo-text">
+        <small>DIDWAPA ESCROW LTD</small>
+        <strong>Terms & Conditions</strong>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-card">
+    <img src="didwapa.png" alt="Didwapa Logo">
+
+    <h1>DIDWAPA ESCROW LTD<br><span>Terms & Conditions</span></h1>
+
+    <p>
+      Please read these Terms & Conditions carefully before using Didwapa.
+      By accessing or using the platform, you agree to be bound by these terms.
+    </p>
+
+    <div class="meta">
+      <div class="meta-card">
+        <span>Version</span>
+        1.0
+      </div>
+
+      <div class="meta-card">
+        <span>Effective Date</span>
+        [Insert Date]
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="content">
+
+  <section class="section">
+    <h2>1. Introduction</h2>
+    <p>
+      Welcome to Didwapa.
+    </p>
+    <p>
+      Didwapa is an online marketplace operated by DIDWAPA ESCROW LTD,
+      providing buyers and sellers with a secure platform to buy, sell and
+      transact for products and services. Certain transactions may include
+      buyer protection through Didwapa’s escrow process.
+    </p>
+    <p>
+      By accessing or using Didwapa, you agree to these Terms & Conditions.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>2. Definitions</h2>
+    <p><strong>Platform</strong> means the Didwapa website, mobile applications and related services.</p>
+    <p><strong>Buyer</strong> means any person purchasing goods or services through Didwapa.</p>
+    <p><strong>Seller</strong> means any approved vendor listing goods or services.</p>
+    <p><strong>Escrow Transaction</strong> means a transaction where payment is managed according to Didwapa’s escrow process.</p>
+    <p><strong>Verified Seller</strong> means a seller who has successfully completed Didwapa’s verification requirements.</p>
+  </section>
+
+  <section class="section">
+    <h2>3. Eligibility</h2>
+    <p>Users must:</p>
+    <ul>
+      <li>Be at least 18 years old or have legal guardian consent.</li>
+      <li>Provide accurate registration information.</li>
+      <li>Use only one personal account unless approved by Didwapa.</li>
+      <li>Complete identity verification when requested.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>4. User Accounts</h2>
+    <p>Users are responsible for:</p>
+    <ul>
+      <li>Keeping passwords secure.</li>
+      <li>Maintaining accurate profile information.</li>
+      <li>Preventing unauthorized access.</li>
+      <li>Reporting suspicious account activity immediately.</li>
+    </ul>
+    <p>
+      Didwapa may suspend accounts that contain false information or violate these Terms.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>5. Marketplace Rules</h2>
+    <p>Buyers and sellers agree to:</p>
+    <ul>
+      <li>Communicate respectfully.</li>
+      <li>Conduct transactions honestly.</li>
+      <li>Avoid fraudulent activities.</li>
+      <li>Comply with Ghanaian laws.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>6. Vendor Approval</h2>
+    <p>Selling on Didwapa requires approval.</p>
+    <p>Applicants may be required to provide:</p>
+    <ul>
+      <li>Ghana Card</li>
+      <li>Selfie verification</li>
+      <li>Mobile Money verification</li>
+      <li>Business registration for companies</li>
+      <li>Additional information requested by Didwapa</li>
+    </ul>
+    <p>
+      Vendor approval is at the sole discretion of Didwapa.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>7. Product Listings</h2>
+    <p>Sellers must ensure that:</p>
+    <ul>
+      <li>Product descriptions are accurate.</li>
+      <li>Images are genuine.</li>
+      <li>Prices are correct.</li>
+      <li>Goods are legally owned.</li>
+      <li>Items comply with Didwapa policies.</li>
+    </ul>
+    <p>
+      Misleading listings may be removed without notice.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>8. Escrow Transactions</h2>
+    <p>Where a transaction is designated as Escrow Protected:</p>
+    <ul>
+      <li>Payment follows Didwapa’s approved escrow workflow.</li>
+      <li>Funds are released only after the applicable release conditions are met.</li>
+      <li>Didwapa may delay or suspend release where fraud, disputes or policy violations are suspected.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>9. Buyer Responsibilities</h2>
+    <p>Buyers agree to:</p>
+    <ul>
+      <li>Pay using approved payment methods.</li>
+      <li>Inspect goods promptly.</li>
+      <li>Confirm receipt only after receiving the correct goods or services.</li>
+      <li>Raise disputes within the applicable dispute period.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>10. Seller Responsibilities</h2>
+    <p>Sellers agree to:</p>
+    <ul>
+      <li>Deliver products as described.</li>
+      <li>Ship within agreed timelines.</li>
+      <li>Cooperate during investigations.</li>
+      <li>Provide evidence when requested.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>11. Disputes</h2>
+    <p>
+      Where a dispute arises, Didwapa may request evidence including:
+    </p>
+    <ul>
+      <li>Delivery records</li>
+      <li>Photographs</li>
+      <li>Videos</li>
+      <li>Chat history</li>
+      <li>Receipts</li>
+      <li>Tracking information</li>
+    </ul>
+    <p>
+      Didwapa will review available evidence before determining the outcome in accordance with its Dispute Resolution Policy.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>12. Prohibited Activities</h2>
+    <p>Users must not:</p>
+    <ul>
+      <li>Sell counterfeit products.</li>
+      <li>Commit fraud.</li>
+      <li>Circumvent Didwapa’s payment process.</li>
+      <li>Harass other users.</li>
+      <li>Use stolen identities.</li>
+      <li>Upload illegal content.</li>
+      <li>List prohibited goods.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>13. Suspension and Termination</h2>
+    <p>
+      Didwapa may suspend or permanently terminate any account involved in:
+    </p>
+    <ul>
+      <li>Fraud</li>
+      <li>Money laundering</li>
+      <li>Identity theft</li>
+      <li>Fake listings</li>
+      <li>Chargeback abuse</li>
+      <li>Repeated policy violations</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>14. Fees</h2>
+    <p>Didwapa may charge:</p>
+    <ul>
+      <li>Escrow fees</li>
+      <li>Vendor subscription fees</li>
+      <li>Promotional listing fees</li>
+      <li>Advertising fees</li>
+      <li>Other published service charges</li>
+    </ul>
+    <p>
+      All fees will be disclosed before payment.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>15. Limitation of Liability</h2>
+    <p>
+      To the fullest extent permitted by law, DIDWAPA ESCROW LTD is not liable
+      for indirect, incidental or consequential losses arising from use of the platform.
+    </p>
+    <p>
+      Nothing in these Terms limits any rights that cannot lawfully be excluded.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>16. Privacy</h2>
+    <p>
+      Personal information is collected and processed in accordance with the Didwapa Privacy Policy.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>17. Intellectual Property</h2>
+    <p>
+      All trademarks, logos, software, graphics and content on Didwapa remain
+      the property of DIDWAPA ESCROW LTD or their respective owners.
+    </p>
+    <p>
+      Users may not reproduce or distribute Didwapa content without written permission.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>18. Governing Law</h2>
+    <p>
+      These Terms & Conditions are governed by the laws of the Republic of Ghana.
+    </p>
+    <p>
+      Any disputes relating to these Terms shall be subject to the jurisdiction
+      of the courts of Ghana unless otherwise required by applicable law.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>19. Contact</h2>
+    <div class="contact-card">
+      <strong>DIDWAPA ESCROW LTD</strong>
+      <p>Customer Support</p>
+      <p>Email: <a href="mailto:support@didwapa.com">support@didwapa.com</a></p>
+      <p>Website: <a href="https://www.didwapa.com">www.didwapa.com</a></p>
+    </div>
+  </section>
+
+  <section class="section acceptance">
+    <h2>20. Acceptance</h2>
+    <p>
+      By creating an account or using Didwapa, you acknowledge that you have read,
+      understood and agreed to these Terms & Conditions.
+    </p>
+  </section>
+
+</main>
+
+<div class="footer-note">
+  © DIDWAPA ESCROW LTD. All rights reserved.
+</div>
+
+</div>
+
+</body>
+</html>

@@ -168,6 +168,51 @@ body{
 .nav-item.active{
   color:var(--primary);
 }
+
+.quick-links{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  padding:14px;
+}
+
+.quick-btn{
+  border:none;
+  border-radius:16px;
+  background:#fff4ea;
+  color:#111827;
+  padding:18px 12px;
+  cursor:pointer;
+  text-align:center;
+  transition:.25s;
+  border:1px solid #ffe0c7;
+}
+
+.quick-btn:hover{
+  background:#ff6600;
+  color:#fff;
+}
+
+.quick-btn .icon{
+  width:60px;
+  height:60px;
+  margin:0 auto 10px;
+  border-radius:50%;
+  background:#fff;
+  display:grid;
+  place-items:center;
+  font-size:30px;
+}
+
+.quick-btn strong{
+  display:block;
+  font-size:.95rem;
+}
+
+.quick-btn small{
+  color:inherit;
+  opacity:.8;
+}
 </style>
 </head>
 
@@ -184,6 +229,32 @@ body{
       <h2>Notifications</h2>
     </div>
   </div>
+<section class="quick-links">
+
+<button class="quick-btn"
+onclick="location.href='faq.html'">
+
+<div class="icon">❓</div>
+
+<strong>FAQ</strong>
+
+<small>Frequently Asked Questions</small>
+
+</button>
+
+<button class="quick-btn"
+onclick="location.href='terms.html'">
+
+<div class="icon">📜</div>
+
+<strong>Terms & Conditions</strong>
+
+<small>Read our marketplace policy</small>
+
+</button>
+
+</section>
+
 </header>
 
 <section id="notificationList" class="notification-list">

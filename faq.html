@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DIDWAPA FAQ & Policies</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,Helvetica,sans-serif;
+}
+
+:root{
+--primary:#ff6600;
+--green:#16a34a;
+--bg:#f7f8fb;
+--text:#111827;
+--muted:#6b7280;
+--border:#e5e7eb;
+--soft:#fff4ea;
+}
+
+body{
+background:var(--bg);
+color:var(--text);
+padding-bottom:90px;
+}
+
+.app{
+max-width:480px;
+margin:auto;
+background:#fff;
+min-height:100vh;
+}
+
+.header{
+position:sticky;
+top:0;
+z-index:20;
+background:#fff;
+padding:14px;
+border-bottom:1px solid var(--border);
+box-shadow:0 6px 20px rgba(0,0,0,.05);
+}
+
+.top-row{
+display:flex;
+align-items:center;
+gap:12px;
+margin-bottom:12px;
+}
+
+.back{
+width:40px;
+height:40px;
+border:none;
+border-radius:50%;
+background:var(--soft);
+color:var(--primary);
+font-size:22px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.title-box{
+flex:1;
+}
+
+.title-box small{
+color:var(--muted);
+font-weight:bold;
+}
+
+.title-box h2{
+margin-top:3px;
+font-size:28px;
+}
+
+.search-box{
+height:46px;
+display:flex;
+align-items:center;
+gap:8px;
+background:#fafafa;
+border:1px solid var(--border);
+border-radius:14px;
+padding:0 12px;
+}
+
+.search-box input{
+width:100%;
+border:none;
+outline:none;
+background:transparent;
+font-size:15px;
+}
+
+.policy-list{
+padding:15px;
+display:flex;
+flex-direction:column;
+gap:12px;
+}
+
+.policy-card{
+display:flex;
+align-items:center;
+gap:14px;
+padding:15px;
+background:#fff;
+border:1px solid var(--border);
+border-radius:18px;
+cursor:pointer;
+transition:.25s;
+box-shadow:0 6px 15px rgba(0,0,0,.04);
+}
+
+.policy-card:hover{
+transform:translateY(-2px);
+}
+
+.icon{
+width:52px;
+height:52px;
+border-radius:16px;
+background:var(--soft);
+display:grid;
+place-items:center;
+font-size:24px;
+flex-shrink:0;
+}
+
+.info{
+flex:1;
+}
+
+.info strong{
+display:block;
+font-size:15px;
+margin-bottom:4px;
+}
+
+.info small{
+color:var(--muted);
+font-size:13px;
+}
+
+.arrow{
+font-size:24px;
+color:var(--primary);
+font-weight:bold;
+}
+
+.bottom-nav{
+position:fixed;
+bottom:0;
+left:50%;
+transform:translateX(-50%);
+max-width:480px;
+width:100%;
+display:grid;
+grid-template-columns:repeat(5,1fr);
+background:#fff;
+border-top:1px solid var(--border);
+padding:8px 5px;
+}
+
+.nav-item{
+text-align:center;
+text-decoration:none;
+color:#111;
+font-size:12px;
+font-weight:bold;
+}
+
+.nav-item div{
+font-size:22px;
+margin-bottom:3px;
+}
+
+.nav-item.active{
+color:var(--primary);
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="header">
+
+<div class="top-row">
+<button class="back" onclick="history.back()">←</button>
+
+<div class="title-box">
+<small>DIDWAPA Help Center</small>
+<h2>FAQ & Policies</h2>
+</div>
+</div>
+
+<div class="search-box">
+🔍
+<input
+id="searchInput"
+type="text"
+placeholder="Search policies...">
+</div>
+
+</header>
+
+<div class="policy-list" id="policyList">
+
+<div class="policy-card" onclick="location.href='terms.html'">
+<div class="icon">📘</div>
+
+<div class="info">
+<strong>DiDWAPA ESCROW LTD Terms & Conditions</strong>
+<small>Platform terms of use</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+<div class="policy-card" onclick="openPolicy('escrow')">
+<div class="icon">✅</div>
+
+<div class="info">
+<strong>Escrow Policy</strong>
+<small>Buyer & Seller protection</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+<div class="policy-card" onclick="openPolicy('dispute')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>Dispute Resolution Policy</strong>
+<small>Handling disputes fairly</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+<div class="policy-card" onclick="openPolicy('vendor')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>Vendor Agreement</strong>
+<small>Rules for sellers</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+<div class="policy-card" onclick="openPolicy('buyer')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>Buyer Agreement</strong>
+<small>Buyer responsibilities</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+<div class="policy-card" onclick="openPolicy('privacy')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>Privacy Policy</strong>
+<small>How your information is protected</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+<div class="policy-card" onclick="openPolicy('refund')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>Refund & Cancellation Policy</strong>
+<small>Refund and cancellation rules</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+<div class="policy-card" onclick="openPolicy('kyc')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>KYC & Identity Verification Policy</strong>
+<small>Verification requirements</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+<div class="policy-card" onclick="openPolicy('prohibited')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>Prohibited Items Policy</strong>
+<small>Items not allowed on DIDWAPA</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+
+<div class="policy-card" onclick="openPolicy('community')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>Community Guidelines</strong>
+<small>Guidelines for users</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+
+<div class="policy-card" onclick="openPolicy('buyerProtection')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>Buyer Protection Policy</strong>
+<small>Buyer securities</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+<div class="policy-card" onclick="openPolicy('sellerCode')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>Seller Code of Conduct</strong>
+<small>Conducts for seller</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+<div class="policy-card" onclick="openPolicy('delivery')">
+<div class="icon">📄</div>
+
+<div class="info">
+<strong>Delivery and Inspection policy</strong>
+<small>Inspection Policy</small>
+</div>
+
+<div class="arrow">›</div>
+</div>
+
+</div>
+
+</div>
+
+<nav class="bottom-nav">
+
+<a href="index.html" class="nav-item">
+<div>🏠</div>
+Home
+</a>
+
+<a href="categorylist.html" class="nav-item">
+<div>▦</div>
+Categories
+</a>
+
+<a href="you.html" class="nav-item">
+<div>👤</div>
+You
+</a>
+
+<a href="product-messages.html" class="nav-item">
+<div>💬</div>
+Message
+</a>
+
+<a href="cart.html" class="nav-item">
+<div>🛒</div>
+Cart
+</a>
+
+</nav>
+
+<script>
+const search=document.getElementById("searchInput");
+
+search.addEventListener("keyup",function(){
+
+const value=this.value.toLowerCase();
+
+document.querySelectorAll(".policy-card").forEach(card=>{
+
+const text=card.innerText.toLowerCase();
+
+card.style.display=text.includes(value)?"flex":"none";
+
+});
+
+});
+</script>
+
+<script>
+function openPolicy(policyId){
+  location.href = `policy-detail.html?policy=${policyId}`;
+}
+</script>
+
+</body>
+</html>
