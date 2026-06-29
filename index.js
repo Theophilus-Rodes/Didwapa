@@ -2543,13 +2543,13 @@ app.post("/api/cart/add", (req, res) => {
         if (updateErr) {
           return res.status(500).json({
             success: false,
-            message: "Failed to update cart."
+            message: "Failed to save product."
           });
         }
 
         res.json({
           success: true,
-          message: "Product quantity updated in cart."
+          message: "Product quantity updated in save."
         });
       });
     }
@@ -2563,13 +2563,13 @@ app.post("/api/cart/add", (req, res) => {
       if (insertErr) {
         return res.status(500).json({
           success: false,
-          message: "Failed to add product to cart."
+          message: "Product failed to save"
         });
       }
 
       res.json({
         success: true,
-        message: "Product added to cart successfully."
+        message: "Product saved"
       });
     });
   });

@@ -482,8 +482,8 @@
     <p>This product is available. What would you like to do?</p>
 
     <button class="modal-message" onclick="openMessagePage()">Send Owner Message</button>
-    <button class="modal-cart" onclick="addToCartFromModal()">Add to Cart</button>
-    <button class="modal-pay" onclick="finalizePayment()">Finalize Payment</button>
+    <button class="modal-cart" onclick="addToCartFromModal()">Save Product</button>
+    <!-- <button class="modal-pay" onclick="finalizePayment()">Finalize Payment</button> -->
     <button class="modal-cancel" onclick="closeBuyModal()">Cancel</button>
   </div>
 </div>
@@ -919,7 +919,7 @@ async function addToCartFromModal() {
 
   } catch (error) {
     console.error(error);
-    alert("Failed to add product to cart.");
+    alert("Failed to save product.");
   }
 }
 
