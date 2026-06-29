@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DIDWAPA - My Cart</title>
+<title>DIDWAPA - Saved Products</title>
 
   <style>
     * {
@@ -257,27 +257,25 @@
 
   <section class="header">
     <div class="top-row">
-      <h3>My Cart</h3>
+     <h3>Saved</h3>
       <button class="back-btn" onclick="window.location.href='you.html'">← Back</button>
     </div>
 
     <h1>Saved Products</h1>
-    <p>View all products you have added to cart.</p>
+   <p>View all products you have saved to buy later.</p>
   </section>
 
   <section class="content">
     <div class="summary">
       Total Items: <strong id="totalItems">0</strong><br/>
-      Total Amount: <strong id="totalAmount">GH₵0.00</strong>
+      Saved Value: <strong id="totalAmount">GH₵0.00</strong>
     </div>
 
     <div class="cart-list" id="cartList">
-      <div class="empty">Loading cart...</div>
+    <div class="empty">Loading saved products...</div>
     </div>
 
-<button class="checkout-btn" onclick="proceedToCheckout()">
-  Proceed to Checkout
-</button>
+
   </section>
 
 </main>
@@ -333,8 +331,8 @@
       if (items.length === 0) {
         cartList.innerHTML = `
           <div class="empty">
-            Your cart is empty.<br/>
-            Add products to see them here.
+            No saved products yet.<br/>
+            Save products to view them here..
           </div>
         `;
         return;
@@ -381,14 +379,14 @@
       console.error(error);
       cartList.innerHTML = `
         <div class="empty">
-          Failed to load cart.
+          Failed to load saved products.
         </div>
       `;
     }
   }
 
   async function removeCartItem(cartId) {
-    if (!confirm("Remove this item from cart?")) return;
+    if (!confirm("Remove this saved product?")) return;
 
     try {
       const res = await fetch(`${API_BASE}/api/cart/remove/${cartId}`, {
@@ -409,16 +407,7 @@
     }
   }
 
-  function proceedToCheckout() {
-  const totalItems = Number(document.getElementById("totalItems").textContent);
 
-  if (totalItems <= 0) {
-    alert("Your cart is empty.");
-    return;
-  }
-
-  window.location.href = "cart-checkout.html";
-}
 
   loadCart();
 </script>
