@@ -7135,6 +7135,226 @@ app.get("/api/vehicle-models", (req, res) => {
 
 
 
+/////Forgot password codes 
+app.post("/api/password/check-email", (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Email is required."
+    });
+  }
+
+  const sql = `
+    SELECT id, email, telephone 
+    FROM users 
+    WHERE email = ? 
+    LIMIT 1
+  `;
+
+  db.query(sql, [email], (err, results) => {
+    if (err) {
+      console.error("CHECK EMAIL ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Server error."
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No account found with this email."
+      });
+    }
+
+    const user = results[0];
+    const phone = user.telephone || "";
+    const lastTwo = phone.slice(-2);
+
+    return res.json({
+      success: true,
+      lastTwo
+    });
+  });
+});
+
+
+app.post("/api/password/send-code", async (req, res) => {
+  const { email, telephone } = req.body;
+
+  if (!email || !telephone) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and telephone are required."
+    });
+  }
+
+  const sql = `
+    SELECT id, email, telephone 
+    FROM users 
+    WHERE email = ? 
+    LIMIT 1
+  `;
+
+  db.query(sql, [email], async (err, results) => {
+    if (err) {
+      console.error("SEND CODE CHECK ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Server error."
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Account not found."
+      });
+    }
+
+    const user = results[0];
+
+    if (String(user.telephone).trim() !== String(telephone).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number does not match this account."
+      });
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    resetCodes[email] = {
+      code,
+      verified: false,
+      expiresAt: Date.now() + 10 * 60 * 1000
+    };
+
+    console.log("DIDWAPA RESET CODE:", code);
+
+    /*
+      Connect your SMS API here.
+      Example message:
+      Your DIDWAPA password reset code is 123456
+    */
+
+    return res.json({
+      success: true,
+      message: "Verification code sent."
+    });
+  });
+});
+
+
+
+app.post("/api/password/verify-code", (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and code are required."
+    });
+  }
+
+  const saved = resetCodes[email];
+
+  if (!saved) {
+    return res.status(400).json({
+      success: false,
+      message: "No reset code found. Please request a new code."
+    });
+  }
+
+  if (Date.now() > saved.expiresAt) {
+    delete resetCodes[email];
+
+    return res.status(400).json({
+      success: false,
+      message: "Code has expired. Please request a new one."
+    });
+  }
+
+  if (saved.code !== code) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid verification code."
+    });
+  }
+
+  resetCodes[email].verified = true;
+
+  return res.json({
+    success: true,
+    message: "Code verified."
+  });
+});
+
+
+app.post("/api/password/reset", async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  if (!email || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and new password are required."
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: "Password must be at least 6 characters."
+    });
+  }
+
+  const saved = resetCodes[email];
+
+  if (!saved || saved.verified !== true) {
+    return res.status(400).json({
+      success: false,
+      message: "Please verify your code first."
+    });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const sql = `
+      UPDATE users 
+      SET pin_hash = ? 
+      WHERE email = ?
+    `;
+
+    db.query(sql, [hashedPassword, email], (err, result) => {
+      if (err) {
+        console.error("PASSWORD RESET ERROR:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update password."
+        });
+      }
+
+      delete resetCodes[email];
+
+      return res.json({
+        success: true,
+        message: "Password updated successfully."
+      });
+    });
+
+  } catch (error) {
+    console.error("HASH PASSWORD ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error."
+    });
+  }
+});
+
+
 
 app.use(express.static(path.join(__dirname)));
 
