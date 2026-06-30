@@ -1,1723 +1,290 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DIDWAPA Marketplace</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DIDWAPA Marketplace</title>
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    :root {
-      --primary: #ff6600;
-      --primary-dark: #e95600;
-      --green: #16a34a;
-      --blue: #2563eb;
-      --purple: #7c3aed;
-      --bg: #f7f8fb;
-      --text: #111827;
-      --muted: #6b7280;
-      --card: #ffffff;
-      --border: #e5e7eb;
-      --soft-orange: #fff4ea;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      padding-bottom: 90px;
-    }
-
-    .app {
-      max-width: 1180px;
-      margin: 0 auto;
-      background: #fff;
-      min-height: 100vh;
-      overflow: hidden;
-    }
-
-    .top-header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(255,255,255,.96);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-      animation: slideDown .5s ease;
-    }
-
-    .header-main {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 16px;
-      padding: 14px 22px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 1.65rem;
-      font-weight: 900;
-      color: #111;
-      white-space: nowrap;
-    }
-
-    .logo-icon {
-      width: 34px;
-      height: 34px;
-      background: var(--primary);
-      color: #fff;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      font-size: 1rem;
-      box-shadow: 0 8px 22px rgba(255,102,0,.35);
-    }
-
-    .search-box {
-      height: 52px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      display: flex;
-      align-items: center;
-      padding: 0 7px 0 18px;
-      gap: 10px;
-      background: #fff;
-      transition: .3s ease;
-      box-shadow: 0 5px 20px rgba(0,0,0,.04);
-    }
-
-    .region-filter{
-  margin-top:10px;
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+:root{
+  --primary:#ff6600;
+  --primary-dark:#e95600;
+  --green:#16a34a;
+  --bg:#f7f8fb;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --soft:#fff4ea;
 }
-
-.region-filter select{
-  width:100%;
-  height:44px;
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:0 12px;
-  background:#fff;
-  font-weight:700;
-  outline:none;
-  cursor:pointer;
-}
-
-.region-filter select:focus{
-  border-color:var(--primary);
-}
-
-    .search-box:focus-within {
-      border-color: var(--primary);
-      box-shadow: 0 12px 35px rgba(255,102,0,.18);
-      transform: translateY(-1px);
-    }
-
-    .search-box input {
-      flex: 1;
-      border: none;
-      outline: none;
-      font-size: .95rem;
-      color: #333;
-      min-width: 0;
-    }
-
-    .camera-btn,
-    .search-btn,
-    .header-icon {
-      border: none;
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      transition: .25s ease;
-    }
-
-    .camera-btn {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: #fff;
-      font-size: 1.15rem;
-    }
-
-    .search-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: #000;
-      color: #fff;
-      font-size: 1.15rem;
-      animation: pulseSearch 2s infinite;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .header-icon {
-      width: 38px;
-      height: 38px;
-      background: #fff;
-      border-radius: 50%;
-      font-size: 1.25rem;
-      position: relative;
-    }
-
-    .mini-badge {
-      position: absolute;
-      top: 0;
-      right: 0;
-      background: var(--primary);
-      color: #fff;
-      font-size: .65rem;
-      min-width: 17px;
-      height: 17px;
-      border-radius: 999px;
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-    }
-
-    .category-nav {
-      display: flex;
-      gap: 12px;
-      overflow-x: auto;
-      padding: 0 22px;
-      scrollbar-width: none;
-    }
-
-    .category-nav::-webkit-scrollbar {
-      display: none;
-    }
-
-    .cat-tab {
-      flex-shrink: 0;
-      border: none;
-      background: transparent;
-      padding: 14px 18px;
-      font-weight: 800;
-      color: #111;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      transition: .25s ease;
-      white-space: nowrap;
-    }
-
-    .cat-tab span {
-      font-size: 1.35rem;
-    }
-
-    .cat-tab:hover,
-    .cat-tab.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
-    }
-
-    .content {
-      padding: 22px;
-    }
-
-  .hero {
-  background: linear-gradient(135deg, #fff3e8, #fffaf5);
-  margin-top: 4px;
-  border-radius: 18px;
-  padding: 34px 34px;
-  display: grid;
-  grid-template-columns: 1.1fr .9fr;
-  align-items: center;
-  gap: 25px;
-  overflow: hidden;
-  position: relative;
-  animation: fadeUp .7s ease;
-  border: 1px solid #ffe0c7;
-}
-
-    .hero h1 {
-      font-size: 2.45rem;
-      line-height: 1.18;
-      margin-bottom: 14px;
-      letter-spacing: -.5px;
-    }
-
-    .hero h1 span {
-      color: var(--primary);
-    }
-
-    .hero p {
-      color: #333;
-      font-size: 1.05rem;
-      line-height: 1.6;
-      margin-bottom: 24px;
-      max-width: 430px;
-    }
-
-    .escrow-steps {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 25px;
-      max-width: 560px;
-    }
-
-    .step {
-      text-align: center;
-      font-size: .75rem;
-      color: #222;
-      animation: floatSoft 3s ease-in-out infinite;
-    }
-
-    .step:nth-child(2) { animation-delay: .2s; }
-    .step:nth-child(3) { animation-delay: .4s; }
-    .step:nth-child(4) { animation-delay: .6s; }
-
-    .step-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 12px;
-      margin: 0 auto 7px;
-      display: grid;
-      place-items: center;
-      color: #fff;
-      font-size: 1.1rem;
-      background: var(--green);
-    }
-
-    .step:nth-child(2) .step-icon,
-    .step:nth-child(4) .step-icon {
-      background: var(--primary);
-    }
-
-    .hero-btn {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 15px 28px;
-      border-radius: 11px;
-      font-weight: 900;
-      font-size: 1rem;
-      cursor: pointer;
-      box-shadow: 0 12px 28px rgba(255,102,0,.28);
-      transition: .25s ease;
-    }
-
-    .hero-btn:hover {
-      background: var(--primary-dark);
-      transform: translateY(-3px);
-    }
-
-    .hero-visual {
-      min-height: 300px;
-      position: relative;
-      display: grid;
-      place-items: center;
-    }
-
-    .phone-card {
-      width: 185px;
-      height: 285px;
-      background: #111;
-      border-radius: 30px;
-      padding: 10px;
-      transform: rotate(5deg);
-      box-shadow: 0 24px 50px rgba(0,0,0,.22);
-      animation: floatPhone 3.5s ease-in-out infinite;
-    }
-
-    .phone-screen {
-      height: 100%;
-      background: #fff;
-      border-radius: 23px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      gap: 12px;
-    }
-
-    .phone-logo {
-      font-size: 1.35rem;
-    }
-
-    .phone-shield {
-      width: 70px;
-      height: 82px;
-      background: var(--primary);
-      color: #fff;
-      border-radius: 22px;
-      display: grid;
-      place-items: center;
-      font-size: 2rem;
-    }
-
-    .protected {
-      background: var(--green);
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-size: .75rem;
-      transform: rotate(5deg);
-    }
-
-    .shield-big {
-      position: absolute;
-      left: 30px;
-      bottom: 35px;
-      width: 115px;
-      height: 135px;
-      background: linear-gradient(135deg, #35d46b, #0d9f43);
-      color: #fff;
-      border-radius: 38px;
-      display: grid;
-      place-items: center;
-      font-size: 3rem;
-      box-shadow: 0 18px 35px rgba(22,163,74,.3);
-      animation: floatSoft 3s ease-in-out infinite;
-    }
-
-    .box {
-      position: absolute;
-      right: 25px;
-      bottom: 30px;
-      width: 135px;
-      height: 105px;
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      border-radius: 14px;
-      box-shadow: 0 18px 35px rgba(217,119,6,.25);
-    }
-
- 
-
-    .trust-grid {
-  grid-template-columns: 1fr !important;
-  gap: 10px !important;
-}
-
-.trust-card {
-  padding: 10px 12px !important;
-  gap: 10px !important;
-  border-radius: 13px !important;
-}
-
-.trust-icon {
-  width: 38px !important;
-  height: 38px !important;
-  font-size: 1.1rem !important;
-}
-
-.trust-card strong {
-  font-size: .85rem !important;
-}
-
-.trust-card small {
-  font-size: .7rem !important;
-}
-    .trust-card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 15px;
-      padding: 18px;
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      box-shadow: 0 8px 22px rgba(0,0,0,.04);
-      transition: .25s ease;
-      animation: fadeUp .8s ease both;
-    }
-
-    .trust-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 16px 35px rgba(0,0,0,.1);
-    }
-
-    .trust-icon {
-      width: 50px;
-      height: 50px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      font-size: 1.6rem;
-      background: #ecfdf5;
-    }
-
-    .trust-card:nth-child(2) .trust-icon { background: #fff7ed; }
-    .trust-card:nth-child(3) .trust-icon { background: #f5f3ff; }
-    .trust-card:nth-child(4) .trust-icon { background: #eff6ff; }
-
-    .trust-card strong {
-      display: block;
-      margin-bottom: 4px;
-      font-size: 1rem;
-    }
-
-    .trust-card small {
-      color: var(--muted);
-    }
-
-    .section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin: 26px 0 14px;
-    }
-
-    .section-head h2 {
-      font-size: 1.45rem;
-    }
-
-    .view-all {
-      color: var(--primary);
-      font-weight: 900;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .shop-cats {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 14px;
-    }
-
-    .shop-cat {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px 10px;
-      text-align: center;
-      cursor: pointer;
-      transition: .25s ease;
-      box-shadow: 0 8px 20px rgba(0,0,0,.035);
-    }
-
-    .shop-cat:hover {
-      transform: translateY(-6px);
-      border-color: var(--primary);
-      box-shadow: 0 18px 35px rgba(255,102,0,.13);
-    }
-
-    .shop-img {
-      width: 110px;
-      height: 90px;
-      margin: 0 auto 10px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-size: 3rem;
-      background: #fff1e6;
-    }
-
-    .shop-cat:nth-child(2) .shop-img { background: #f1f5f9; }
-    .shop-cat:nth-child(3) .shop-img { background: #fef3c7; }
-    .shop-cat:nth-child(4) .shop-img { background: #f3f4f6; }
-    .shop-cat:nth-child(5) .shop-img { background: #e0f2fe; }
-
-    .shop-cat strong {
-      display: block;
-      margin-bottom: 5px;
-    }
-
-    .shop-cat small {
-      color: var(--muted);
-      line-height: 1.4;
-    }
-
-    .products {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 14px;
-      padding-bottom: 24px;
-    }
-
-    .product-card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      overflow: hidden;
-      transition: .3s ease;
-      cursor: pointer;
-      box-shadow: 0 8px 20px rgba(0,0,0,.035);
-      animation: productPop .55s ease both;
-    }
-
-    .product-card:hover {
-      transform: translateY(-7px);
-      box-shadow: 0 18px 40px rgba(0,0,0,.11);
-    }
-
-    .product-img {
-      height: 160px;
-      background: #f3f4f6;
-      position: relative;
-      display: grid;
-      place-items: center;
-      font-size: 3.2rem;
-      overflow: hidden;
-    }
-
-    .product-img img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .verified-badge {
-      position: absolute;
-      left: 7px;
-      bottom: 7px;
-      background: var(--green);
-      color: #fff;
-      border-radius: 999px;
-      padding: 4px 7px;
-      font-size: .68rem;
-      font-weight: 900;
-    }
-
-    .heart {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: rgba(255,255,255,.9);
-      display: grid;
-      place-items: center;
-      font-size: 1rem;
-    }
-
-    .product-info {
-      padding: 10px;
-    }
-
-    .product-name {
-      font-size: .92rem;
-      font-weight: 900;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 7px;
-    }
-
-    .product-price {
-      font-size: 1rem;
-      font-weight: 900;
-      margin-bottom: 6px;
-    }
-
-    .product-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: var(--muted);
-      font-size: .78rem;
-      gap: 8px;
-    }
-
-    .rating {
-      color: #f59e0b;
-      font-weight: 900;
-      white-space: nowrap;
-    }
-
-.vendor-strip {
-  grid-template-columns: 1fr !important;
-  gap: 10px !important;
-  padding: 14px !important;
-}
-
-.vendor-card {
-  width: 100% !important;
-  padding: 9px 10px !important;
-  gap: 8px !important;
-}
-
-.vendor-logo {
-  width: 32px !important;
-  height: 32px !important;
-  font-size: .8rem !important;
-}
-
-.vendor-card strong {
-  font-size: .8rem !important;
-}
-
-.vendor-card small {
-  font-size: .68rem !important;
-}
-
-.vendor-arrow {
-  width: 36px !important;
-  height: 36px !important;
-  border-radius: 50% !important;
-}
-
-    .vendor-title strong {
-      display: block;
-      font-size: 1.1rem;
-    }
-
-    .vendor-title small {
-      color: var(--muted);
-    }
-
-    .vendor-card {
-      background: #fff;
-      border-radius: 14px;
-      padding: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 6px 18px rgba(0,0,0,.04);
-    }
-
-    .vendor-logo {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      background: #f3f4f6;
-      font-weight: 900;
-      color: var(--primary);
-    }
-
-    .vendor-card strong {
-      display: block;
-      font-size: .85rem;
-    }
-
-    .vendor-card small {
-      color: #111;
-      font-size: .78rem;
-      font-weight: 700;
-    }
-
-    .vendor-arrow {
-      width: 45px;
-      height: 45px;
-      border-radius: 50%;
-      border: none;
-      background: #fff;
-      font-size: 1.4rem;
-      cursor: pointer;
-      box-shadow: 0 8px 20px rgba(0,0,0,.08);
-    }
-
-   .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  max-width: 1180px;
-  width: 100%;
-  background: rgba(255,255,255,.96);
-  backdrop-filter: blur(14px);
-  border-top: 1px solid var(--border);
-  display: grid;
-  grid-template-columns: repeat(5, 1fr) 1.5fr;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 10px;
-  z-index: 120;
-}
-
-    .nav-item {
-      text-align: center;
-      text-decoration: none;
-      color: #111;
-      font-size: .76rem;
-      font-weight: 800;
-      position: relative;
-      transition: .25s ease;
-    }
-
-    .nav-item div {
-      font-size: 1.45rem;
-      margin-bottom: 3px;
-    }
-
-    .nav-item:hover,
-    .nav-item.active {
-      color: var(--primary);
-      transform: translateY(-3px);
-    }
-
-    .badge {
-      position: absolute;
-      top: -3px;
-      right: 30%;
-      background: var(--primary);
-      color: #fff;
-      font-size: .65rem;
-      min-width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      display: inline-grid;
-      place-items: center;
-      font-weight: 900;
-    }
-
-    .sell-btn {
-      background: var(--green);
-      color: #fff;
-      border-radius: 999px;
-      padding: 14px 20px;
-      text-decoration: none;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      box-shadow: 0 12px 26px rgba(22,163,74,.25);
-      transition: .25s ease;
-      white-space: nowrap;
-    }
-
-    .sell-btn:hover {
-      transform: translateY(-3px);
-      background: #0f8f3d;
-    }
-
-    @keyframes slideDown {
-      from { transform: translateY(-25px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    @keyframes slideUp {
-      from { transform: translate(-50%, 30px); opacity: 0; }
-      to { transform: translate(-50%, 0); opacity: 1; }
-    }
-
-    @keyframes fadeUp {
-      from { transform: translateY(24px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    @keyframes pulseSearch {
-      0%,100% { box-shadow: 0 0 0 0 rgba(0,0,0,.25); }
-      50% { box-shadow: 0 0 0 9px rgba(0,0,0,0); }
-    }
-
-    @keyframes floatSoft {
-      0%,100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-
-    @keyframes floatPhone {
-      0%,100% { transform: rotate(5deg) translateY(0); }
-      50% { transform: rotate(2deg) translateY(-10px); }
-    }
-
-    @keyframes popIn {
-      from { transform: scale(.85); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    @keyframes productPop {
-      from { transform: scale(.96); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    @media (max-width: 900px) {
-      .header-main {
-        grid-template-columns: 1fr;
-        gap: 10px;
-        padding: 12px;
-      }
-
-      .logo {
-        justify-content: center;
-      }
-
-      .header-actions {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-      }
-
-      .header-icon:first-child {
-        display: none;
-      }
-
-      .content {
-        padding: 14px;
-      }
-
-      .hero {
-        grid-template-columns: 1fr;
-        padding: 26px 18px;
-      }
-
-      .hero h1 {
-        font-size: 2rem;
-      }
-
-      .hero-visual {
-        min-height: 240px;
-      }
-
-      .escrow-steps {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .trust-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .shop-cats {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .products {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .vendor-strip {
-        grid-template-columns: 1fr;
-      }
-
-      .vendor-card {
-        justify-content: flex-start;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .category-nav {
-        padding: 0 12px;
-      }
-
-      .cat-tab {
-        padding: 12px 14px;
-        font-size: .82rem;
-      }
-
-      .hero h1 {
-        font-size: 1.75rem;
-      }
-
-      .hero p {
-        font-size: .95rem;
-      }
-
-      .escrow-steps {
-        gap: 7px;
-      }
-
-      .step {
-        font-size: .65rem;
-      }
-
-      .step-icon {
-        width: 31px;
-        height: 31px;
-      }
-
-      .phone-card {
-    width: 88px;
-    height: 145px;
-}
-
-      .shield-big {
-        width: 80px;
-        height: 95px;
-        font-size: 2.1rem;
-        left: 5px;
-      }
-
-      .box {
-        width: 95px;
-        height: 75px;
-        right: 2px;
-      }
-
-    
-
-      .trust-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .shop-img {
-        width: 90px;
-        height: 75px;
-        font-size: 2.4rem;
-      }
-
-      .product-img {
-        height: 140px;
-      }
-
-      .bottom-nav {
-  grid-template-columns: repeat(5, 1fr);
-  padding: 7px 4px;
-}
-
-.bottom-nav .sell-btn {
-  position: fixed;
-  right: 12px;
-  bottom: 82px;
-  padding: 12px 18px;
-  z-index: 130;
-}
-
-      .sell-btn {
-        position: fixed;
-        right: 12px;
-        bottom: 84px;
-        padding: 12px 18px;
-        z-index: 130;
-      }
-    }
-
-/* FINAL PHONE MODE - COMPACT LIKE THE IMAGE */
-/* CLEAN FINAL MOBILE DESIGN */
-@media (max-width: 600px) {
-
-  .content {
-    padding: 10px;
-  }
-
-  .hero {
-    background: linear-gradient(135deg, #fff3e8, #fffaf5) !important;
-    display: grid !important;
-    grid-template-columns: 1.15fr .85fr !important;
-    padding: 16px 14px !important;
-    min-height: 220px !important;
-    gap: 8px !important;
-    border-radius: 14px !important;
-    border: 1px solid #ffe0c7 !important;
-  }
-
-  .hero h1 {
-    font-size: 1.15rem !important;
-    line-height: 1.18 !important;
-    margin-bottom: 8px !important;
-  }
-
-  .hero p {
-    font-size: .65rem !important;
-    line-height: 1.35 !important;
-    margin-bottom: 12px !important;
-    max-width: 160px;
-  }
-
-  .escrow-steps {
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 5px !important;
-    margin-bottom: 12px !important;
-    max-width: 190px;
-  }
-
-  .step {
-    font-size: .42rem !important;
-    line-height: 1.15 !important;
-  }
-
-  .step-icon {
-    width: 21px !important;
-    height: 21px !important;
-    font-size: .58rem !important;
-    border-radius: 7px !important;
-    margin-bottom: 3px !important;
-  }
-
-  .hero-btn {
-    padding: 8px 13px !important;
-    font-size: .62rem !important;
-    border-radius: 8px !important;
-  }
-
-  .hero-visual {
-    min-height: 170px !important;
-    position: relative !important;
-  }
-
-  .phone-card {
-    width: 86px !important;
-    height: 138px !important;
-    padding: 5px !important;
-    border-radius: 18px !important;
-    z-index: 4 !important;
-  }
-
-  .phone-screen {
-    border-radius: 14px !important;
-    gap: 5px !important;
-    font-size: .5rem !important;
-  }
-
-  .phone-logo {
-    font-size: .55rem !important;
-  }
-
-  .phone-shield {
-    width: 32px !important;
-    height: 38px !important;
-    font-size: .78rem !important;
-    border-radius: 10px !important;
-  }
-
-  .protected {
-    font-size: .34rem !important;
-    padding: 4px 6px !important;
-  }
-
-  .shield-big {
-    width: 55px !important;
-    height: 65px !important;
-    left: -2px !important;
-    bottom: 43px !important;
-    font-size: 1.4rem !important;
-    border-radius: 18px !important;
-    z-index: 3 !important;
-  }
-
-  .box {
-    width: 58px !important;
-    height: 48px !important;
-    right: -2px !important;
-    bottom: 33px !important;
-    border-radius: 10px !important;
-    z-index: 2 !important;
-  }
-
-  .quick-actions{
-  grid-template-columns:repeat(4,1fr);
-  gap:6px;
-}
-
-.quick-card{
-  padding:8px 4px;
-  border-radius:10px;
-}
-
-.quick-icon{
-  width:34px;
-  height:34px;
-  font-size:1rem;
-  border-radius:10px;
-  margin-bottom:5px;
-}
-
-.quick-card p{
-  font-size:.52rem;
-  line-height:1.15;
-}
-
-}
-
-
-/* FINAL FIX: TRUST + VENDORS SHOULD BE SMALL COLUMNS ON PHONE */
-@media (max-width: 600px) {
-
-  .trust-grid {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 6px !important;
-    margin: 10px 0 18px !important;
-  }
-
-  .trust-card {
-    padding: 8px 4px !important;
-    border-radius: 10px !important;
-    gap: 4px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    text-align: center !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-  }
-
-  .trust-icon {
-    width: 28px !important;
-    height: 28px !important;
-    font-size: .8rem !important;
-    border-radius: 8px !important;
-  }
-
-  .trust-card strong {
-    font-size: .52rem !important;
-    line-height: 1.15 !important;
-    margin-bottom: 3px !important;
-  }
-
-  .trust-card small {
-    font-size: .44rem !important;
-    line-height: 1.2 !important;
-  }
-
-  .vendor-strip {
-    display: grid !important;
-    grid-template-columns: 1.2fr repeat(4, 1fr) auto !important;
-    gap: 6px !important;
-    padding: 10px !important;
-    border-radius: 14px !important;
-  }
-
-  .vendor-title strong {
-    font-size: .58rem !important;
-  }
-
-  .vendor-title small {
-    font-size: .45rem !important;
-  }
-
-  .vendor-card {
-    width: auto !important;
-    padding: 6px 4px !important;
-    gap: 4px !important;
-    border-radius: 9px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    text-align: center !important;
-    align-items: center !important;
-  }
-
-  .vendor-logo {
-    width: 24px !important;
-    height: 24px !important;
-    font-size: .5rem !important;
-    border-radius: 7px !important;
-  }
-
-  .vendor-card strong {
-    font-size: .45rem !important;
-    line-height: 1.1 !important;
-  }
-
-  .vendor-card small {
-    font-size: .4rem !important;
-    line-height: 1.1 !important;
-  }
-
-  .vendor-arrow {
-    width: 26px !important;
-    height: 26px !important;
-    font-size: .75rem !important;
-  }
-}
-
-
-/* SHOP BY CATEGORY - 4 COLUMNS ON MOBILE */
-@media (max-width: 600px) {
-
-  .shop-cats {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 8px !important;
-  }
-
-  .shop-cat {
-    padding: 8px 4px !important;
-    border-radius: 12px !important;
-  }
-
-  .shop-img {
-    width: 52px !important;
-    height: 52px !important;
-    font-size: 1.5rem !important;
-    margin: 0 auto 6px !important;
-  }
-
-  .shop-cat strong {
-    font-size: .58rem !important;
-    line-height: 1.15 !important;
-    margin-bottom: 2px !important;
-    display: block;
-  }
-
-  .shop-cat small {
-    font-size: .45rem !important;
-    line-height: 1.2 !important;
-  }
-}
-
-.location-filters{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin-top:10px;
-}
-
-.location-filters select{
-  height:44px;
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:0 12px;
-  background:#fff;
-  font-weight:700;
-}
-
-
-.quick-actions{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:10px;
-  margin:18px 0 22px;
-  width:100%;
-}
-
-.quick-card{
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:12px 8px;
-  text-align:center;
-  cursor:pointer;
-  transition:.25s ease;
-  box-shadow:0 6px 18px rgba(0,0,0,.04);
-}
-
-.quick-card:hover{
-  transform:translateY(-4px);
-  border-color:var(--primary);
-}
-
-.quick-icon{
-  width:50px;
-  height:50px;
-  margin:0 auto 8px;
-  border-radius:14px;
-  display:grid;
-  place-items:center;
-  font-size:1.4rem;
-  background:#fff4ea;
-}
-
-.quick-card p{
-  font-size:.78rem;
-  font-weight:800;
-  line-height:1.25;
-}
-
-.login-popup{
-  position:fixed;
-  top:20px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#fff;
-  border-left:5px solid #ff6600;
-  border-radius:14px;
-  padding:14px 18px;
-  box-shadow:0 15px 35px rgba(0,0,0,.15);
-  z-index:99999;
-  min-width:280px;
-  animation:slideDown .3s ease;
-}
-
-.login-popup-title{
-  font-weight:900;
-  color:#ff6600;
-  margin-bottom:4px;
-}
-
-.login-popup-text{
-  font-size:.9rem;
-  color:#555;
-}
-
-@keyframes slideDown{
-  from{
-    opacity:0;
-    transform:translateX(-50%) translateY(-20px);
-  }
-  to{
-    opacity:1;
-    transform:translateX(-50%) translateY(0);
-  }
-}
-  </style>
+body{background:var(--bg);color:var(--text);padding-bottom:92px}
+.app{max-width:480px;margin:auto;background:#fff;min-height:100vh;overflow:hidden}
+.top-header{background:#fff;padding:14px 16px 10px;border-bottom:1px solid #f1f1f1;position:sticky;top:0;z-index:50}
+.header-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.menu-btn,.bell-btn{border:none;background:#fff;font-size:1.65rem;cursor:pointer;position:relative}
+.logo-wrap{display:flex;align-items:center;gap:9px;flex:1}
+.logo-icon{width:35px;height:35px;border-radius:10px;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:1.2rem;box-shadow:0 8px 20px rgba(255,102,0,.25)}
+.logo-text{line-height:1}
+.logo-text strong{display:block;font-size:1.65rem;font-weight:900;letter-spacing:-1px;color:#111}
+.logo-text span{display:block;font-size:.72rem;color:var(--primary);font-weight:800;margin-top:2px}
+.sell-top{background:var(--primary);color:#fff;border:none;border-radius:11px;padding:12px 15px;font-weight:900;font-size:.9rem;box-shadow:0 8px 20px rgba(255,102,0,.25);cursor:pointer}
+.mini-badge{position:absolute;top:-4px;right:-6px;background:var(--primary);color:#fff;font-size:.62rem;min-width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-weight:900;border:2px solid #fff}
+.search-row{display:grid;grid-template-columns:1fr 82px;gap:10px;margin-bottom:12px}
+.search-box{height:48px;border:1px solid var(--border);border-radius:13px;display:flex;align-items:center;gap:9px;padding:0 12px;background:#fff}
+.search-icon{font-size:1.35rem;color:#7b7f87}
+.search-box input{border:none;outline:none;flex:1;min-width:0;font-size:.83rem;color:#111}
+.camera-btn{border:none;background:#fff;font-size:1.25rem;cursor:pointer;color:#555}
+.search-btn{height:48px;border:none;border-radius:13px;background:var(--primary);color:#fff;font-weight:900;font-size:.9rem;cursor:pointer}
+.filter-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.select-wrap{height:47px;border:1px solid var(--border);border-radius:13px;background:#fff;display:flex;align-items:center;gap:8px;padding:0 11px;min-width:0}
+.select-wrap .left-icon{font-size:1.15rem;flex-shrink:0}
+.select-wrap select{border:none;outline:none;background:transparent;width:100%;font-weight:800;font-size:.82rem;color:#111;min-width:0;appearance:auto}
+.content{padding:16px}
+.category-icons{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:4px 0 22px}
+.category-icon{border:none;background:#fff;text-align:center;cursor:pointer}
+.category-icon .circle{width:48px;height:48px;border-radius:15px;margin:0 auto 7px;display:grid;place-items:center;font-size:1.55rem;background:#fff1e8}
+.category-icon:nth-child(2) .circle{background:#eafaf0}
+.category-icon:nth-child(3) .circle{background:#eef5ff}
+.category-icon:nth-child(4) .circle{background:#f3ecff}
+.category-icon:nth-child(5) .circle{background:#fff0f5}
+.category-icon:nth-child(6) .circle{background:#fff4e6}
+.category-icon span{display:block;font-size:.62rem;font-weight:900;line-height:1.1;color:#111}
+.hero-ad{background:linear-gradient(135deg,#fff1e8,#fff7f2);border-radius:16px;min-height:218px;position:relative;overflow:hidden;margin-bottom:22px;border:1px solid #ffe4d0}
+.hero-slide{position:absolute;inset:0;display:grid;grid-template-columns:1.05fr .95fr;gap:8px;padding:16px 14px 14px;opacity:0;transform:translateX(22px);transition:.45s ease;pointer-events:none}
+.hero-slide.active{opacity:1;transform:translateX(0);pointer-events:auto}
+.boost-tag{display:inline-block;background:var(--primary);color:#fff;font-size:.58rem;font-weight:900;border-radius:8px;padding:6px 8px;margin-bottom:10px}
+.hero-slide h1{font-size:1.43rem;line-height:1.08;letter-spacing:-.4px;margin-bottom:10px}
+.hero-slide h1 span{color:var(--primary)}
+.hero-slide p{font-size:.75rem;line-height:1.35;color:#222;margin-bottom:13px;max-width:175px}
+.promote-btn{border:none;background:var(--primary);color:#fff;border-radius:9px;padding:11px 13px;font-size:.78rem;font-weight:900;cursor:pointer}
+.hero-visual{position:relative;min-height:175px}
+.megaphone{position:absolute;left:-10px;bottom:24px;font-size:3.6rem;z-index:2;transform:rotate(-18deg)}
+.phone-ad{position:absolute;right:28px;top:12px;width:88px;height:142px;background:#111;border-radius:19px;padding:5px;transform:rotate(6deg);box-shadow:0 15px 28px rgba(0,0,0,.24);z-index:3}
+.phone-screen{height:100%;background:#fff;border-radius:14px;padding:10px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:5px}
+.phone-screen .tag{background:var(--primary);color:#fff;border-radius:7px;padding:5px;font-size:.52rem;font-weight:900}
+.phone-screen .car{font-size:1.85rem}
+.phone-screen strong{font-size:.55rem;line-height:1.1}
+.phone-screen span{font-size:.54rem;font-weight:900}
+.hero-slide:nth-child(2) .phone-screen .tag{background:var(--green)}
+.hero-slide:nth-child(3) .phone-screen .tag{background:#7c3aed}
+.stat-card{position:absolute;right:0;background:#fff;border-radius:10px;padding:8px 9px;box-shadow:0 8px 18px rgba(0,0,0,.08);font-size:.58rem;font-weight:900;z-index:4;min-width:62px;text-align:center}
+.stat-card.views{top:18px}.stat-card.inq{bottom:30px}
+.stat-card b{display:block;font-size:.78rem;color:#111}
+.dots{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);display:flex;gap:5px;z-index:8}
+.dots span{width:6px;height:6px;border-radius:50%;background:#ffd3b7}.dots span.active{background:var(--primary)}
+.section-head{display:flex;align-items:flex-start;justify-content:space-between;margin:0 0 12px}
+.section-title strong{font-size:1rem;font-weight:900}.section-title span{display:block;font-size:.72rem;color:#111;margin-top:3px}
+.view-all,.see-all{color:var(--primary);font-size:.78rem;font-weight:900;text-decoration:none;cursor:pointer}
+.products{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:22px}
+.product-card{border:1px solid var(--border);border-radius:9px;background:#fff;overflow:hidden;cursor:pointer;box-shadow:0 5px 13px rgba(0,0,0,.04)}
+.product-img{height:104px;background:#f3f4f6;position:relative;display:grid;place-items:center;overflow:hidden;font-size:2rem}
+.product-img img{width:100%;height:100%;object-fit:cover}
+.verified-badge{position:absolute;top:7px;left:7px;background:#111827;color:#fff;border-radius:5px;padding:4px 5px;font-size:.5rem;font-weight:900}
+.heart{position:absolute;top:6px;right:6px;width:23px;height:23px;border-radius:50%;background:rgba(255,255,255,.9);display:grid;place-items:center;font-size:.95rem}
+.product-info{padding:8px 7px}
+.product-name{font-size:.72rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px}
+.product-price{font-size:.8rem;font-weight:900;color:var(--primary);margin-bottom:7px}
+.product-meta{font-size:.62rem;color:var(--muted);display:flex;align-items:center;gap:4px}
+.notice-card{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:12px;padding:13px 14px;margin-bottom:20px}
+.notice-card.safe{background:#f0fbf6}.notice-card.report{background:#fff5ee}
+.notice-left{display:flex;align-items:center;gap:12px}
+.notice-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:1.4rem;background:var(--green);color:#fff;flex-shrink:0}
+.notice-card.report .notice-icon{background:#9ca3af}
+.notice-text strong{font-size:.83rem}.notice-text span{display:block;font-size:.67rem;line-height:1.25;color:#111;margin-top:3px}
+.outline-btn{border:1px solid #9fd8bd;background:#fff;color:#10a061;border-radius:9px;padding:10px 12px;font-weight:900;font-size:.68rem;white-space:nowrap}
+.how-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;align-items:start;margin-bottom:18px}
+.how-step{text-align:center;position:relative}
+.how-step .icon{width:52px;height:52px;border-radius:50%;background:#fff4ea;margin:0 auto 8px;display:grid;place-items:center;color:var(--primary);font-size:1.6rem}
+.how-step p{font-size:.61rem;font-weight:900;margin-bottom:5px}.how-step small{font-size:.56rem;color:#333;line-height:1.2;display:block}
+.no{background:var(--primary);color:#fff;border-radius:50%;width:15px;height:15px;display:inline-grid;place-items:center;font-size:.5rem;font-weight:900;margin-right:2px}
+.bottom-nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);max-width:480px;width:100%;background:#fff;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 9px;z-index:60}
+.nav-item{text-decoration:none;text-align:center;color:#555;font-size:.68rem;font-weight:800;position:relative}
+.nav-item div{font-size:1.35rem;margin-bottom:2px}.nav-item.active{color:var(--primary)}
+.nav-plus{width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;display:grid!important;place-items:center;margin:-20px auto 2px!important;font-size:1.8rem!important;box-shadow:0 8px 20px rgba(255,102,0,.3)}
+.badge{position:absolute;top:-4px;right:29%;background:var(--primary);color:#fff;font-size:.58rem;min-width:16px;height:16px;border-radius:50%;display:grid;place-items:center;border:2px solid #fff}
+.login-popup{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#fff;border-left:5px solid var(--primary);border-radius:14px;padding:14px 18px;box-shadow:0 15px 35px rgba(0,0,0,.15);z-index:99999;min-width:280px}
+.login-popup-title{font-weight:900;color:var(--primary);margin-bottom:4px}.login-popup-text{font-size:.9rem;color:#555}
+@media(min-width:700px){.app,.bottom-nav{max-width:720px}.products{grid-template-columns:repeat(4,1fr)}.category-icons{gap:18px}.product-img{height:130px}}
+</style>
 </head>
 
 <body>
-
-  <main class="app">
-
-    <header class="top-header">
-      <div class="header-main">
-        <div class="logo">
-          <span class="logo-icon">🛍️</span>
-          didwapa
-        </div>
-
-        <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Search for products, brands and more..." />
-          <button class="camera-btn" type="button">📷</button>
-          <button class="search-btn" type="button" onclick="searchProducts()">🔍</button>
-        </div>
-
-<div class="location-filters">
-
-<select id="regionSelect" onchange="loadDistricts(false); changeLocation();">
-    <option value="All Ghana">📍 All Ghana</option>
-    <option value="Ashanti">Ashanti</option>
-    <option value="Ahafo Region">Ahafo Region</option>
-    <option value="Bono Region">Bono Region</option>
-    <option value="Bono East Region">Bono East Region</option>
-    <option value="Central Region">Central Region</option>
-    <option value="North East Region">North East Region</option>
-    <option value="Oti Region">Oti Region</option>
-    <option value="Savannah Region">Savannah Region</option>
-    <option value="Greater Accra">Greater Accra</option>
-    <option value="Central Region">Central Region</option>
-    <option value="Eastern Region">Eastern Region</option>
-    <option value="Western Region">Western Region</option>
-    <option value="Western North Region">Western North Region</option>
-    <option value="Northern Region">Northern Region</option>
-    <option value="Upper East Region">Upper East Region</option>
-    <option value="Upper West Region">Upper West Region</option>
-    <option value="Volta Region">Volta Region</option>
-    <option value="Brong Ahafo">Brong Ahafo</option>
-  </select>
-
-  <select id="districtSelect" onchange="changeLocation()">
-    <option value="">All Districts</option>
-  </select>
-
-</div>
-
-        <div class="header-actions">
-          <button
-  class="header-icon"
-  type="button"
-  onclick="openMessagesPage(event)">
-  💬
-  <span class="mini-badge" id="messageBadge">0</span>
-</button>
-         <button class="header-icon" type="button" onclick="window.location.href='notifications.html'">
-  🔔
-  <span class="mini-badge" id="notificationBadge">0</span>
-</button>
-        </div>
+<main class="app">
+<header class="top-header">
+  <div class="header-top">
+    <button class="menu-btn" type="button">☰</button>
+    <div class="logo-wrap" onclick="window.location.href='index.html'">
+      <span class="logo-icon">🛍️</span>
+      <div class="logo-text">
+        <strong>didwapa</strong>
+        <span>Buy. Sell. Connect.</span>
       </div>
+    </div>
+    <button class="bell-btn" type="button" onclick="window.location.href='notifications.html'">🔔
+      <span class="mini-badge" id="notificationBadge">0</span>
+    </button>
+    <button class="sell-top" type="button" onclick="window.location.href='sell-products.html'">+ Sell</button>
+  </div>
 
-   <nav class="category-nav">
-  <button class="cat-tab active" onclick="filterByCategory('All', this)">
-    <span>🏠</span> All
-  </button>
+  <div class="search-row">
+    <div class="search-box">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="Search for anything (e.g. iPhone, Toyota, House)">
+      <button class="camera-btn" type="button">📷</button>
+    </div>
+    <button class="search-btn" type="button" onclick="searchProducts()">Search</button>
+  </div>
 
-  <button class="cat-tab" onclick="filterByCategory('Vehicles', this)">
-    <span>🚗</span> Vehicles
-  </button>
+  <div class="filter-row">
+    <div class="select-wrap">
+      <span class="left-icon">📍</span>
+      <select id="regionSelect" onchange="loadDistricts(false); changeLocation();">
+        <option value="All Ghana">All Ghana</option>
+        <option value="Ashanti">Ashanti</option>
+        <option value="Ahafo Region">Ahafo Region</option>
+        <option value="Bono Region">Bono Region</option>
+        <option value="Bono East Region">Bono East Region</option>
+        <option value="Central Region">Central Region</option>
+        <option value="North East Region">North East Region</option>
+        <option value="Oti Region">Oti Region</option>
+        <option value="Savannah Region">Savannah Region</option>
+        <option value="Greater Accra">Greater Accra</option>
+        <option value="Eastern Region">Eastern Region</option>
+        <option value="Western Region">Western Region</option>
+        <option value="Western North Region">Western North Region</option>
+        <option value="Northern Region">Northern Region</option>
+        <option value="Upper East Region">Upper East Region</option>
+        <option value="Upper West Region">Upper West Region</option>
+        <option value="Volta Region">Volta Region</option>
+        <option value="Brong Ahafo">Brong Ahafo</option>
+      </select>
+    </div>
 
-  <button class="cat-tab" onclick="filterByCategory('Property', this)">
-    <span>🏠</span> Property
-  </button>
+    <div class="select-wrap">
+      <span class="left-icon">▦</span>
+      <select id="districtSelect" onchange="changeLocation()">
+        <option value="">All Categories</option>
+      </select>
+    </div>
+  </div>
+</header>
 
-  <button class="cat-tab" onclick="filterByCategory('Phones & Tablets', this)">
-    <span>📱</span> Phones & Tablets
-  </button>
+<section class="content">
+  <section class="category-icons">
+    <button class="category-icon" onclick="openCategoryPage('Vehicles')"><div class="circle">🚗</div><span>Vehicles</span></button>
+    <button class="category-icon" onclick="openCategoryPage('Property')"><div class="circle">🏠</div><span>Property</span></button>
+    <button class="category-icon" onclick="openCategoryPage('Phones & Tablets')"><div class="circle">📱</div><span>Phones &<br>Tablets</span></button>
+    <button class="category-icon" onclick="openCategoryPage('Electronics')"><div class="circle">🖥️</div><span>Electronics</span></button>
+    <button class="category-icon" onclick="openCategoryPage('Fashion')"><div class="circle">👗</div><span>Fashion</span></button>
+    <button class="category-icon" onclick="window.location.href='categorylist.html'"><div class="circle">▦</div><span>More</span></button>
+  </section>
 
-  <button class="cat-tab" onclick="filterByCategory('Electronics', this)">
-    <span>💻</span> Electronics
-  </button>
+  <section class="hero-ad">
+    <div class="hero-slide active">
+      <div>
+        <span class="boost-tag">BOOST YOUR AD</span>
+        <h1>Get noticed.<br><span>Sell faster</span> on Didwapa.</h1>
+        <p>Promote your ad and reach thousands of potential buyers.</p>
+        <button class="promote-btn" type="button" onclick="comingSoon()">Promote Now →</button>
+      </div>
+      <div class="hero-visual">
+        <!-- <div class="stat-card views">👁️ <b></b>Views</div> -->
+        <div class="megaphone">📣</div>
+        <div class="phone-ad"><div class="phone-screen"><div class="tag">Top Ad</div><div class="car">🚙</div><strong>Toyota Camry 2016</strong><span>GH₵ 85,000</span></div></div>
+        <!-- <div class="stat-card inq">📈 <b>230</b>Inquiries</div> -->
+      </div>
+    </div>
 
-  <button class="cat-tab" onclick="filterByCategory('Fashion', this)">
-    <span>👗</span> Fashion
-  </button>
+    <div class="hero-slide">
+      <div>
+        <!-- <span class="boost-tag">SAFE DEALS</span> -->
+        <h1>Buy smart.<br><span>Connect safely</span> today.</h1>
+        <p>Find trusted sellers and make better buying decisions.</p>
+        <button class="promote-btn" type="button" onclick="window.location.href='categorylist.html'">Start Shopping →</button>
+      </div>
+      <div class="hero-visual">
+        <!-- <div class="stat-card views">✅ <b>Safe</b>Deals</div> -->
+        <div class="megaphone">🛡️</div>
+        <div class="phone-ad"><div class="phone-screen"><div class="tag">Verified</div><div class="car">🏠</div><strong>4 Bedroom House</strong><span>GH₵ 850,000</span></div></div>
+        <!-- <div class="stat-card inq">🤝 <b>Trust</b>Sellers</div> -->
+      </div>
+    </div>
 
-  <button class="cat-tab" onclick="filterByCategory('Home Appliances', this)">
-    <span>📺</span> Home Appliances
-  </button>
+    <div class="hero-slide">
+      <div>
+        <span class="boost-tag">POST YOUR AD</span>
+        <h1>Sell today.<br><span>Reach buyers</span> fast.</h1>
+        <p>Upload your product and start receiving real customer interest.</p>
+        <button class="promote-btn" type="button" onclick="window.location.href='sell-products.html'">Post Ad →</button>
+      </div>
+      <div class="hero-visual">
+        <!-- <div class="stat-card views">🔥 <b>Hot</b>Listing</div> -->
+        <div class="megaphone">🚀</div>
+        <div class="phone-ad"><div class="phone-screen"><div class="tag">New Ad</div><div class="car">📱</div><strong>iPhone 14 Pro Max</strong><span>GH₵ 6,800</span></div></div>
+        <!-- <div class="stat-card inq">💬 <b>Fast</b>Replies</div> -->
+      </div>
+    </div>
 
-  <button class="cat-tab" onclick="filterByCategory('Services', this)">
-    <span>🛠️</span> Services
-  </button>
+    <div class="dots"><span class="active"></span><span></span><span></span></div>
+  </section>
+
+  <div class="section-head">
+    <div class="section-title">
+      <strong>👑 Future Ads</strong>
+      <span>Premium ads from trusted sellers</span>
+    </div>
+    <a class="see-all" onclick="window.location.href='categorylist.html'">See all</a>
+  </div>
+
+  <section class="products" id="productsContainer">
+    <p style="grid-column:1/-1;padding:15px;">Loading products...</p>
+  </section>
+
+  <section class="notice-card safe">
+    <div class="notice-left">
+      <div class="notice-icon">✓</div>
+      <div class="notice-text">
+        <strong>Stay safe on Didwapa</strong>
+        <span>Follow our safety tips for a secure buying and selling experience.</span>
+      </div>
+    </div>
+    <button class="outline-btn" onclick="comingSoon()">Safety Tips →</button>
+  </section>
+
+  <div class="section-head">
+    <div class="section-title"><strong>How Didwapa works</strong></div>
+    <a class="see-all" onclick="comingSoon()">View all</a>
+  </div>
+
+  <section class="how-steps">
+    <div class="how-step"><div class="icon">📝</div><p><span class="no">1</span>Post your ad</p><small>Create your listing easy and fast</small></div>
+    <div class="how-step"><div class="icon">👥</div><p><span class="no">2</span>Connect</p><small>Buyers contact you directly</small></div>
+    <div class="how-step"><div class="icon">🤝</div><p><span class="no">3</span>Agree & meet</p><small>Agree on price and arrange to meet</small></div>
+    <div class="how-step"><div class="icon">🛡️</div><p><span class="no">4</span>Complete safely</p><small>Check item and complete the deal</small></div>
+  </section>
+
+  <section class="notice-card report">
+    <div class="notice-left">
+      <div class="notice-icon">✓</div>
+      <div class="notice-text">
+        <strong>We protect our community</strong>
+        <span>Report suspicious users or ads and help us keep Didwapa safe.</span>
+      </div>
+    </div>
+    <button class="outline-btn" onclick="comingSoon()">Report Now →</button>
+  </section>
+</section>
+</main>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="nav-item active"><div>🏠</div>Home</a>
+  <a href="categorylist.html" class="nav-item"><div>▦</div>Categories</a>
+  <a href="sell-products.html" class="nav-item"><div class="nav-plus">+</div>Post Ad</a>
+  <a href="#" class="nav-item" onclick="openMessagesPage(event)"><span class="badge" id="messageBadge">0</span><div>💬</div>Messages</a>
+  <a href="#" class="nav-item" onclick="openYouPage(event)"><div>👤</div>Profile</a>
 </nav>
-    
-    </header>
 
-    <section class="content">
-
-      <section class="hero">
-        <div>
-       <h1>Shop Everything <br>on <span>Didwapa</span></h1>
-<p>Discover thousands of products from trusted sellers across Ghana at amazing prices.</p>
-
-       <div class="escrow-steps">
-
-<div class="step">
-<div class="step-icon">🔍</div>
-Browse thousands of products
-</div>
-
-<div class="step">
-<div class="step-icon">🛒</div>
-Add Items you love
-</div>
-
-<div class="step">
-<div class="step-icon">💳</div>
-Checkout securely
-</div>
-
-<div class="step">
-<div class="step-icon">🚚</div>
-Receive your order
-</div>
-
-</div>
-
-    <button
-  class="hero-btn"
-  type="button"
-  onclick="window.location.href='categorylist.html'">
-  Start Shopping →
-</button>
-        </div>
-
-        <div class="hero-visual">
-          <div class="shield-big">✓</div>
-
-          <div class="phone-card">
-            <div class="phone-screen">
-              <div class="phone-logo">didwapa</div>
-              <div class="phone-shield">🔒</div>
-              <div>ONLINE SHOPPING</div>
-
-<div class="protected">
-SHOP NOW
-</div>
-            </div>
-          </div>
-
-          <div class="box"></div>
-
-          
-        </div>
-      </section>
-
-      <section class="trust-grid">
-        <div class="trust-card">
-          <div class="trust-icon">🛡️</div>
-          <div>
-            <strong>Thousands of Products</strong>
-<small>Everything you need in one place</small>
-          </div>
-        </div>
-
-        <div class="trust-card">
-          <div class="trust-icon">👤</div>
-          <div>
-         <strong>Trusted Sellers</strong>
-<small>Buy with confidence</small>
-          </div>
-        </div>
-
-        <div class="trust-card">
-          <div class="trust-icon">⚖️</div>
-          <div>
-          <strong>Fast Delivery</strong>
-<small>Delivered across Ghana</small>
-          </div>
-        </div>
-
-        <div class="trust-card">
-          <div class="trust-icon">🔐</div>
-          <div>
-          <strong>Great Prices</strong>
-<small>Affordable deals every day</small>
-          </div>
-        </div>
-      </section>
-
- <section class="quick-actions">
-
-  <div class="quick-card" onclick="comingSoon()">
-    <div class="quick-icon">🔎</div>
-    <p>The Intelligence</p>
-  </div>
-
-  <div class="quick-card" onclick="comingSoon()">
-    <div class="quick-icon">💻</div>
-    <p>Apply for Job</p>
-  </div>
-
-  <div class="quick-card" onclick="comingSoon()">
-    <div class="quick-icon">💸</div>
-    <p>How to Sell</p>
-  </div>
-
-  <div class="quick-card" onclick="comingSoon()">
-    <div class="quick-icon">🛒</div>
-    <p>How to Buy</p>
-  </div>
-
-</section>
-
-<div class="section-head" id="categoryHead">
-  <h2>Browse Categories</h2>
-</div>
-
-<section id="mainCategories" class="shop-cats">
-
-<div class="shop-cat" onclick="loadTrendingFromCategory()">
-  <div class="shop-img">🔥</div>
-  <strong>Trending</strong>
-</div>
-
-<div class="shop-cat" onclick="openCategoryPage('Vehicles')">
-  <div class="shop-img">🚗</div>
-  <strong>Vehicles</strong>
-  <small>Cars, buses, trucks</small>
-</div>
-
-<div class="shop-cat" onclick="openCategoryPage('Property')">
-  <div class="shop-img">🏠</div>
-  <strong>Property</strong>
-  <small>Houses, land, shops</small>
-</div>
-
-
-<div class="shop-cat"
-onclick="openCategoryPage('Phones & Tablets')">
-    <div class="shop-img">📱</div>
-    <strong>Phones & Tablets</strong>
-  </div>
-
-<div class="shop-cat"
-onclick="openCategoryPage('Electronics')">
-    <div class="shop-img">💻</div>
-    <strong>Electronics</strong>
-  </div>
-
-<div class="shop-cat"
-onclick="openCategoryPage('Fashion')">
-    <div class="shop-img">👗</div>
-    <strong>Fashion</strong>
-  </div>
-
-
-  <div class="shop-cat"
-onclick="openCategoryPage('Home Appliances')">
-    <div class="shop-img">📺</div>
-    <strong>Home Appliances</strong>
-  </div>
-
-  <div class="shop-cat"
-onclick="openCategoryPage('Services')">
-    <div class="shop-img">🛠️</div>
-    <strong>Services</strong>
-  </div>
-
-</section>
-
-<section id="subCategoryBox" style="display:none; margin-top:10px;">
-
-  <button onclick="goBackCategories()" class="hero-btn" style="margin-bottom:15px;">
-    ← Back
-  </button>
-
-  <div id="subCategoryGrid" class="shop-cats"></div>
-
-</section>
-   
-      <a class="view-all" onclick="filterByCategory('All', document.querySelector('.cat-tab:last-child'))">View all</a>
-      </div>
-
-      <section class="products" id="productsContainer">
-        <p style="padding:15px;">Loading products...</p>
-      </section>
-
-      <section class="vendor-strip">
-        <div class="vendor-title">
-          <strong>Top Rated Vendors</strong>
-          <small>Shop from trusted sellers</small>
-        </div>
-
-        <div class="vendor-card">
-          <div class="vendor-logo">TH</div>
-          <div>
-            <strong>TechHub Ghana</strong>
-            <small>4.9 (520)</small>
-          </div>
-        </div>
-
-        <div class="vendor-card">
-          <div class="vendor-logo">GP</div>
-          <div>
-            <strong>Gadget Palace</strong>
-            <small>4.8 (314)</small>
-          </div>
-        </div>
-
-        <div class="vendor-card">
-          <div class="vendor-logo">KM</div>
-          <div>
-            <strong>Kumasi Motors</strong>
-            <small>4.7 (276)</small>
-          </div>
-        </div>
-
-        <div class="vendor-card">
-          <div class="vendor-logo">HW</div>
-          <div>
-            <strong>HomeWorld</strong>
-            <small>4.9 (198)</small>
-          </div>
-        </div>
-
-        <button class="vendor-arrow" type="button">→</button>
-      </section>
-
-    </section>
-  </main>
-
- <nav class="bottom-nav">
-  <a href="index.html" class="nav-item active">
-    <div>🏠</div>
-    Home
-  </a>
-
-  <!-- <a href="#" class="nav-item" onclick="goToBrowseCategories(event)">
-    <div>▦</div>
-    Categories
-  </a> -->
-
-  <a href="categorylist.html" class="nav-item">
-  <div>▦</div>
-  Categories
-</a>
-
-  <a href="" class="nav-item" onclick="openYouPage(event)">
-    <span class="badge">0</span>
-    <div>👤</div>
-    You
-  </a>
-
-<a href="#" class="nav-item" onclick="openMessagesPage(event)">
-  <div>💬</div>
-  Message
-</a>
-
-
-
-
-<a href="#" class="nav-item" onclick="openCartPage(event)">
-  <span class="badge" id="savedCountBadge">0</span>
-  <div>❤️</div>
-  Saved
-</a>
-
-  <a href="sell-products.html" class="sell-btn">
-    Sell →
-  </a>
-</nav> 
-
-
-
-  <script>
+<script>
     const API_BASE =
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1"
@@ -2221,8 +788,7 @@ if(
   },300);
 }
   </script>
-
-  <script>
+<script>
     async function openYouPage(event) {
       event.preventDefault();
 
@@ -2264,8 +830,7 @@ function loadTrendingFromCategory(){
 
 
   </script>
-
-  <script>
+<script>
 
 
 
@@ -2297,7 +862,6 @@ function loadTrendingFromCategory(){
     loadCartCount();
     updateNotificationBadge();
   </script>
-
 <script>
 function comingSoon(){
   alert("🚀 This feature is coming soon to DIDWAPA. Stay tuned!");
@@ -2423,6 +987,22 @@ function showLoginPopup(message){
     popup.remove();
   }, 3000);
 }
+</script>
+<script>
+let heroSlideIndex = 0;
+setInterval(() => {
+  const slides = document.querySelectorAll('.hero-slide');
+  const dots = document.querySelectorAll('.hero-ad .dots span');
+  if(!slides.length) return;
+
+  slides[heroSlideIndex].classList.remove('active');
+  dots[heroSlideIndex].classList.remove('active');
+
+  heroSlideIndex = (heroSlideIndex + 1) % slides.length;
+
+  slides[heroSlideIndex].classList.add('active');
+  dots[heroSlideIndex].classList.add('active');
+}, 5000);
 </script>
 
 </body>
