@@ -1753,7 +1753,6 @@ app.get("/api/user/notifications", (req, res) => {
     });
   });
 });
-
 app.get("/api/user/profile", (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({
@@ -1782,6 +1781,25 @@ app.get("/api/user/profile", (req, res) => {
       selfie_image,
       gh_card_front,
       gh_card_back,
+
+      business_name,
+      business_type,
+      business_category,
+      business_description,
+      business_whatsapp,
+      business_email,
+      business_address,
+      business_region,
+      business_district,
+      business_logo,
+      business_registration_number,
+      business_registration_cert,
+      business_tin,
+      business_website,
+      business_hours,
+      delivery_available,
+      delivery_coverage,
+
       created_at
     FROM users
     WHERE id = ?
@@ -1810,7 +1828,6 @@ app.get("/api/user/profile", (req, res) => {
     });
   });
 });
-
 app.put(
   "/api/user/profile/update",
   upload.fields([
