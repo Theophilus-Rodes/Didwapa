@@ -20,7 +20,8 @@ const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 8 * 1024 * 1024 // 8MB per image
+    fileSize: 15 * 1024 * 1024, // 15MB per image
+    files: 10
   }
 });
 
@@ -7210,6 +7211,28 @@ app.get("/api/vehicle-models", (req, res) => {
   });
 });
 
+
+
+////Mukter code 
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    console.error("MULTER ERROR:", err);
+
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        success: false,
+        message: "One or more images are too large. Please upload images below 15MB each."
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: err.message || "Upload error."
+    });
+  }
+
+  next(err);
+});
 
 
 /////Forgot password codes 
