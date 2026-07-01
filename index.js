@@ -2116,6 +2116,7 @@ app.put("/api/user/profile/change-password", async (req, res) => {
 });
 
 
+
 ///// Users Add Products 
 app.post(
   "/api/products/upload",
@@ -2139,6 +2140,35 @@ app.post(
 
       const userId = req.session.user.id;
       console.log("USER ID:", userId);
+
+
+      const statusSql = `
+  SELECT status
+  FROM users
+  WHERE id = ?
+  LIMIT 1
+`;
+
+const [userStatus] = await new Promise((resolve, reject) => {
+  db.query(statusSql, [userId], (err, results) => {
+    if (err) return reject(err);
+    resolve(results);
+  });
+});
+
+if (!userStatus) {
+  return res.status(404).json({
+    success: false,
+    message: "User account not found."
+  });
+}
+
+if (String(userStatus.status).toLowerCase() !== "approved") {
+  return res.status(403).json({
+    success: false,
+    message: "Your account is not approved yet. Please complete your account and wait for DIDWAPA approval before posting."
+  });
+}
 
       console.log("BODY RECEIVED:", req.body);
       console.log("FILES RECEIVED:", req.files ? req.files.length : 0);
