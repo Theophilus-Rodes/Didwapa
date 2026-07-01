@@ -2817,28 +2817,51 @@ formData.append("product_color", document.getElementById("product_color").value 
 
   selectedFiles.forEach(file => formData.append("images", file));
 
+ try{
+  const res = await fetch(`${API_BASE}/api/products/upload`, {
+    method:"POST",
+    credentials:"include",
+    body:formData
+  });
+
+  let data = {};
+
   try{
-    const res = await fetch(`${API_BASE}/api/products/upload`, {
-      method:"POST",
-      credentials:"include",
-      body:formData
-    });
-
-    const data = await res.json();
-
-    if(data.success){
-      showAlert(data.message || "Advert posted successfully.");
-      clearForm(false);
-    }else{
-      showAlert(data.message || "Upload failed.", "error");
-    }
-  }catch(error){
-    console.error(error);
-    showAlert("Upload failed. Try again.", "error");
-  }finally{
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = "Post Ad";
+    data = await res.json();
+  }catch(jsonError){
+    data = {
+      success:false,
+      message:"Server returned an invalid response. Check backend logs."
+    };
   }
+
+  if(res.status === 401){
+    showAlert(data.message || "Please login first before posting.", "error");
+    setTimeout(() => {
+      window.location.href = "userlogin.html";
+    }, 1800);
+    return;
+  }
+
+  if(res.status === 403){
+    showAlert(data.message || "Your account is not approved yet.", "error");
+    return;
+  }
+
+  if(data.success){
+    showAlert(data.message || "Advert posted successfully.");
+    clearForm(false);
+  }else{
+    showAlert(data.message || "Upload failed.", "error");
+  }
+
+}catch(error){
+  console.error("UPLOAD FRONTEND ERROR:", error);
+  showAlert("Network error. Please check your internet or backend server.", "error");
+}finally{
+  submitBtn.disabled = false;
+  submitBtn.innerHTML = "Post Ad";
+}
 });
 
 function askBeforeLeave(){
