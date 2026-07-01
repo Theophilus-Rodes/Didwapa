@@ -435,12 +435,7 @@ app.put("/api/admin/profile/update", (req, res) => {
     other_telephone
   } = req.body;
 
-  if (!firstname || !lastname || !email || !telephone) {
-    return res.status(400).json({
-      success: false,
-      message: "Firstname, lastname, email and telephone are required."
-    });
-  }
+
 
   const sql = `
     UPDATE users
@@ -1816,87 +1811,200 @@ app.get("/api/user/profile", (req, res) => {
   });
 });
 
-app.put("/api/user/profile/update", (req, res) => {
-  if (!req.session.user) {
-    return res.status(401).json({
-      success: false,
-      message: "Please login first."
-    });
-  }
+app.put(
+  "/api/user/profile/update",
+  upload.fields([
+    { name: "gh_card_front", maxCount: 1 },
+    { name: "gh_card_back", maxCount: 1 },
+    { name: "selfie_image", maxCount: 1 },
+    { name: "business_logo", maxCount: 1 },
+    { name: "business_registration_cert", maxCount: 1 }
+  ]),
+  async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Please login first."
+      });
+    }
 
-  const userId = req.session.user.id;
+    const userId = req.session.user.id;
 
-  const {
-    firstname,
-    lastname,
-    email,
-    telephone,
-    other_telephone,
-    gender,
-    dob,
-    digital_address,
-    address
-  } = req.body;
-
-  if (!firstname || !lastname || !email || !telephone) {
-    return res.status(400).json({
-      success: false,
-      message: "Firstname, lastname, email and telephone are required."
-    });
-  }
-
-  const sql = `
-    UPDATE users
-    SET 
-      firstname = ?,
-      lastname = ?,
-      email = ?,
-      telephone = ?,
-      other_telephone = ?,
-      gender = ?,
-      dob = ?,
-      digital_address = ?,
-      address = ?
-    WHERE id = ?
-  `;
-
-  db.query(
-    sql,
-    [
+    const {
       firstname,
       lastname,
       email,
       telephone,
-      other_telephone || null,
-      gender || null,
-      dob || null,
-      digital_address || null,
-      address || null,
-      userId
-    ],
-    (err) => {
-      if (err) {
-        console.error("Update user profile error:", err);
-        return res.status(500).json({
-          success: false,
-          message: err.sqlMessage || "Failed to update profile."
+      other_telephone,
+      gender,
+      dob,
+      digital_address,
+      address,
+
+      business_name,
+      business_type,
+      business_category,
+      business_description,
+      business_whatsapp,
+      business_email,
+      business_address,
+      business_region,
+      business_district,
+      business_registration_number,
+      business_tin,
+      business_website,
+      business_hours,
+      delivery_available,
+      delivery_coverage
+    } = req.body;
+
+    if (!firstname || !lastname || !email || !telephone) {
+      return res.status(400).json({
+        success: false,
+        message: "Firstname, lastname, email and telephone are required."
+      });
+    }
+
+    try {
+      function getFileUrl(file, folder) {
+        return new Promise(async (resolve, reject) => {
+          if (!file) return resolve(null);
+
+          try {
+            const ext = path.extname(file.originalname);
+            const key = `users/${folder}/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+
+            await spacesClient.send(
+              new PutObjectCommand({
+                Bucket: SPACES_BUCKET,
+                Key: key,
+                Body: file.buffer,
+                ACL: "public-read",
+                ContentType: file.mimetype
+              })
+            );
+
+            resolve(`https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/${key}`);
+          } catch (err) {
+            reject(err);
+          }
         });
       }
 
-      req.session.user.firstname = firstname;
-      req.session.user.lastname = lastname;
-      req.session.user.email = email;
-      req.session.user.telephone = telephone;
+      const ghCardFrontUrl = await getFileUrl(req.files?.gh_card_front?.[0], "ghana-cards");
+      const ghCardBackUrl = await getFileUrl(req.files?.gh_card_back?.[0], "ghana-cards");
+      const selfieUrl = await getFileUrl(req.files?.selfie_image?.[0], "selfies");
+      const businessLogoUrl = await getFileUrl(req.files?.business_logo?.[0], "business-logos");
+      const businessCertUrl = await getFileUrl(req.files?.business_registration_cert?.[0], "business-certificates");
 
-      req.session.save(() => {
-        res.json({
-          success: true,
-          message: "Profile updated successfully."
-        });
+      const sql = `
+        UPDATE users
+        SET 
+          firstname = ?,
+          lastname = ?,
+          email = ?,
+          telephone = ?,
+          other_telephone = ?,
+          gender = ?,
+          dob = ?,
+          digital_address = ?,
+          address = ?,
+
+          gh_card_front = COALESCE(?, gh_card_front),
+          gh_card_back = COALESCE(?, gh_card_back),
+          selfie_image = COALESCE(?, selfie_image),
+
+          business_name = ?,
+          business_type = ?,
+          business_category = ?,
+          business_description = ?,
+          business_whatsapp = ?,
+          business_email = ?,
+          business_address = ?,
+          business_region = ?,
+          business_district = ?,
+          business_logo = COALESCE(?, business_logo),
+          business_registration_number = ?,
+          business_registration_cert = COALESCE(?, business_registration_cert),
+          business_tin = ?,
+          business_website = ?,
+          business_hours = ?,
+          delivery_available = ?,
+          delivery_coverage = ?,
+
+          verification_status = 'pending',
+          status = 'pending'
+        WHERE id = ?
+      `;
+
+      db.query(
+        sql,
+        [
+          firstname,
+          lastname,
+          email,
+          telephone,
+          other_telephone || null,
+          gender || null,
+          dob || null,
+          digital_address || null,
+          address || null,
+
+          ghCardFrontUrl,
+          ghCardBackUrl,
+          selfieUrl,
+
+          business_name || null,
+          business_type || null,
+          business_category || null,
+          business_description || null,
+          business_whatsapp || null,
+          business_email || null,
+          business_address || null,
+          business_region || null,
+          business_district || null,
+          businessLogoUrl,
+          business_registration_number || null,
+          businessCertUrl,
+          business_tin || null,
+          business_website || null,
+          business_hours || null,
+          delivery_available || null,
+          delivery_coverage || null,
+
+          userId
+        ],
+        (err) => {
+          if (err) {
+            console.error("Update user profile error:", err);
+            return res.status(500).json({
+              success: false,
+              message: err.sqlMessage || "Failed to update profile."
+            });
+          }
+
+          req.session.user.firstname = firstname;
+          req.session.user.lastname = lastname;
+          req.session.user.email = email;
+          req.session.user.telephone = telephone;
+
+          req.session.save(() => {
+            res.json({
+              success: true,
+              message: "Profile submitted successfully. Please wait for approval."
+            });
+          });
+        }
+      );
+    } catch (error) {
+      console.error("Profile upload error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to upload profile files."
       });
     }
-  );
-});
+  }
+);
 
 
 app.put("/api/user/profile/change-password", async (req, res) => {
