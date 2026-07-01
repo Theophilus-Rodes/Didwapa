@@ -979,211 +979,131 @@ app.get("/api/admin/check-session", (req, res) => {
 
 
 
+app.post("/api/user/create-account", async (req, res) => {
+  try {
+    const {
+      firstname,
+      lastname,
+      gender,
+      dob,
+      digital_address,
+      address,
+      telephone,
+      other_telephone,
+      email,
+      password,
+      confirm_password
+    } = req.body;
 
-
-
-
-
-app.post(
-  "/api/user/create-account",
-  upload.fields([
-    { name: "gh_card_front", maxCount: 1 },
-    { name: "gh_card_back", maxCount: 1 }
-  ]),
-  async (req, res) => {
-    try {
-      const {
-        firstname,
-        lastname,
-        gender,
-        dob,
-        digital_address,
-        address,
-        telephone,
-        other_telephone,
-        email,
-        password,
-        confirm_password,
-        selfie_image
-      } = req.body;
-
-      if (
-        !firstname || !lastname || !gender || !dob ||
-        !digital_address || !address || !telephone ||
-        !email || !password || !confirm_password ||
-        !selfie_image ||
-        !req.files?.gh_card_front ||
-        !req.files?.gh_card_back
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Please fill all required fields."
-        });
-      }
-
-      if (password !== confirm_password) {
-        return res.status(400).json({
-          success: false,
-          message: "Passwords do not match."
-        });
-      }
-
-      const checkSql = `
-        SELECT id FROM users 
-        WHERE email = ? OR telephone = ?
-        LIMIT 1
-      `;
-
-      db.query(checkSql, [email, telephone], async (checkErr, existingUser) => {
-        if (checkErr) {
-          console.error("Check user error:", checkErr);
-          return res.status(500).json({
-            success: false,
-            message: "Database error while checking account."
-          });
-        }
-
-        if (existingUser.length > 0) {
-          return res.status(409).json({
-            success: false,
-            message: "Email or telephone number already exists."
-          });
-        }
-
-        try {
-          const frontFile = req.files.gh_card_front[0];
-          const backFile = req.files.gh_card_back[0];
-
-          console.log("Front file buffer exists:", !!frontFile.buffer);
-console.log("Back file buffer exists:", !!backFile.buffer);
-console.log("Spaces bucket:", SPACES_BUCKET);
-console.log("Spaces region:", SPACES_REGION);
-
-          const frontExt = path.extname(frontFile.originalname);
-          const backExt = path.extname(backFile.originalname);
-
-          const frontKey = `users/ghana-cards/${Date.now()}-${Math.round(Math.random() * 1e9)}-front${frontExt}`;
-          const backKey = `users/ghana-cards/${Date.now()}-${Math.round(Math.random() * 1e9)}-back${backExt}`;
-
-          await spacesClient.send(
-            new PutObjectCommand({
-              Bucket: SPACES_BUCKET,
-              Key: frontKey,
-              Body: frontFile.buffer,
-              ACL: "public-read",
-              ContentType: frontFile.mimetype
-            })
-          );
-
-          await spacesClient.send(
-            new PutObjectCommand({
-              Bucket: SPACES_BUCKET,
-              Key: backKey,
-              Body: backFile.buffer,
-              ACL: "public-read",
-              ContentType: backFile.mimetype
-            })
-          );
-
-          const ghCardFrontUrl = `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/${frontKey}`;
-          const ghCardBackUrl = `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/${backKey}`;
-
-          const selfieBase64 = selfie_image.replace(/^data:image\/\w+;base64,/, "");
-          const selfieBuffer = Buffer.from(selfieBase64, "base64");
-
-          const selfieKey = `users/selfies/${Date.now()}-${Math.round(Math.random() * 1e9)}-selfie.png`;
-
-          await spacesClient.send(
-            new PutObjectCommand({
-              Bucket: SPACES_BUCKET,
-              Key: selfieKey,
-              Body: selfieBuffer,
-              ACL: "public-read",
-              ContentType: "image/png"
-            })
-          );
-
-          const selfieUrl = `https://${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com/${selfieKey}`;
-
-          const pinHash = await bcrypt.hash(password, 10);
-
-          const sql = `
-            INSERT INTO users 
-            (
-              firstname,
-              lastname,
-              gender,
-              dob,
-              digital_address,
-              address,
-              telephone,
-              other_telephone,
-              gh_card_front,
-              gh_card_back,
-              selfie_image,
-              email,
-              pin_hash,
-              role,
-              status,
-              verification_status,
-              created_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-          `;
-
-          db.query(
-            sql,
-            [
-              firstname,
-              lastname,
-              gender,
-              dob,
-              digital_address,
-              address,
-              telephone,
-              other_telephone || null,
-              ghCardFrontUrl,
-              ghCardBackUrl,
-              selfieUrl,
-              email,
-              pinHash,
-              "user",
-              "approved",
-              "pending"
-            ],
-            (err) => {
-              if (err) {
-                console.error("Create user error:", err);
-                return res.status(500).json({
-                  success: false,
-                  message: "Database error while creating account."
-                });
-              }
-
-              res.json({
-                success: true,
-                message: "Account created successfully."
-              });
-            }
-          );
-        } catch (uploadErr) {
-          console.error("User image Spaces upload error:", uploadErr);
-          return res.status(500).json({
-            success: false,
-            message: "Failed to upload verification images."
-          });
-        }
-      });
-
-    } catch (error) {
-      console.error("Create account error:", error);
-      res.status(500).json({
+    if (
+      !firstname || !lastname || !gender || !dob ||
+      !digital_address || !address || !telephone ||
+      !email || !password || !confirm_password
+    ) {
+      return res.status(400).json({
         success: false,
-        message: "Server error while creating account."
+        message: "Please fill all required fields."
       });
     }
+
+    if (password !== confirm_password) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match."
+      });
+    }
+
+    const checkSql = `
+      SELECT id FROM users 
+      WHERE email = ? OR telephone = ?
+      LIMIT 1
+    `;
+
+    db.query(checkSql, [email, telephone], async (checkErr, existingUser) => {
+      if (checkErr) {
+        console.error("Check user error:", checkErr);
+        return res.status(500).json({
+          success: false,
+          message: "Database error while checking account."
+        });
+      }
+
+      if (existingUser.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: "Email or telephone number already exists."
+        });
+      }
+
+      const pinHash = await bcrypt.hash(password, 10);
+
+      const sql = `
+        INSERT INTO users 
+        (
+          firstname,
+          lastname,
+          gender,
+          dob,
+          digital_address,
+          address,
+          telephone,
+          other_telephone,
+          email,
+          pin_hash,
+          role,
+          status,
+          verification_status,
+          created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      `;
+
+      db.query(
+        sql,
+        [
+          firstname,
+          lastname,
+          gender,
+          dob,
+          digital_address,
+          address,
+          telephone,
+          other_telephone || null,
+          email,
+          pinHash,
+          "user",
+          "pending",
+          "pending"
+        ],
+        (err) => {
+          if (err) {
+            console.error("Create user error:", err);
+            return res.status(500).json({
+              success: false,
+              message: "Database error while creating account."
+            });
+          }
+
+          res.json({
+            success: true,
+            message: "Account created successfully. Please wait for approval."
+          });
+        }
+      );
+    });
+
+  } catch (error) {
+    console.error("Create account error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while creating account."
+    });
   }
-);
+});
+
+
+
+
 
 ///// User Login 
 app.post("/api/user/login", (req, res) => {
