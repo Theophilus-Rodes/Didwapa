@@ -47,17 +47,39 @@ async function loadDrafts(){
 
   try{
     const res = await fetch(`${API_BASE}/api/products/drafts`, {
-      credentials:"include"
+      method: "GET",
+      credentials: "include"
     });
 
-    const data = await res.json();
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = { success:false, message:"Invalid server response." };
+    }
 
-    if(!data.success){
-      window.location.href = "userlogin.html";
+    if(res.status === 401){
+      box.innerHTML = `
+        <div class="empty">
+          Please login first.<br><br>
+          <button class="btn open" onclick="window.location.href='userlogin.html'">
+            Go to Login
+          </button>
+        </div>
+      `;
       return;
     }
 
-    if(!data.drafts.length){
+    if(!data.success){
+      box.innerHTML = `
+        <div class="empty">
+          ${data.message || "Failed to load saved products."}
+        </div>
+      `;
+      return;
+    }
+
+    if(!data.drafts || data.drafts.length === 0){
       box.innerHTML = `<div class="empty">No saved products yet.</div>`;
       return;
     }
@@ -80,11 +102,10 @@ async function loadDrafts(){
     }).join("");
 
   }catch(error){
-    console.error(error);
-    box.innerHTML = `<div class="empty">Failed to load drafts.</div>`;
+    console.error("Draft load error:", error);
+    box.innerHTML = `<div class="empty">Network error. Please check your backend connection.</div>`;
   }
 }
-
 function openDraft(id){
   window.location.href = `sell-products.html?draft_id=${id}`;
 }
