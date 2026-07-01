@@ -7213,7 +7213,151 @@ app.get("/api/vehicle-models", (req, res) => {
 
 
 
-////Mukter code 
+
+////// Saved unposted products 
+app.post("/api/products/drafts/save", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+  const draftData = JSON.stringify(req.body || {});
+
+  const sql = `
+    INSERT INTO product_drafts (user_id, draft_data)
+    VALUES (?, ?)
+  `;
+
+  db.query(sql, [userId, draftData], (err, result) => {
+    if (err) {
+      console.error("Save draft error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to save draft."
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Draft saved successfully.",
+      draftId: result.insertId
+    });
+  });
+});
+
+
+app.get("/api/products/drafts", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  const sql = `
+    SELECT id, draft_data, created_at, updated_at
+    FROM product_drafts
+    WHERE user_id = ?
+    ORDER BY updated_at DESC
+  `;
+
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("Load drafts error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load drafts."
+      });
+    }
+
+    res.json({
+      success: true,
+      drafts: results
+    });
+  });
+});
+
+
+app.get("/api/products/drafts/:id", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+  const draftId = req.params.id;
+
+  const sql = `
+    SELECT id, draft_data
+    FROM product_drafts
+    WHERE id = ? AND user_id = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [draftId, userId], (err, results) => {
+    if (err) {
+      console.error("Load draft error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load draft."
+      });
+    }
+
+    if (!results.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Draft not found."
+      });
+    }
+
+    res.json({
+      success: true,
+      draft: results[0]
+    });
+  });
+});
+
+
+app.delete("/api/products/drafts/:id", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+  const draftId = req.params.id;
+
+  db.query(
+    "DELETE FROM product_drafts WHERE id = ? AND user_id = ?",
+    [draftId, userId],
+    (err) => {
+      if (err) {
+        console.error("Delete draft error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to delete draft."
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Draft deleted."
+      });
+    }
+  );
+});
+
+
+////Multer code 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     console.error("MULTER ERROR:", err);

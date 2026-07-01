@@ -942,7 +942,7 @@ select:focus{
 
   <div class="submit-area">
     <button class="submit-btn" type="submit" form="productForm">Post Ad</button>
-    <button class="draft-btn" type="button" onclick="showAlert('Draft saving will work after we add backend support.', 'success')">Save and Post Later</button>
+    <button class="draft-btn" type="button" onclick="saveDraftToServer()">Save and Post Later</button>
   </div>
 </main>
 
@@ -2975,7 +2975,131 @@ async function loadSellerInfo(){
 }
 
 
+async function saveDraftToServer(){
+  const specs = collectSpecifications();
 
+  const draft = {
+    selectedCategory,
+    selectedSubcategory,
+    selectedOptions,
+    product_name: document.getElementById("product_name").value,
+    description: document.getElementById("description").value,
+    price: document.getElementById("price").value,
+    product_color: document.getElementById("product_color").value,
+    quantity: document.getElementById("quantity").value,
+    phone_number: document.getElementById("phone_number").value,
+    seller_name: document.getElementById("seller_name").value,
+    youtube_link: document.getElementById("youtube_link").value,
+    instructions: document.getElementById("instructions").value,
+    specifications: specs
+  };
+
+  try{
+    const res = await fetch(`${API_BASE}/api/products/drafts/save`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      credentials:"include",
+      body:JSON.stringify(draft)
+    });
+
+    const data = await res.json();
+
+    if(data.success){
+      showAlert("Draft saved successfully.");
+      setTimeout(() => {
+        window.location.href = "saved-products.html";
+      }, 1000);
+    }else{
+      showAlert(data.message || "Failed to save draft.", "error");
+    }
+
+  }catch(error){
+    console.error(error);
+    showAlert("Failed to save draft.", "error");
+  }
+}
+
+async function loadDraftIntoForm(){
+  const params = new URLSearchParams(window.location.search);
+  const draftId = params.get("draft_id");
+
+  if(!draftId) return;
+
+  try{
+    const res = await fetch(`${API_BASE}/api/products/drafts/${draftId}`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      showAlert(data.message || "Failed to load draft.", "error");
+      return;
+    }
+
+    const draft = JSON.parse(data.draft.draft_data || "{}");
+
+    selectedCategory = draft.selectedCategory || "";
+    selectedSubcategory = draft.selectedSubcategory || "";
+    selectedOptions = draft.selectedOptions || selectedOptions;
+
+    if(selectedCategory){
+      setText("categoryText", selectedCategory, false);
+    }
+
+    if(selectedSubcategory){
+      setText("subcategoryText", selectedSubcategory, false);
+      renderDynamicFields();
+    }
+
+    setText("regionText", selectedOptions.region || "Region*", !selectedOptions.region);
+    setText("districtText", selectedOptions.district || "Area / District*", !selectedOptions.district);
+    setText("item_conditionText", selectedOptions.item_condition || "Item Condition*", !selectedOptions.item_condition);
+    setText("exchange_possibleText", selectedOptions.exchange_possible || "Exchange Possible", !selectedOptions.exchange_possible);
+    setText("delivery_availableText", selectedOptions.delivery_available || "Delivery Available", !selectedOptions.delivery_available);
+    setText("delivery_fee_typeText", selectedOptions.delivery_fee_type || "Delivery Fee", !selectedOptions.delivery_fee_type);
+    setText("delivery_timeText", selectedOptions.delivery_time || "Delivery Time", !selectedOptions.delivery_time);
+    setText("pickup_availableText", selectedOptions.pickup_available || "Pickup Available", !selectedOptions.pickup_available);
+    setText("promotion_typeText", selectedOptions.promotion_type || "No promo - Free", false);
+
+    document.getElementById("product_name").value = draft.product_name || "";
+    document.getElementById("description").value = draft.description || "";
+    document.getElementById("price").value = draft.price || "";
+    document.getElementById("product_color").value = draft.product_color || "";
+    document.getElementById("quantity").value = draft.quantity || 1;
+    document.getElementById("phone_number").value = draft.phone_number || "";
+    document.getElementById("seller_name").value = draft.seller_name || "";
+    document.getElementById("youtube_link").value = draft.youtube_link || "";
+    document.getElementById("instructions").value = draft.instructions || "";
+
+    setTimeout(() => {
+      const specs = draft.specifications || {};
+
+      Object.keys(specs).forEach(key => {
+        const input = document.getElementById(`spec_${key}`);
+        const text = document.getElementById(`spec_${key}Text`);
+
+        if(input){
+          input.value = specs[key] || "";
+        }
+
+        if(text && specs[key]){
+          text.textContent = specs[key];
+          text.classList.remove("placeholder");
+        }
+      });
+    }, 300);
+
+    showAlert("Draft loaded successfully.");
+
+  }catch(error){
+    console.error("Load draft error:", error);
+    showAlert("Failed to load draft.", "error");
+  }
+}
+
+
+loadDraftIntoForm();
 loadSellerInfo();
 </script>
 

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DIDWAPA - Saved Products</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+:root{--primary:#ff6600;--secondary:#0a2d73;--bg:#f6f7fb;--text:#111827;--muted:#6b7280;--border:#e5e7eb}
+body{background:var(--bg);color:var(--text)}
+.app{max-width:680px;margin:auto;background:#fff;min-height:100vh}
+.header{background:linear-gradient(135deg,var(--secondary),var(--primary));color:#fff;padding:18px;border-bottom-left-radius:24px;border-bottom-right-radius:24px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.back{border:none;background:rgba(255,255,255,.2);color:white;border-radius:999px;padding:9px 13px;font-weight:900}
+.content{padding:14px}
+.draft{border:1px solid var(--border);border-radius:18px;padding:14px;margin-bottom:12px;background:#fff;box-shadow:0 10px 25px rgba(0,0,0,.06)}
+.draft h3{font-size:1rem;color:var(--secondary);margin-bottom:6px}
+.draft p{font-size:.82rem;color:var(--muted);margin-bottom:10px}
+.row{display:flex;gap:8px}
+.btn{flex:1;border:none;border-radius:12px;height:42px;font-weight:900}
+.open{background:var(--primary);color:white}
+.del{background:#fee2e2;color:#b91c1c}
+.empty{text-align:center;padding:50px 20px;color:var(--muted);font-weight:900}
+</style>
+</head>
+<body>
+<main class="app">
+<header class="header">
+  <div class="top">
+    <h3>Saved Products</h3>
+    <button class="back" onclick="window.location.href='you.html'">← Back</button>
+  </div>
+</header>
+
+<section class="content" id="draftList"></section>
+</main>
+
+<script>
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
+
+async function loadDrafts(){
+  const box = document.getElementById("draftList");
+
+  try{
+    const res = await fetch(`${API_BASE}/api/products/drafts`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      window.location.href = "userlogin.html";
+      return;
+    }
+
+    if(!data.drafts.length){
+      box.innerHTML = `<div class="empty">No saved products yet.</div>`;
+      return;
+    }
+
+    box.innerHTML = data.drafts.map(item => {
+      let draft = {};
+      try{ draft = JSON.parse(item.draft_data); }catch{}
+
+      return `
+        <div class="draft">
+          <h3>${draft.product_name || "Untitled Draft"}</h3>
+          <p>${draft.selectedCategory || "No category"} • ${draft.selectedSubcategory || "No subcategory"}</p>
+          <p>Saved: ${new Date(item.updated_at).toLocaleString()}</p>
+          <div class="row">
+            <button class="btn open" onclick="openDraft(${item.id})">Continue</button>
+            <button class="btn del" onclick="deleteDraft(${item.id})">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  }catch(error){
+    console.error(error);
+    box.innerHTML = `<div class="empty">Failed to load drafts.</div>`;
+  }
+}
+
+function openDraft(id){
+  window.location.href = `sell-products.html?draft_id=${id}`;
+}
+
+async function deleteDraft(id){
+  if(!confirm("Delete this saved product?")) return;
+
+  await fetch(`${API_BASE}/api/products/drafts/${id}`, {
+    method:"DELETE",
+    credentials:"include"
+  });
+
+  loadDrafts();
+}
+
+
+
+
+loadDrafts();
+</script>
+</body>
+</html>

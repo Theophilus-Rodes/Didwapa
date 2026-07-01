@@ -375,6 +375,19 @@
   </div>
 
 
+  <div class="quick-card count-card"
+     onclick="window.location.href='saved-products.html'">
+
+  <span class="card-count-badge" id="draftProductsCount">0</span>
+
+  <div class="icon">📝</div>
+
+  <h3>Draft Products</h3>
+
+  <p>Continue editing products you saved before posting.</p>
+
+</div>
+
   <div class="quick-card count-card" onclick="window.location.href='cart.html'">
   <span class="card-count-badge" id="myCartCount">0</span>
 
@@ -704,6 +717,33 @@ async function loadReportMessagesCount() {
 }
 
 document.addEventListener("DOMContentLoaded", loadReportMessagesCount);
+</script>
+
+<script>
+async function loadDraftProductsCount() {
+  try {
+    const badge = document.getElementById("draftProductsCount");
+    if (!badge) return;
+
+    const res = await fetch("/api/products/drafts", {
+      method: "GET",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      const count = data.drafts ? data.drafts.length : 0;
+
+      badge.textContent = count;
+      badge.style.display = count > 0 ? "inline-flex" : "none";
+    }
+  } catch (error) {
+    console.error("Draft products count error:", error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", loadDraftProductsCount);
 </script>
 
 <script>
