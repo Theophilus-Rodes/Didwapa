@@ -979,7 +979,7 @@ app.get("/api/admin/check-session", (req, res) => {
 
 
 
-app.post("/api/user/create-account", async (req, res) => {
+app.post("/api/user/create-account", upload.none(), async (req, res) => {
   try {
     const {
       firstname,
