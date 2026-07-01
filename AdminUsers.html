@@ -349,14 +349,13 @@
           <th>Lastname</th>
           <th>Role</th>
           <th>Status</th>
-          <th>Verification</th>
           <th>Actions</th>
         </tr>
       </thead>
 
       <tbody id="usersTable">
         <tr>
-          <td colspan="7">
+         <td colspan="6">
             <div class="loader"></div>
             Loading users...
           </td>
@@ -431,12 +430,12 @@ async function loadUsers() {
     const data = await res.json();
 
     if (!data.success) {
-      usersTable.innerHTML = `<tr><td colspan="7">${data.message}</td></tr>`;
+      usersTable.innerHTML = `<tr><td colspan="6">${data.message}</td></tr>`;
       return;
     }
 
     if (data.users.length === 0) {
-      usersTable.innerHTML = `<tr><td colspan="7">No users found.</td></tr>`;
+      usersTable.innerHTML = `<tr><td colspan="6">No users found.</td></tr>`;
       return;
     }
 
@@ -445,7 +444,7 @@ renderUsers(usersData);
 
   } catch (err) {
     console.error(err);
-    usersTable.innerHTML = `<tr><td colspan="7">Failed to load users.</td></tr>`;
+    usersTable.innerHTML = `<tr><td colspan="6">Failed to load users.</td></tr>`;
   }
 }
 
@@ -525,11 +524,7 @@ function renderUsers(users) {
         </span>
       </td>
 
-      <td data-label="Verification">
-        <span class="badge ${badgeClass(user.verification_status)}">
-          ${user.verification_status || "N/A"}
-        </span>
-      </td>
+    
 
       <td data-label="Actions">
         <div class="actions">
@@ -554,7 +549,7 @@ function renderUsers(users) {
   if (users.length === 0) {
     usersTable.innerHTML = `
       <tr>
-        <td colspan="7">No users found.</td>
+        <td colspan="6">No users found.</td>
       </tr>
     `;
   }

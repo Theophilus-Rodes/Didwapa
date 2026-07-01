@@ -896,7 +896,7 @@ app.put("/api/admin/users/:id/approve", (req, res) => {
   }
 
   db.query(
-    "UPDATE users SET status = 'approved', verification_status = 'approved' WHERE id = ?",
+   "UPDATE users SET status = 'approved' WHERE id = ?",
     [req.params.id],
     (err) => {
       if (err) {
@@ -920,7 +920,7 @@ app.put("/api/admin/users/:id/pending", (req, res) => {
   }
 
   db.query(
-    "UPDATE users SET status = 'pending', verification_status = 'pending' WHERE id = ?",
+   "UPDATE users SET status = 'pending' WHERE id = ?",
     [req.params.id],
     (err) => {
       if (err) {
