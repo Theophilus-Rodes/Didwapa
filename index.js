@@ -1842,20 +1842,22 @@ app.put(
       address,
 
       business_name,
-      business_type,
-      business_category,
-      business_description,
-      business_whatsapp,
-      business_email,
-      business_address,
-      business_region,
-      business_district,
-      business_registration_number,
-      business_tin,
-      business_website,
-      business_hours,
-      delivery_available,
-      delivery_coverage
+business_type,
+business_category,
+business_description,
+business_whatsapp,
+business_email,
+business_address,
+business_region,
+business_district,
+business_logo,
+business_registration_number,
+business_registration_cert,
+business_tin,
+business_website,
+business_hours,
+delivery_available,
+delivery_coverage,
     } = req.body;
 
     if (!firstname || !lastname || !email || !telephone) {
@@ -1983,10 +1985,10 @@ app.put(
             });
           }
 
-          req.session.user.firstname = firstname;
-          req.session.user.lastname = lastname;
-          req.session.user.email = email;
-          req.session.user.telephone = telephone;
+        req.session.user.firstname = firstname || req.session.user.firstname;
+req.session.user.lastname = lastname || req.session.user.lastname;
+req.session.user.email = email || req.session.user.email;
+req.session.user.telephone = telephone || req.session.user.telephone;
 
           req.session.save(() => {
             res.json({
