@@ -2945,6 +2945,38 @@ function safe(str){
     .replace(/'/g,"\\'")
     .replace(/"/g,"&quot;");
 }
+
+
+async function loadSellerInfo(){
+  try{
+    const res = await fetch(`${API_BASE}/api/user/profile`, {
+      credentials:"include"
+    });
+
+    const data = await res.json();
+
+    if(!data.success) return;
+
+    const user = data.user;
+
+    document.getElementById("seller_name").value =
+      user.business_name ||
+      `${user.firstname || ""} ${user.lastname || ""}`.trim();
+
+    document.getElementById("phone_number").value =
+      user.business_whatsapp ||
+      user.telephone ||
+      user.other_telephone ||
+      "";
+
+  }catch(error){
+    console.error("Failed to load seller info:", error);
+  }
+}
+
+
+
+loadSellerInfo();
 </script>
 
 </body>
