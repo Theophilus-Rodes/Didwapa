@@ -687,11 +687,23 @@ function niceLabel(key){
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function formatPostedDate(date){
+  if(!date) return "";
+
+  const d = new Date(date);
+
+  return d.toLocaleDateString(undefined,{
+    day:"numeric",
+    month:"long",
+    year:"numeric"
+  });
+}
+
 function renderProductDetails(product){
   let normalDetails = [];
   let longDetails = [];
 
-  const normalFields = {
+const normalFields = {
     product_type: product.product_type,
     product_color: product.product_color,
     delivery_available: product.delivery_available,
@@ -700,8 +712,9 @@ function renderProductDetails(product){
     pickup_available: product.pickup_available,
     bulk_min_qty: product.bulk_min_qty,
     bulk_price: product.bulk_price,
-    registered_car: product.registered_car
-  };
+    registered_car: product.registered_car,
+    posted_date: formatPostedDate(product.created_at)
+};
 
   Object.entries(normalFields).forEach(([key, value]) => {
     if (
