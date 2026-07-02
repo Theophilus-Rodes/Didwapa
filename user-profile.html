@@ -263,6 +263,7 @@ body{background:var(--bg);color:var(--text);padding-bottom:30px}.app{max-width:7
   <button type="button" class="tab-btn" data-tab="passwordTab">Change Password</button>
 </div>
   <form class="card" id="profileForm" enctype="multipart/form-data">
+    <input type="hidden" id="face_match_confirmed" name="face_match_confirmed" value="no">
     <div class="tab-panel active" id="personalTab">
     
     <div class="card-title">Personal Information <small>Basic account details</small></div><div class="form-grid"><div class="form-group"><label>Firstname</label>
@@ -303,7 +304,7 @@ body{background:var(--bg);color:var(--text);padding-bottom:30px}.app{max-width:7
 </form>
 
 </section></main><div class="image-modal" id="imageModal" onclick="closeImageModal()"><span class="close-image">&times;</span><img id="modalImage" onclick="event.stopPropagation()"></div>
-
+<script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
 <script>
 const API_BASE=window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'?'http://localhost:5000':'';
 let identityVerified = false;
@@ -312,9 +313,28 @@ let faceModelsLoaded = false;
 const alertBox = document.getElementById('alertBox');
 const loadingOverlay = document.getElementById('loadingOverlay');
 
+async function loadFaceModels() {
+  if (faceModelsLoaded) return true;
 
-async function loadFaceModels(){
-  return true;
+  loadingOverlay.style.display = "flex";
+  document.querySelector(".loading-card h3").textContent = "Loading AI...";
+  document.querySelector(".loading-card p").textContent =
+    "Preparing face verification...";
+
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri("/models");
+    await faceapi.nets.faceLandmark68Net.loadFromUri("/models");
+    await faceapi.nets.faceRecognitionNet.loadFromUri("/models");
+
+    faceModelsLoaded = true;
+    loadingOverlay.style.display = "none";
+    return true;
+  } catch (err) {
+    console.error(err);
+    loadingOverlay.style.display = "none";
+    showAlert("Failed to load face verification models.", "error");
+    return false;
+  }
 }
 
 function fileToImage(file){
@@ -347,28 +367,65 @@ async function verifyFaceMatch(){
   if(!selfieInput.files.length || !cardInput.files.length) return;
 
   identityVerified = false;
-  //lockFormUntilVerified(true);
 
   loadingOverlay.style.display = "flex";
-  document.querySelector(".loading-card h3").textContent = "Checking Images...";
-  document.querySelector(".loading-card p").textContent = "Please wait while DIDWAPA checks your selfie and Ghana Card image.";
+  document.querySelector(".loading-card h3").textContent = "Checking Face Match...";
+  document.querySelector(".loading-card p").textContent = "Comparing your selfie with your Ghana Card photo.";
 
   try{
-    await fileToImage(selfieInput.files[0]);
-    await fileToImage(cardInput.files[0]);
+    await loadFaceModels();
+
+    const selfieImg = await fileToImage(selfieInput.files[0]);
+    const cardImg = await fileToImage(cardInput.files[0]);
+
+    const options = new faceapi.TinyFaceDetectorOptions();
+
+    const selfieFace = await faceapi
+      .detectSingleFace(selfieImg, options)
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+    const cardFace = await faceapi
+      .detectSingleFace(cardImg, options)
+      .withFaceLandmarks()
+      .withFaceDescriptor();
 
     loadingOverlay.style.display = "none";
 
-    identityVerified = true;
-    lockFormUntilVerified(false);
-    showAlert("✅ Images checked successfully. You can continue.");
+    if(!selfieFace){
+      document.getElementById("face_match_confirmed").value = "no";
+      showAlert("No clear face found in the selfie. Please upload a clearer selfie.", "error");
+      return;
+    }
+
+    if(!cardFace){
+      document.getElementById("face_match_confirmed").value = "no";
+      showAlert("No clear face found on the Ghana Card front. Please upload a clearer card image.", "error");
+      return;
+    }
+
+    const distance = faceapi.euclideanDistance(
+      selfieFace.descriptor,
+      cardFace.descriptor
+    );
+
+    console.log("Face distance:", distance);
+
+if(distance <= 0.55){
+  identityVerified = true;
+  document.getElementById("face_match_confirmed").value = "yes";
+  showAlert("✅ Face matched successfully. You can submit.");
+}else{
+  identityVerified = false;
+  document.getElementById("face_match_confirmed").value = "no";
+  showAlert("Selfie does not match the Ghana Card photo.", "error");
+}
 
   }catch(error){
     console.error(error);
     loadingOverlay.style.display = "none";
     identityVerified = false;
-   // lockFormUntilVerified(true);
-    showAlert("Please upload valid image files.", "error");
+    showAlert("Face verification failed. Please try clearer images.", "error");
   }
 }
 

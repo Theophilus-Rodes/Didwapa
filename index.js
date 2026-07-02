@@ -2059,6 +2059,8 @@ app.get("/api/user/profile", (req, res) => {
     });
   });
 });
+
+
 app.put(
   "/api/user/profile/update",
   upload.fields([
@@ -2114,6 +2116,31 @@ delivery_coverage,
         message: "Firstname, lastname, email and telephone are required."
       });
     }
+
+    const hasNewIdentityFiles =
+  req.files?.selfie_image?.length ||
+  req.files?.gh_card_front?.length ||
+  req.files?.gh_card_back?.length;
+
+if (hasNewIdentityFiles) {
+  if (
+    !req.files?.selfie_image?.[0] ||
+    !req.files?.gh_card_front?.[0] ||
+    !req.files?.gh_card_back?.[0]
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Please upload selfie, Ghana Card front and Ghana Card back."
+    });
+  }
+
+  if (req.body.face_match_confirmed !== "yes") {
+    return res.status(400).json({
+      success: false,
+      message: "Face verification failed. Your selfie must match the Ghana Card front image."
+    });
+  }
+}
 
     try {
       function getFileUrl(file, folder) {
