@@ -21,6 +21,67 @@ body{background:#f6f7fb;color:#111827}
 .price{color:#ff6600;font-weight:900}
 .meta{font-size:.75rem;color:#6b7280;margin-top:5px}
 .empty{background:white;padding:20px;border-radius:18px;text-align:center;font-weight:900}
+
+.seller-box{
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:18px;
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:0 10px 25px rgba(0,0,0,.08);
+}
+.seller-top{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.seller-avatar{
+  width:55px;
+  height:55px;
+  border-radius:50%;
+  background:#fff4ea;
+  color:#ff6600;
+  display:grid;
+  place-items:center;
+  font-weight:900;
+  font-size:1.4rem;
+}
+.seller-name{
+  font-weight:900;
+  color:#0a2d73;
+}
+.seller-badge{
+  display:inline-block;
+  margin-top:5px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:#dcfce7;
+  color:#166534;
+  font-size:.7rem;
+  font-weight:900;
+}
+.seller-stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-top:12px;
+}
+.seller-stat{
+  background:#f9fafb;
+  border-radius:13px;
+  padding:9px 6px;
+  text-align:center;
+}
+.seller-stat strong{
+  display:block;
+  color:#0a2d73;
+  font-size:.78rem;
+}
+.seller-stat span{
+  color:#6b7280;
+  font-size:.7rem;
+  font-weight:800;
+}
 </style>
 </head>
 
@@ -32,7 +93,8 @@ body{background:#f6f7fb;color:#111827}
   </section>
 
   <section class="content">
-    <div class="grid" id="productsBox">Loading...</div>
+   <div class="seller-box" id="sellerBox">Loading seller...</div>
+<div class="grid" id="productsBox">Loading...</div>
   </section>
 </main>
 
@@ -63,12 +125,63 @@ function getProductImages(images){
   }
 }
 
+
+function sellerAgeText(createdAt){
+  if(!createdAt) return "Unknown";
+
+  const joined = new Date(createdAt);
+  const now = new Date();
+  const diffDays = Math.floor((now - joined) / (1000 * 60 * 60 * 24));
+
+  if(diffDays < 30) return "Recent seller";
+  if(diffDays < 365) return `${Math.floor(diffDays / 30)} month(s)`;
+  return `${Math.floor(diffDays / 365)} year(s)`;
+}
+
+function renderSellerBox(seller){
+  const box = document.getElementById("sellerBox");
+
+ const fullname = `${seller.firstname || ""} ${seller.lastname || ""}`.trim() || "DIDWAPA Seller";
+const initial = fullname.charAt(0).toUpperCase();
+
+box.innerHTML = `
+  <div class="seller-top">
+    <div class="seller-avatar">${initial}</div>
+
+    <div>
+      <div class="seller-name">${fullname}</div>
+    </div>
+  </div>
+
+  <div class="seller-stats">
+    <div class="seller-stat">
+      <strong>${sellerAgeText(seller.created_at)}</strong>
+      <span>Joined</span>
+    </div>
+
+    <div class="seller-stat">
+      <strong>${seller.total_ads || 0}</strong>
+      <span>Ads</span>
+    </div>
+
+    <div class="seller-stat">
+      <strong>${seller.role || "Seller"}</strong>
+      <span>Account</span>
+    </div>
+  </div>
+`;
+}
+
 async function loadSellerProducts(){
   const box = document.getElementById("productsBox");
 
   try{
     const res = await fetch(`${API_BASE}/api/sellers/${sellerId}/products`);
     const data = await res.json();
+
+    if(data.seller){
+  renderSellerBox(data.seller);
+}
 
     if(!data.success || !data.products.length){
       box.innerHTML = `<div class="empty">No products found for this seller.</div>`;
