@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DIDWAPA - Seller Products</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{background:#f6f7fb;color:#111827}
+.app{max-width:620px;margin:auto;background:#fff;min-height:100vh}
+.header{background:linear-gradient(135deg,#0a2d73,#ff6600);color:white;padding:20px 16px 35px;border-bottom-left-radius:25px;border-bottom-right-radius:25px}
+.back{border:none;background:rgba(255,255,255,.2);color:white;padding:10px 14px;border-radius:999px;font-weight:900}
+.header h1{margin-top:16px;font-size:1.35rem}
+.content{padding:14px;margin-top:-22px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.card{background:white;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,.08);cursor:pointer}
+.card img{width:100%;height:140px;object-fit:cover;background:#f3f4f6}
+.info{padding:10px}
+.info h3{font-size:.9rem;margin-bottom:6px}
+.price{color:#ff6600;font-weight:900}
+.meta{font-size:.75rem;color:#6b7280;margin-top:5px}
+.empty{background:white;padding:20px;border-radius:18px;text-align:center;font-weight:900}
+</style>
+</head>
+
+<body>
+<main class="app">
+  <section class="header">
+    <button class="back" onclick="history.back()">← Back</button>
+    <h1>Seller Products</h1>
+  </section>
+
+  <section class="content">
+    <div class="grid" id="productsBox">Loading...</div>
+  </section>
+</main>
+
+<script>
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000"
+    : "";
+
+const sellerId = new URLSearchParams(window.location.search).get("seller_id");
+
+function getProductImages(images){
+  try{
+    const parsed = JSON.parse(images || "[]");
+
+    return parsed.map(img => {
+      img = String(img || "").replace(/\\/g, "/");
+
+      if(img.startsWith("http://") || img.startsWith("https://")) return img;
+      if(img.startsWith("/uploads/")) return API_BASE + img;
+      if(img.startsWith("uploads/")) return API_BASE + "/" + img;
+
+      return API_BASE + "/uploads/" + img;
+    }).filter(Boolean);
+  }catch{
+    return [];
+  }
+}
+
+async function loadSellerProducts(){
+  const box = document.getElementById("productsBox");
+
+  try{
+    const res = await fetch(`${API_BASE}/api/sellers/${sellerId}/products`);
+    const data = await res.json();
+
+    if(!data.success || !data.products.length){
+      box.innerHTML = `<div class="empty">No products found for this seller.</div>`;
+      return;
+    }
+
+    box.innerHTML = data.products.map(p => {
+      const imgs = getProductImages(p.images);
+      const img = imgs[0] || "https://via.placeholder.com/300";
+
+      return `
+        <div class="card" onclick="window.location.href='product-details.html?id=${p.id}'">
+          <img src="${img}">
+          <div class="info">
+            <h3>${p.product_name}</h3>
+            <div class="price">GH₵${Number(p.price).toFixed(2)}</div>
+            <div class="meta">${p.region || ""} ${p.district ? "• " + p.district : ""}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+  }catch(error){
+    console.error(error);
+    box.innerHTML = `<div class="empty">Failed to load seller products.</div>`;
+  }
+}
+
+loadSellerProducts();
+</script>
+</body>
+</html>

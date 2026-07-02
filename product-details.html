@@ -470,6 +470,50 @@
   margin-top:12px;
 }
 
+.seller-card{
+  margin:14px -16px 12px;
+  padding:16px 18px;
+  background:#fff;
+  border-top:8px solid #edf4ff;
+  border-bottom:8px solid #edf4ff;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  cursor:pointer;
+}
+
+.seller-avatar{
+  width:54px;
+  height:54px;
+  border-radius:50%;
+  background:#e5e7eb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.8rem;
+}
+
+.seller-info h3{
+  font-size:1rem;
+  color:#111827;
+  margin-bottom:6px;
+}
+
+.seller-badges{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.seller-badges span{
+  background:#edf4ff;
+  color:#0a2d73;
+  padding:4px 7px;
+  border-radius:7px;
+  font-size:.68rem;
+  font-weight:900;
+}
+
   </style>
 </head>
 
@@ -829,6 +873,7 @@ const image = productImages[0] || "";
 </div>
 
 ${renderProductDetails(product)}
+${renderSellerCard(product)}
 
 ${isNegotiableProduct() ? `
   <button class="suggest-btn" onclick="toggleOfferBox()">💬 Suggest Pay</button>
@@ -859,15 +904,6 @@ ${isNegotiableProduct() ? `
   📞 Call Seller
 </a>
 
-      <label style="font-weight:900;">Quantity to buy</label>
-      <input 
-        type="number" 
-        id="quantity" 
-        value="1" 
-        min="1" 
-        max="${product.quantity_in_stock}" 
-        oninput="calculateTotal()"
-      >
 
       <div class="total" id="totalBox">
         Total: GH₵${Number(product.price).toFixed(2)}
@@ -1122,7 +1158,44 @@ function sendCallbackRequest(){
 }
 
 loadBuyerInfo();
+function renderSellerCard(product){
+  const sellerName =
+    `${product.firstname || ""} ${product.lastname || ""}`.trim() ||
+    "DIDWAPA Seller";
 
+  const verified =
+    String(product.verification_status || "").toLowerCase() === "approved"
+      ? "Verified ID"
+      : "Seller";
+
+  const totalAds = product.seller_total_ads || 0;
+
+  let joinedText = "New seller";
+
+  if(product.user_created_at){
+    const joinedYear = new Date(product.user_created_at).getFullYear();
+    const currentYear = new Date().getFullYear();
+    const years = currentYear - joinedYear;
+
+    joinedText = years > 0 ? `${years}+ years on DIDWAPA` : "Joined recently";
+  }
+
+  return `
+    <div class="seller-card" onclick="window.location.href='seller-products.html?seller_id=${product.posted_by}'">
+      <div class="seller-avatar">👤</div>
+
+      <div class="seller-info">
+        <h3>${safeText(sellerName)}</h3>
+
+        <div class="seller-badges">
+          <span>✔ ${safeText(verified)}</span>
+          <span>📦 ${totalAds} active ads</span>
+          <span>🕒 ${safeText(joinedText)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 loadProduct();
 loadComments();

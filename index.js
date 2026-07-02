@@ -1779,46 +1779,61 @@ app.delete("/api/products/drafts/:id", (req, res) => {
   );
 });
 
-
 app.get("/api/products/:id", (req, res) => {
   const productId = req.params.id;
 
   const sql = `
     SELECT 
-      id,
-      category,
-      subcategory,
-      region,
-      district,
-      product_name,
-      product_type,
-      price,
-      product_color,
-      quantity_in_stock,
-      status,
-      phone_number,
-      instructions,
-      description,
-      item_condition,
-      images,
-      specifications,
-      seller_name,
-      youtube_link,
-      registered_car,
-      exchange_possible,
-      negotiable,
-      bulk_min_qty,
-      bulk_price,
-      delivery_available,
-      delivery_fee_type,
-      delivery_time,
-      pickup_available,
-      promotion_type,
-      posted_by,
-      created_at
-    FROM products
-    WHERE id = ? 
-      AND status = 'approved'
+      p.id,
+      p.category,
+      p.subcategory,
+      p.region,
+      p.district,
+      p.product_name,
+      p.product_type,
+      p.price,
+      p.product_color,
+      p.quantity_in_stock,
+      p.status,
+      p.phone_number,
+      p.instructions,
+      p.description,
+      p.item_condition,
+      p.images,
+      p.specifications,
+      p.seller_name,
+      p.youtube_link,
+      p.registered_car,
+      p.exchange_possible,
+      p.negotiable,
+      p.bulk_min_qty,
+      p.bulk_price,
+      p.delivery_available,
+      p.delivery_fee_type,
+      p.delivery_time,
+      p.pickup_available,
+      p.promotion_type,
+      p.posted_by,
+      p.created_at,
+
+      u.firstname,
+      u.lastname,
+      u.role,
+      u.status AS user_status,
+      u.verification_status,
+      u.created_at AS user_created_at,
+
+      (
+        SELECT COUNT(*) 
+        FROM products 
+        WHERE posted_by = p.posted_by 
+        AND status = 'approved'
+      ) AS seller_total_ads
+
+    FROM products p
+    LEFT JOIN users u ON p.posted_by = u.id
+    WHERE p.id = ? 
+    AND p.status = 'approved'
     LIMIT 1
   `;
 
@@ -1844,6 +1859,43 @@ app.get("/api/products/:id", (req, res) => {
     });
   });
 });
+
+
+app.get("/api/sellers/:sellerId/products", (req, res) => {
+  const sellerId = req.params.sellerId;
+
+  const sql = `
+    SELECT 
+      id,
+      product_name,
+      price,
+      images,
+      item_condition,
+      region,
+      district,
+      created_at
+    FROM products
+    WHERE posted_by = ?
+    AND status = 'approved'
+    ORDER BY created_at DESC
+  `;
+
+  db.query(sql, [sellerId], (err, products) => {
+    if (err) {
+      console.error("Fetch seller products error:", err);
+      return res.status(500).json({
+        success: false,
+        message: err.sqlMessage || "Failed to load seller products"
+      });
+    }
+
+    res.json({
+      success: true,
+      products
+    });
+  });
+});
+
 
 
 
