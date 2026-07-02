@@ -631,34 +631,68 @@ function niceLabel(key){
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function renderSpecifications(specData){
-  if(!specData) return "";
 
-  let specs = {};
+function renderProductDetails(product){
+  let details = [];
 
-  try{
-    specs = typeof specData === "string" ? JSON.parse(specData) : specData;
-  }catch(e){
-    return "";
+  const normalFields = {
+  category: product.category,
+  subcategory: product.subcategory,
+  product_type: product.product_type,
+  product_color: product.product_color,
+  description: product.description,
+  instructions: product.instructions,
+  delivery_available: product.delivery_available,
+  delivery_fee_type: product.delivery_fee_type,
+  delivery_time: product.delivery_time,
+  pickup_available: product.pickup_available,
+  bulk_min_qty: product.bulk_min_qty,
+  bulk_price: product.bulk_price,
+  registered_car: product.registered_car
+};
+  Object.entries(normalFields).forEach(([key, value]) => {
+    if (
+      value !== null &&
+      value !== undefined &&
+      String(value).trim() !== "" &&
+      String(value).trim().toLowerCase() !== "null"
+    ) {
+      details.push([key, value]);
+    }
+  });
+
+  if(product.specifications){
+    try{
+      const specs = typeof product.specifications === "string"
+        ? JSON.parse(product.specifications)
+        : product.specifications;
+
+      Object.entries(specs).forEach(([key, value]) => {
+        if (
+          value !== null &&
+          value !== undefined &&
+          String(value).trim() !== "" &&
+          String(value).trim().toLowerCase() !== "null"
+        ) {
+          details.push([key, value]);
+        }
+      });
+    }catch(error){
+      console.log("Invalid specifications JSON:", error);
+    }
   }
 
-  const entries = Object.entries(specs).filter(([key,value]) =>
-    value !== null &&
-    value !== undefined &&
-    String(value).trim() !== ""
-  );
+  if(!details.length) return "";
 
-  if(!entries.length) return "";
-
-const firstTen = entries.slice(0,4);
-const remaining = entries.slice(4);
+  const firstFour = details.slice(0, 4);
+  const remaining = details.slice(4);
 
   return `
     <div class="spec-section">
       <div class="spec-title">Product Details</div>
 
       <div class="spec-grid">
-        ${firstTen.map(([key,value]) => `
+        ${firstFour.map(([key,value]) => `
           <div class="spec-item">
             <span>${safeText(value)}</span>
             <small>${safeText(niceLabel(key))}</small>
@@ -794,7 +828,7 @@ const image = productImages[0] || "";
 
 </div>
 
-${renderSpecifications(product.specifications)}
+${renderProductDetails(product)}
 
 ${isNegotiableProduct() ? `
   <button class="suggest-btn" onclick="toggleOfferBox()">💬 Suggest Pay</button>
