@@ -574,8 +574,11 @@ if (selectedDistrict) {
                 <div class="product-name">${product.product_name || "Product"}</div>
 
                 <div class="product-price">
-                  GH₵${Number(product.price || 0).toFixed(2)}
-                </div>
+  GH₵${Number(product.price || 0).toLocaleString(undefined,{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  })}
+</div>
 
                 <div class="product-meta">
                   <span class="rating">★ 4.8</span>
