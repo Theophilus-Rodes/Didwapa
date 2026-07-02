@@ -31,6 +31,36 @@ textarea:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,102,0,.
 @keyframes down{from{transform:translateY(-25px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
 @media(max-width:420px){.app{max-width:100%}.message{max-width:86%;font-size:.82rem}.header{padding:14px 12px 20px}}
+
+.safety-box{
+  margin-top:10px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.28);
+  padding:12px;
+  border-radius:16px;
+  font-size:.78rem;
+}
+
+.safety-box strong{
+  display:block;
+  margin-bottom:5px;
+}
+
+.safety-box p{
+  line-height:1.45;
+  opacity:.95;
+  margin-bottom:8px;
+}
+
+.safety-box button{
+  border:none;
+  background:white;
+  color:var(--primary);
+  padding:8px 12px;
+  border-radius:999px;
+  font-weight:900;
+  cursor:pointer;
+}
 </style>
 </head>
 
@@ -55,6 +85,14 @@ textarea:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,102,0,.
     <div class="product-box" id="productBox">
       Loading product...
     </div>
+
+    <div class="safety-box">
+  <strong>⚠️ Buyer Safety</strong>
+  <p>Do not make payment before receiving and checking the product. Meet safely and verify the item first.</p>
+  <button type="button" onclick="window.location.href='buyer-safety.html'">
+    View Safety Tips →
+  </button>
+</div>
   </section>
 
   <section class="chat-area" id="chatArea">
