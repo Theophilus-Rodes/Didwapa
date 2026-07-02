@@ -1865,42 +1865,74 @@ app.get("/api/products/:id", (req, res) => {
   });
 });
 
-
 app.get("/api/sellers/:sellerId/products", (req, res) => {
   const sellerId = req.params.sellerId;
 
-  const sql = `
+  const sellerSql = `
     SELECT 
       id,
-      product_name,
-      price,
-      images,
-      item_condition,
-      region,
-      district,
+      firstname,
+      lastname,
+      role,
+      status,
       created_at
-    FROM products
-    WHERE posted_by = ?
-    AND status = 'approved'
-    ORDER BY created_at DESC
+    FROM users
+    WHERE id = ?
+    LIMIT 1
   `;
 
-  db.query(sql, [sellerId], (err, products) => {
-    if (err) {
-      console.error("Fetch seller products error:", err);
+  db.query(sellerSql, [sellerId], (sellerErr, sellerRows) => {
+    if (sellerErr) {
+      console.error("Fetch seller error:", sellerErr);
       return res.status(500).json({
         success: false,
-        message: err.sqlMessage || "Failed to load seller products"
+        message: "Failed to load seller."
       });
     }
 
-    res.json({
-      success: true,
-      products
+    if (!sellerRows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Seller not found."
+      });
+    }
+
+    const productsSql = `
+      SELECT 
+        id,
+        product_name,
+        price,
+        images,
+        item_condition,
+        region,
+        district,
+        created_at
+      FROM products
+      WHERE posted_by = ?
+      AND status = 'approved'
+      ORDER BY created_at DESC
+    `;
+
+    db.query(productsSql, [sellerId], (productErr, products) => {
+      if (productErr) {
+        console.error("Fetch seller products error:", productErr);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to load seller products."
+        });
+      }
+
+      res.json({
+        success: true,
+        seller: {
+          ...sellerRows[0],
+          total_ads: products.length
+        },
+        products
+      });
     });
   });
 });
-
 
 
 
