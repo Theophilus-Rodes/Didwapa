@@ -396,6 +396,18 @@
   text-transform:uppercase;
 }
 
+.spec-long{
+  grid-column:1 / -1;
+  min-height:auto;
+  padding:12px;
+}
+
+.spec-long span{
+  font-size:.9rem;
+  line-height:1.45;
+  font-weight:500;
+}
+
 @media(max-width:620px){
   .spec-grid{
     grid-template-columns:repeat(4, 1fr);
@@ -675,25 +687,22 @@ function niceLabel(key){
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-
 function renderProductDetails(product){
-  let details = [];
+  let normalDetails = [];
+  let longDetails = [];
 
   const normalFields = {
-  category: product.category,
-  subcategory: product.subcategory,
-  product_type: product.product_type,
-  product_color: product.product_color,
-  description: product.description,
-  instructions: product.instructions,
-  delivery_available: product.delivery_available,
-  delivery_fee_type: product.delivery_fee_type,
-  delivery_time: product.delivery_time,
-  pickup_available: product.pickup_available,
-  bulk_min_qty: product.bulk_min_qty,
-  bulk_price: product.bulk_price,
-  registered_car: product.registered_car
-};
+    product_type: product.product_type,
+    product_color: product.product_color,
+    delivery_available: product.delivery_available,
+    delivery_fee_type: product.delivery_fee_type,
+    delivery_time: product.delivery_time,
+    pickup_available: product.pickup_available,
+    bulk_min_qty: product.bulk_min_qty,
+    bulk_price: product.bulk_price,
+    registered_car: product.registered_car
+  };
+
   Object.entries(normalFields).forEach(([key, value]) => {
     if (
       value !== null &&
@@ -701,7 +710,7 @@ function renderProductDetails(product){
       String(value).trim() !== "" &&
       String(value).trim().toLowerCase() !== "null"
     ) {
-      details.push([key, value]);
+      normalDetails.push([key, value]);
     }
   });
 
@@ -713,12 +722,13 @@ function renderProductDetails(product){
 
       Object.entries(specs).forEach(([key, value]) => {
         if (
+          key !== "title" &&
           value !== null &&
           value !== undefined &&
           String(value).trim() !== "" &&
           String(value).trim().toLowerCase() !== "null"
         ) {
-          details.push([key, value]);
+          normalDetails.push([key, value]);
         }
       });
     }catch(error){
@@ -726,10 +736,17 @@ function renderProductDetails(product){
     }
   }
 
-  if(!details.length) return "";
+  if(product.description){
+    longDetails.push(["description", product.description]);
+  }
 
-  const firstFour = details.slice(0, 4);
-  const remaining = details.slice(4);
+  if(product.instructions){
+    longDetails.push(["instructions", product.instructions]);
+  }
+
+  const allNormal = normalDetails;
+  const firstFour = allNormal.slice(0, 4);
+  const remaining = allNormal.slice(4);
 
   return `
     <div class="spec-section">
@@ -749,10 +766,17 @@ function renderProductDetails(product){
             <small>${safeText(niceLabel(key))}</small>
           </div>
         `).join("")}
+
+        ${longDetails.map(([key,value]) => `
+          <div class="spec-item spec-long spec-hidden extra-spec">
+            <span>${safeText(value)}</span>
+            <small>${safeText(niceLabel(key))}</small>
+          </div>
+        `).join("")}
       </div>
 
       ${
-        remaining.length
+        remaining.length || longDetails.length
         ? `<div class="show-more-btn" onclick="toggleSpecs(this)">Show more⌄</div>`
         : ""
       }
