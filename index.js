@@ -88,6 +88,11 @@ db.connect((err) => {
 });
 
 
+// ===============================
+// Password Reset Storage
+// ===============================
+const resetCodes = {};
+
 // const db = mysql.createConnection({ 
 //   host: "localhost", user: "root", 
 //   password: "", 
@@ -7430,12 +7435,18 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
+//////////////////////////////
+// Forgot Password Routes
+//////////////////////////////
 
-/////Forgot password codes 
 app.post("/api/password/check-email", (req, res) => {
   const { email } = req.body;
 
+  console.log("\n========== CHECK EMAIL ==========");
+  console.log("Request Body:", req.body);
+
   if (!email) {
+    console.log("Email not provided.");
     return res.status(400).json({
       success: false,
       message: "Email is required."
@@ -7443,22 +7454,28 @@ app.post("/api/password/check-email", (req, res) => {
   }
 
   const sql = `
-    SELECT id, email, telephone 
-    FROM users 
-    WHERE email = ? 
+    SELECT id, email, telephone
+    FROM users
+    WHERE email = ?
     LIMIT 1
   `;
 
+  console.log("Searching database for:", email);
+
   db.query(sql, [email], (err, results) => {
+
     if (err) {
-      console.error("CHECK EMAIL ERROR:", err);
+      console.error("CHECK EMAIL DATABASE ERROR:", err);
       return res.status(500).json({
         success: false,
         message: "Server error."
       });
     }
 
+    console.log("Database Results:", results);
+
     if (results.length === 0) {
+      console.log("No account found.");
       return res.status(404).json({
         success: false,
         message: "No account found with this email."
@@ -7466,21 +7483,36 @@ app.post("/api/password/check-email", (req, res) => {
     }
 
     const user = results[0];
-    const phone = user.telephone || "";
+
+    const phone = String(user.telephone || "");
     const lastTwo = phone.slice(-2);
+
+    console.log("User Found:", user.email);
+    console.log("Telephone:", phone);
+    console.log("Last Two Digits:", lastTwo);
 
     return res.json({
       success: true,
       lastTwo
     });
+
   });
+
 });
 
 
+
+
+
 app.post("/api/password/send-code", async (req, res) => {
+
   const { email, telephone } = req.body;
 
+  console.log("\n========== SEND RESET CODE ==========");
+  console.log("Incoming Body:", req.body);
+
   if (!email || !telephone) {
+    console.log("Email or telephone missing.");
     return res.status(400).json({
       success: false,
       message: "Email and telephone are required."
@@ -7488,168 +7520,310 @@ app.post("/api/password/send-code", async (req, res) => {
   }
 
   const sql = `
-    SELECT id, email, telephone 
-    FROM users 
-    WHERE email = ? 
+    SELECT id,email,telephone
+    FROM users
+    WHERE email=?
     LIMIT 1
   `;
 
-  db.query(sql, [email], async (err, results) => {
-    if (err) {
-      console.error("SEND CODE CHECK ERROR:", err);
+  console.log("Looking for:", email);
+
+  db.query(sql,[email],async(err,results)=>{
+
+    if(err){
+      console.error("DATABASE ERROR:",err);
+
       return res.status(500).json({
-        success: false,
-        message: "Server error."
+        success:false,
+        message:"Server error."
       });
     }
 
-    if (results.length === 0) {
+    console.log("Database Results:",results);
+
+    if(results.length===0){
+
+      console.log("Account not found.");
+
       return res.status(404).json({
-        success: false,
-        message: "Account not found."
+        success:false,
+        message:"Account not found."
       });
     }
 
-    const user = results[0];
+    const user=results[0];
 
-    if (String(user.telephone).trim() !== String(telephone).trim()) {
+    console.log("Database Telephone:",user.telephone);
+    console.log("Entered Telephone :",telephone);
+
+    if(String(user.telephone).trim()!==String(telephone).trim()){
+
+      console.log("Telephone mismatch.");
+
       return res.status(400).json({
-        success: false,
-        message: "Phone number does not match this account."
+        success:false,
+        message:"Phone number does not match this account."
       });
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code=Math.floor(100000+Math.random()*900000).toString();
 
-    resetCodes[email] = {
+    console.log("Generated Code:",code);
+
+    resetCodes[email]={
       code,
-      verified: false,
-      expiresAt: Date.now() + 10 * 60 * 1000
+      verified:false,
+      expiresAt:Date.now()+10*60*1000
     };
 
-    console.log("DIDWAPA RESET CODE:", code);
+    console.log("Reset Object:",resetCodes[email]);
 
-    /*
-      Connect your SMS API here.
-      Example message:
-      Your DIDWAPA password reset code is 123456
-    */
+    let recipient=telephone.trim();
 
-    return res.json({
-      success: true,
-      message: "Verification code sent."
-    });
+    if(recipient.startsWith("0")){
+      recipient="233"+recipient.substring(1);
+    }
+
+    if(!recipient.startsWith("+")){
+      recipient="+"+recipient;
+    }
+
+    console.log("Formatted Recipient:",recipient);
+
+    const message=`Your DIDWAPA password reset code is ${code}. It expires in 10 minutes.`;
+
+    console.log("Message:");
+    console.log(message);
+
+    try{
+
+      console.log("Sending SMS to GiantSMS...");
+
+      const smsResponse=await axios.post(
+        "https://app.giantsms.com/api/sms/send",
+        {
+          username:"pAdLSXDa",
+          password:"nEMqaseCAY",
+          token:"cEFkTFNYRGE6bkVNcWFzZUNBWQ==",
+          sender_id:"Didwapa App",
+          recipient,
+          message
+        }
+      );
+
+      console.log("================================");
+      console.log("GIANTSMS SUCCESS");
+      console.log(smsResponse.data);
+      console.log("================================");
+
+      return res.json({
+        success:true,
+        message:"Verification code sent."
+      });
+
+    }catch(smsErr){
+
+      console.error("================================");
+      console.error("GIANTSMS FAILED");
+
+      if(smsErr.response){
+
+        console.error("Status:",smsErr.response.status);
+        console.error("Headers:",smsErr.response.headers);
+        console.error("Response:",smsErr.response.data);
+
+      }else{
+
+        console.error("Message:",smsErr.message);
+
+      }
+
+      console.error("================================");
+
+      return res.status(500).json({
+        success:false,
+        message:"Failed to send SMS. Please try again."
+      });
+
+    }
+
   });
+
 });
 
 
 
-app.post("/api/password/verify-code", (req, res) => {
-  const { email, code } = req.body;
 
-  if (!email || !code) {
+
+
+app.post("/api/password/verify-code",(req,res)=>{
+
+  const {email,code}=req.body;
+
+  console.log("\n========== VERIFY RESET CODE ==========");
+  console.log("Body:",req.body);
+
+  if(!email||!code){
+
+    console.log("Email or code missing.");
+
     return res.status(400).json({
-      success: false,
-      message: "Email and code are required."
+      success:false,
+      message:"Email and code are required."
     });
   }
 
-  const saved = resetCodes[email];
+  const saved=resetCodes[email];
 
-  if (!saved) {
+  console.log("Saved Reset Object:",saved);
+
+  if(!saved){
+
+    console.log("No reset record found.");
+
     return res.status(400).json({
-      success: false,
-      message: "No reset code found. Please request a new code."
+      success:false,
+      message:"No reset code found. Please request a new code."
     });
   }
 
-  if (Date.now() > saved.expiresAt) {
+  if(Date.now()>saved.expiresAt){
+
+    console.log("Reset code expired.");
+
     delete resetCodes[email];
 
     return res.status(400).json({
-      success: false,
-      message: "Code has expired. Please request a new one."
+      success:false,
+      message:"Code has expired. Please request a new one."
     });
   }
 
-  if (saved.code !== code) {
+  console.log("Expected Code:",saved.code);
+  console.log("Entered Code :",code);
+
+  if(saved.code!==code){
+
+    console.log("Wrong verification code.");
+
     return res.status(400).json({
-      success: false,
-      message: "Invalid verification code."
+      success:false,
+      message:"Invalid verification code."
     });
   }
 
-  resetCodes[email].verified = true;
+  resetCodes[email].verified=true;
+
+  console.log("Verification successful.");
 
   return res.json({
-    success: true,
-    message: "Code verified."
+    success:true,
+    message:"Code verified."
   });
+
 });
 
 
-app.post("/api/password/reset", async (req, res) => {
-  const { email, newPassword } = req.body;
 
-  if (!email || !newPassword) {
+
+
+
+
+
+app.post("/api/password/reset",async(req,res)=>{
+
+  const {email,newPassword}=req.body;
+
+  console.log("\n========== RESET PASSWORD ==========");
+  console.log("Body:",req.body);
+
+  if(!email||!newPassword){
+
+    console.log("Email or password missing.");
+
     return res.status(400).json({
-      success: false,
-      message: "Email and new password are required."
+      success:false,
+      message:"Email and new password are required."
     });
   }
 
-  if (newPassword.length < 6) {
+  if(newPassword.length<6){
+
+    console.log("Password too short.");
+
     return res.status(400).json({
-      success: false,
-      message: "Password must be at least 6 characters."
+      success:false,
+      message:"Password must be at least 6 characters."
     });
   }
 
-  const saved = resetCodes[email];
+  const saved=resetCodes[email];
 
-  if (!saved || saved.verified !== true) {
+  console.log("Reset Object:",saved);
+
+  if(!saved||saved.verified!==true){
+
+    console.log("Code has not been verified.");
+
     return res.status(400).json({
-      success: false,
-      message: "Please verify your code first."
+      success:false,
+      message:"Please verify your code first."
     });
   }
 
-  try {
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+  try{
 
-    const sql = `
-      UPDATE users 
-      SET pin_hash = ? 
-      WHERE email = ?
+    console.log("Hashing password...");
+
+    const hashedPassword=await bcrypt.hash(newPassword,10);
+
+    console.log("Password hashed successfully.");
+
+    const sql=`
+      UPDATE users
+      SET pin_hash=?
+      WHERE email=?
     `;
 
-    db.query(sql, [hashedPassword, email], (err, result) => {
-      if (err) {
-        console.error("PASSWORD RESET ERROR:", err);
+    db.query(sql,[hashedPassword,email],(err,result)=>{
+
+      if(err){
+
+        console.error("DATABASE UPDATE ERROR:",err);
+
         return res.status(500).json({
-          success: false,
-          message: "Failed to update password."
+          success:false,
+          message:"Failed to update password."
         });
       }
 
+      console.log("Database Result:",result);
+      console.log("Affected Rows:",result.affectedRows);
+
       delete resetCodes[email];
 
+      console.log("Reset object removed.");
+      console.log("Password reset completed successfully.");
+
       return res.json({
-        success: true,
-        message: "Password updated successfully."
+        success:true,
+        message:"Password updated successfully."
       });
+
     });
 
-  } catch (error) {
-    console.error("HASH PASSWORD ERROR:", error);
+  }catch(error){
+
+    console.error("HASH ERROR:",error);
 
     return res.status(500).json({
-      success: false,
-      message: "Server error."
+      success:false,
+      message:"Server error."
     });
-  }
-});
 
+  }
+
+});
 
 
 app.use(express.static(path.join(__dirname)));
