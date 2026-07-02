@@ -959,28 +959,15 @@ ${isNegotiableProduct() ? `
 
 
 function calculateTotal() {
-  const qty = Number(document.getElementById("quantity").value || 1);
-  const total = qty * Number(product.price);
- document.getElementById("totalBox").textContent = `Total: GH₵${total.toLocaleString(undefined, {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-})}`;
+  document.getElementById("totalBox").textContent =
+    `Total: GH₵${Number(product.price).toLocaleString(undefined,{
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    })}`;
 }
 
 function continueToOptions() {
-  const qty = Number(document.getElementById("quantity").value);
-
-  if (!qty || qty <= 0) {
-    alert("Enter a valid quantity.");
-    return;
-  }
-
-  if (qty > Number(product.quantity_in_stock)) {
-    alert(`Only ${product.quantity_in_stock} item(s) available.`);
-    return;
-  }
-
-  selectedQty = qty;
+  selectedQty = 1;
   document.getElementById("buyModal").style.display = "flex";
 }
 
