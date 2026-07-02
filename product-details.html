@@ -872,7 +872,10 @@ const image = productImages[0] || "";
 </div>
 
       <h2>${product.product_name}</h2>
-      <div class="price">GH₵${Number(product.price).toFixed(2)}</div>
+     <div class="price">GH₵${Number(product.price).toLocaleString(undefined, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+})}</div>
 
      <div class="product-info-grid">
 
@@ -905,7 +908,10 @@ ${isNegotiableProduct() ? `
   <div class="offer-box" id="offerBox">
     <strong>Suggest your price</strong>
     <p style="font-size:.85rem;color:#6b7280;margin:7px 0;">
-      Original price: GH₵${Number(product.price).toFixed(2)}
+     Original price: GH₵${Number(product.price).toLocaleString(undefined, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+})}
     </p>
 
     <input type="number" id="suggestedAmount" placeholder="Enter your suggested amount">
@@ -930,7 +936,10 @@ ${isNegotiableProduct() ? `
 
 
       <div class="total" id="totalBox">
-        Total: GH₵${Number(product.price).toFixed(2)}
+        Total: GH₵${Number(product.price).toLocaleString(undefined, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+})}
       </div>
 
       <button class="pay" onclick="continueToOptions()">Proceed</button>
@@ -952,7 +961,10 @@ ${isNegotiableProduct() ? `
 function calculateTotal() {
   const qty = Number(document.getElementById("quantity").value || 1);
   const total = qty * Number(product.price);
-  document.getElementById("totalBox").textContent = `Total: GH₵${total.toFixed(2)}`;
+ document.getElementById("totalBox").textContent = `Total: GH₵${total.toLocaleString(undefined, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+})}`;
 }
 
 function continueToOptions() {

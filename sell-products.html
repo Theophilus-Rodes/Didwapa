@@ -806,7 +806,7 @@ select:focus{
 
       <div class="field">
         <label class="field-label">Price (GH₵)*</label>
-        <input type="number" id="price" placeholder="Price*" required>
+       <input type="text" id="price" placeholder="Price*" required oninput="formatPriceInput(this)">
       </div>
 
       <div class="field">
@@ -912,17 +912,12 @@ select:focus{
         </div>
       </div>
 
-      <div class="inline-grid">
-        <div class="field">
-          <label class="field-label">Quantity in Stock*</label>
-          <input type="number" id="quantity" placeholder="Quantity in Stock*" value="1" min="1" required>
-        </div>
+     <input type="hidden" id="quantity" value="1">
 
-        <div class="field">
-          <label class="field-label">Product Color</label>
-          <input type="text" id="product_color" placeholder="Product Color">
-        </div>
-      </div>
+<div class="field">
+  <label class="field-label">Product Color</label>
+  <input type="text" id="product_color" placeholder="Product Color">
+</div>
 
       <div class="field">
         <label class="field-label">Item Condition*</label>
@@ -2794,7 +2789,7 @@ document.getElementById("productForm").addEventListener("submit", async e => {
   formData.append("region", selectedOptions.region);
   formData.append("district", selectedOptions.district);
   formData.append("product_name", document.getElementById("product_name").value);
-  formData.append("price", document.getElementById("price").value);
+  formData.append("price", document.getElementById("price").value.replace(/,/g, ""));
 formData.append("product_color", document.getElementById("product_color").value || specs.color || specs.Color || "");
   formData.append("quantity_in_stock", document.getElementById("quantity").value);
   formData.append("phone_number", document.getElementById("phone_number").value);
@@ -3096,6 +3091,21 @@ async function loadDraftIntoForm(){
     console.error("Load draft error:", error);
     showAlert("Failed to load draft.", "error");
   }
+}
+
+
+function formatPriceInput(input){
+  let value = input.value.replace(/,/g, "").replace(/[^\d.]/g, "");
+
+  if(!value){
+    input.value = "";
+    return;
+  }
+
+  const parts = value.split(".");
+  parts[0] = Number(parts[0]).toLocaleString();
+
+  input.value = parts.length > 1 ? `${parts[0]}.${parts[1]}` : parts[0];
 }
 
 
