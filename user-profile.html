@@ -225,17 +225,84 @@ body{background:var(--bg);color:var(--text);padding-bottom:30px}.app{max-width:7
   }
 }
 
+.tabs{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  margin-bottom:14px;
+  padding-bottom:6px;
+}
+.tab-btn{
+  border:1px solid var(--border);
+  background:#fff;
+  color:var(--secondary);
+  padding:11px 14px;
+  border-radius:999px;
+  font-weight:900;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.tab-btn.active{
+  background:linear-gradient(135deg,var(--primary),#ff4500);
+  color:#fff;
+  border-color:transparent;
+}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
 </style>
 </head>
 <body>
 <div class="alert" id="alertBox"></div><div class="loading-overlay" id="loadingOverlay"><div class="loading-card"><div class="loader"></div><h3>Submitting Profile...</h3><p>Please wait while DIDWAPA saves your information.</p></div></div>
 <main class="app"><section class="header"><div class="top-row"><h3>Complete Account</h3><button class="back-btn" onclick="window.location.href='you.html'">← Back</button></div><div class="profile-head"><div class="avatar">👤</div><div><h2 id="displayName">Loading...</h2><p id="displayEmail">Please wait...</p></div></div></section><section class="content"><div class="card"><div class="card-title">Account Status</div><div class="status-box"><div class="status-item"><strong>Role</strong><span id="roleText">---</span></div><div class="status-item"><strong>Status</strong><span id="statusText">---</span></div></div></div>
-<form class="card" id="profileForm" enctype="multipart/form-data"><div class="card-title">Personal Information <small>Basic account details</small></div><div class="form-grid"><div class="form-group"><label>Firstname</label>
+
+<div class="tabs">
+  <button type="button" class="tab-btn active" data-tab="personalTab">Personal Information</button>
+  <button type="button" class="tab-btn" data-tab="identityTab">Identity Verification</button>
+  <button type="button" class="tab-btn" data-tab="businessTab">Business Information</button>
+  <button type="button" class="tab-btn" data-tab="passwordTab">Change Password</button>
+</div>
+  <form class="card" id="profileForm" enctype="multipart/form-data">
+    <div class="tab-panel active" id="personalTab">
+    
+    <div class="card-title">Personal Information <small>Basic account details</small></div><div class="form-grid"><div class="form-group"><label>Firstname</label>
   <input type="text" id="firstname" name="firstname" ></div>
   <div class="form-group"><label>Lastname</label><input type="text" id="lastname" name="lastname" ></div><div class="form-group"><label>Email</label><input type="email" id="email" name="email" ></div><div class="form-group"><label>Telephone</label><input type="text" id="telephone" name="telephone" ></div><div class="form-group"><label>Other Telephone</label><input type="text" id="other_telephone" name="other_telephone"></div><div class="form-group"><label>Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="Male">Male</option><option value="Female">Female</option></select></div><div class="form-group"><label>Date of Birth</label><input type="date" id="dob" name="dob"></div><div class="form-group"><label>Digital Address</label><input type="text" id="digital_address" name="digital_address"></div><div class="form-group full"><label>Address / Area of Stay</label><input type="text" id="address" name="address"></div></div>
-<div class="card-title" style="margin-top:22px;">Identity Verification <small>Ghana Card & Selfie</small></div><div class="section-note">Upload clear images. After submitting, your account status will become pending until DIDWAPA approves it.</div><div class="form-grid"><div class="form-group"><label>Selfie / Picture of Yourself</label><label class="file-box"><input type="file" id="selfie_image" name="selfie_image" accept="image/*"><div><span>📸</span><strong>Upload Selfie</strong><small>JPG, PNG or JPEG</small></div></label><div class="file-success" id="selfieSuccess"></div></div><div class="form-group"><label>Ghana Card Front</label><label class="file-box"><input type="file" id="gh_card_front" name="gh_card_front" accept="image/*"><div><span>🪪</span><strong>Upload Card Front</strong><small>JPG, PNG or JPEG</small></div></label><div class="file-success" id="frontSuccess"></div></div><div class="form-group full"><label>Ghana Card Back</label><label class="file-box"><input type="file" id="gh_card_back" name="gh_card_back" accept="image/*"><div><span>🪪</span><strong>Upload Card Back</strong><small>JPG, PNG or JPEG</small></div></label><div class="file-success" id="backSuccess"></div></div></div><div class="preview-grid"><div class="preview-card"><h4>Current Selfie</h4><img id="selfieImg" alt="Selfie" onclick="openImage(this.src)"></div><div class="preview-card"><h4>Current Ghana Card Front</h4><img id="frontCardImg" alt="Ghana Card Front" onclick="openImage(this.src)"></div><div class="preview-card"><h4>Current Ghana Card Back</h4><img id="backCardImg" alt="Ghana Card Back" onclick="openImage(this.src)"></div></div>
-<div class="card-title" style="margin-top:22px;">Business Information <small>Seller profile details</small></div><div class="form-grid"><div class="form-group"><label>Business Name</label><input type="text" id="business_name" name="business_name" placeholder="Example: Rhotech Phones"></div><div class="form-group"><label>Business Type</label><select id="business_type" name="business_type"><option value="">Select business type</option><option>Individual Seller</option><option>Sole Proprietorship</option><option>Partnership</option><option>Limited Liability Company</option><option>Enterprise</option><option>NGO</option><option>Other</option></select></div><div class="form-group"><label>Business Category</label><select id="business_category" name="business_category"><option value="">Select category</option><option>Vehicles</option><option>Property</option><option>Phones & Tablets</option><option>Electronics</option><option>Fashion</option><option>Home Appliances</option><option>Beauty & Personal Care</option><option>Agriculture</option><option>Services</option><option>Jobs</option><option>Education</option><option>Sports</option><option>Other</option></select></div><div class="form-group"><label>Business WhatsApp Number</label><input type="text" id="business_whatsapp" name="business_whatsapp"></div><div class="form-group"><label>Business Email</label><input type="email" id="business_email" name="business_email"></div><div class="form-group"><label>Business Registration Number</label><input type="text" id="business_registration_number" name="business_registration_number"></div><div class="form-group"><label>Business TIN</label><input type="text" id="business_tin" name="business_tin"></div><div class="form-group"><label>Business Website</label><input type="url" id="business_website" name="business_website" placeholder="https://example.com"></div><div class="form-group"><label>Business Region</label><select id="business_region" name="business_region"><option value="">Select region</option><option>Ahafo Region</option><option>Ashanti</option><option>Bono Region</option><option>Bono East Region</option><option>Central Region</option><option>Eastern Region</option><option>Greater Accra</option><option>North East Region</option><option>Northern Region</option><option>Oti Region</option><option>Savannah Region</option><option>Upper East Region</option><option>Upper West Region</option><option>Volta Region</option><option>Western Region</option><option>Western North Region</option></select></div><div class="form-group"><label>Business District / Area</label><input type="text" id="business_district" name="business_district"></div><div class="form-group"><label>Delivery Available?</label><select id="delivery_available" name="delivery_available"><option value="">Select option</option><option>Yes</option><option>No</option></select></div><div class="form-group"><label>Delivery Coverage</label><select id="delivery_coverage" name="delivery_coverage"><option value="">Select coverage</option><option>My Area Only</option><option>My Region</option><option>Nationwide</option><option>International</option></select></div><div class="form-group full"><label>Business Address</label><input type="text" id="business_address" name="business_address"></div><div class="form-group full"><label>Business Description</label><textarea id="business_description" name="business_description" placeholder="Tell buyers what your business does..."></textarea></div><div class="form-group full"><label>Business Opening Hours</label><input type="text" id="business_hours" name="business_hours" placeholder="Monday - Saturday, 8:00 AM - 6:00 PM"></div><div class="form-group"><label>Business Logo</label><label class="file-box"><input type="file" id="business_logo" name="business_logo" accept="image/*"><div><span>🏪</span><strong>Upload Business Logo</strong><small>Optional image</small></div></label><div class="file-success" id="logoSuccess"></div></div><div class="form-group"><label>Business Registration Certificate</label><label class="file-box"><input type="file" id="business_registration_cert" name="business_registration_cert" accept="image/*,.pdf"><div><span>📜</span><strong>Upload Certificate</strong><small>Image or PDF</small></div></label><div class="file-success" id="certSuccess"></div></div></div><div class="preview-grid" style="grid-template-columns:repeat(2,1fr)"><div class="preview-card"><h4>Current Business Logo</h4><img id="businessLogoImg" alt="Business Logo" onclick="openImage(this.src)"></div><div class="preview-card"><h4>Current Business Certificate</h4><img id="businessCertImg" alt="Business Certificate" onclick="openImage(this.src)"></div></div><div class="btn-row"><button type="submit" class="btn primary-btn" id="saveProfileBtn">Submit Account Completion</button><button type="button" class="btn light-btn" onclick="loadProfile()">Reset</button></div></form>
-<form class="card" id="passwordForm"><div class="card-title">Change Password</div><div class="form-grid"><div class="form-group full"><label>Current Password</label><input type="password" id="current_password" required></div><div class="form-group"><label>New Password</label><input type="password" id="new_password" required></div><div class="form-group"><label>Confirm New Password</label><input type="password" id="confirm_password" required></div></div><div class="btn-row"><button type="submit" class="btn blue-btn">Change Password</button></div></form></section></main><div class="image-modal" id="imageModal" onclick="closeImageModal()"><span class="close-image">&times;</span><img id="modalImage" onclick="event.stopPropagation()"></div>
+</div><div class="tab-panel" id="identityTab">
+
+  <div class="card-title" style="margin-top:22px;">Identity Verification <small>Ghana Card & Selfie</small></div><div class="section-note">Upload clear images. After submitting, your account status will become pending until DIDWAPA approves it.</div><div class="form-grid"><div class="form-group"><label>Selfie / Picture of Yourself</label><label class="file-box"><input type="file" id="selfie_image" name="selfie_image" accept="image/*"><div><span>📸</span><strong>Upload Selfie</strong><small>JPG, PNG or JPEG</small></div></label><div class="file-success" id="selfieSuccess"></div></div><div class="form-group"><label>Ghana Card Front</label><label class="file-box"><input type="file" id="gh_card_front" name="gh_card_front" accept="image/*"><div><span>🪪</span><strong>Upload Card Front</strong><small>JPG, PNG or JPEG</small></div></label><div class="file-success" id="frontSuccess"></div></div><div class="form-group full"><label>Ghana Card Back</label><label class="file-box"><input type="file" id="gh_card_back" name="gh_card_back" accept="image/*"><div><span>🪪</span><strong>Upload Card Back</strong><small>JPG, PNG or JPEG</small></div></label><div class="file-success" id="backSuccess"></div></div></div><div class="preview-grid"><div class="preview-card"><h4>Current Selfie</h4><img id="selfieImg" alt="Selfie" onclick="openImage(this.src)"></div><div class="preview-card"><h4>Current Ghana Card Front</h4><img id="frontCardImg" alt="Ghana Card Front" onclick="openImage(this.src)"></div><div class="preview-card"><h4>Current Ghana Card Back</h4><img id="backCardImg" alt="Ghana Card Back" onclick="openImage(this.src)"></div></div>
+</div><div class="tab-panel" id="businessTab">
+
+  <div class="card-title" style="margin-top:22px;">Business Information <small>Seller profile details</small></div><div class="form-grid"><div class="form-group"><label>Business Name</label><input type="text" id="business_name" name="business_name" placeholder="Example: Rhotech Phones"></div><div class="form-group"><label>Business Type</label><select id="business_type" name="business_type"><option value="">Select business type</option><option>Individual Seller</option><option>Sole Proprietorship</option><option>Partnership</option><option>Limited Liability Company</option><option>Enterprise</option><option>NGO</option><option>Other</option></select></div><div class="form-group"><label>Business Category</label><select id="business_category" name="business_category"><option value="">Select category</option><option>Vehicles</option><option>Property</option><option>Phones & Tablets</option><option>Electronics</option><option>Fashion</option><option>Home Appliances</option><option>Beauty & Personal Care</option><option>Agriculture</option><option>Services</option><option>Jobs</option><option>Education</option><option>Sports</option><option>Other</option></select></div><div class="form-group"><label>Business WhatsApp Number</label><input type="text" id="business_whatsapp" name="business_whatsapp"></div><div class="form-group"><label>Business Email</label><input type="email" id="business_email" name="business_email"></div><div class="form-group"><label>Business Registration Number</label><input type="text" id="business_registration_number" name="business_registration_number"></div><div class="form-group"><label>Business TIN</label><input type="text" id="business_tin" name="business_tin"></div><div class="form-group"><label>Business Website</label><input type="url" id="business_website" name="business_website" placeholder="https://example.com"></div><div class="form-group"><label>Business Region</label><select id="business_region" name="business_region"><option value="">Select region</option><option>Ahafo Region</option><option>Ashanti</option><option>Bono Region</option><option>Bono East Region</option><option>Central Region</option><option>Eastern Region</option><option>Greater Accra</option><option>North East Region</option><option>Northern Region</option><option>Oti Region</option><option>Savannah Region</option><option>Upper East Region</option><option>Upper West Region</option><option>Volta Region</option><option>Western Region</option><option>Western North Region</option></select></div><div class="form-group"><label>Business District / Area</label><input type="text" id="business_district" name="business_district"></div><div class="form-group"><label>Delivery Available?</label><select id="delivery_available" name="delivery_available"><option value="">Select option</option><option>Yes</option><option>No</option></select></div><div class="form-group"><label>Delivery Coverage</label><select id="delivery_coverage" name="delivery_coverage"><option value="">Select coverage</option><option>My Area Only</option><option>My Region</option><option>Nationwide</option><option>International</option></select></div><div class="form-group full"><label>Business Address</label><input type="text" id="business_address" name="business_address"></div><div class="form-group full"><label>Business Description</label><textarea id="business_description" name="business_description" placeholder="Tell buyers what your business does..."></textarea></div><div class="form-group full"><label>Business Opening Hours</label><input type="text" id="business_hours" name="business_hours" placeholder="Monday - Saturday, 8:00 AM - 6:00 PM"></div><div class="form-group"><label>Business Logo</label><label class="file-box"><input type="file" id="business_logo" name="business_logo" accept="image/*"><div><span>🏪</span><strong>Upload Business Logo</strong><small>Optional image</small></div></label><div class="file-success" id="logoSuccess"></div></div><div class="form-group"><label>Business Registration Certificate</label><label class="file-box"><input type="file" id="business_registration_cert" name="business_registration_cert" accept="image/*,.pdf"><div><span>📜</span><strong>Upload Certificate</strong><small>Image or PDF</small></div></label><div class="file-success" id="certSuccess"></div></div></div><div class="preview-grid" style="grid-template-columns:repeat(2,1fr)"><div class="preview-card"><h4>Current Business Logo</h4><img id="businessLogoImg" alt="Business Logo" onclick="openImage(this.src)"></div><div class="preview-card"><h4>Current Business Certificate</h4><img id="businessCertImg" alt="Business Certificate" onclick="openImage(this.src)"></div></div>
+  </div>
+  <div class="btn-row"><button type="submit" class="btn primary-btn" id="saveProfileBtn">Submit Account Completion</button><button type="button" class="btn light-btn" onclick="loadProfile()">Reset</button></div></form>
+
+<form class="card tab-panel" id="passwordTab">
+  <div class="card-title">Change Password</div>
+
+  <div class="form-grid">
+    <div class="form-group full">
+      <label>Current Password</label>
+      <input type="password" id="current_password" required>
+    </div>
+
+    <div class="form-group">
+      <label>New Password</label>
+      <input type="password" id="new_password" required>
+    </div>
+
+    <div class="form-group">
+      <label>Confirm New Password</label>
+      <input type="password" id="confirm_password" required>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button type="submit" class="btn blue-btn">Change Password</button>
+  </div>
+</form>
+
+</section></main><div class="image-modal" id="imageModal" onclick="closeImageModal()"><span class="close-image">&times;</span><img id="modalImage" onclick="event.stopPropagation()"></div>
 
 <script>
 const API_BASE=window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'?'http://localhost:5000':'';
@@ -280,7 +347,7 @@ async function verifyFaceMatch(){
   if(!selfieInput.files.length || !cardInput.files.length) return;
 
   identityVerified = false;
-  lockFormUntilVerified(true);
+  //lockFormUntilVerified(true);
 
   loadingOverlay.style.display = "flex";
   document.querySelector(".loading-card h3").textContent = "Checking Images...";
@@ -300,21 +367,41 @@ async function verifyFaceMatch(){
     console.error(error);
     loadingOverlay.style.display = "none";
     identityVerified = false;
-    lockFormUntilVerified(true);
+   // lockFormUntilVerified(true);
     showAlert("Please upload valid image files.", "error");
   }
 }
 
-lockFormUntilVerified(true);
+//lockFormUntilVerified(true);
 
 document.getElementById("selfie_image").addEventListener("change", verifyFaceMatch);
 document.getElementById("gh_card_front").addEventListener("change", verifyFaceMatch);
 function showAlert(message,type='success'){alertBox.textContent=message;alertBox.className=`alert ${type}`;alertBox.style.display='block';setTimeout(()=>{alertBox.style.display='none'},3000)}function setValue(id,value){const el=document.getElementById(id);if(el){el.value=value||''}}function setText(id,value){const el=document.getElementById(id);if(el){el.textContent=value||'---'}}function getImageUrl(value){if(!value)return'';if(value.startsWith('http://')||value.startsWith('https://'))return value;if(value.startsWith('/uploads/'))return`${API_BASE}${value}`;return`${API_BASE}/uploads/${value}`}function setImage(id,value){const img=document.getElementById(id);if(!img)return;const url=getImageUrl(value);if(url){img.src=url;img.style.display='block'}else{img.removeAttribute('src');img.style.display='none'}}async function loadProfile(){try{const res=await fetch(`${API_BASE}/api/user/profile`,{credentials:'include'});const data=await res.json();if(!data.success){window.location.href='userlogin.html';return}const user=data.user;document.getElementById('displayName').textContent=`${user.firstname||''} ${user.lastname||''}`.trim()||'DIDWAPA User';document.getElementById('displayEmail').textContent=user.email||'';setText('roleText',user.role||'user');setText('statusText',user.status||'pending');setText('verificationText',user.verification_status||'pending');['firstname','lastname','email','telephone','other_telephone','gender','digital_address','address','business_name','business_type','business_category','business_description','business_whatsapp','business_email','business_address','business_region','business_district','business_registration_number','business_tin','business_website','business_hours','delivery_available','delivery_coverage'].forEach(k=>setValue(k,user[k]));setValue('dob',user.dob?String(user.dob).split('T')[0]:'');setImage('selfieImg',user.selfie_image);setImage('frontCardImg',user.gh_card_front);setImage('backCardImg',user.gh_card_back);setImage('businessLogoImg',user.business_logo);setImage('businessCertImg',user.business_registration_cert)}catch(error){console.error(error);showAlert('Failed to load profile.','error')}}function showFileName(inputId,successId,label){const input=document.getElementById(inputId),box=document.getElementById(successId);if(!input||!box)return;input.addEventListener('change',()=>{if(input.files&&input.files.length){box.style.display='block';box.textContent=`✅ ${label}: ${input.files[0].name}`}else{box.style.display='none';box.textContent=''}})}showFileName('selfie_image','selfieSuccess','Selfie selected');showFileName('gh_card_front','frontSuccess','Ghana Card front selected');showFileName('gh_card_back','backSuccess','Ghana Card back selected');showFileName('business_logo','logoSuccess','Business logo selected');showFileName('business_registration_cert','certSuccess','Business certificate selected');document.getElementById('profileForm').addEventListener('submit',async(e)=>{e.preventDefault();
-if(!identityVerified){
- showAlert("Please upload selfie and Ghana Card front first.", "error");
+const hasNewIdentityFiles =
+  document.getElementById("selfie_image").files.length ||
+  document.getElementById("gh_card_front").files.length ||
+  document.getElementById("gh_card_back").files.length;
+
+if(hasNewIdentityFiles && !identityVerified){
+  showAlert("Please upload valid selfie and Ghana Card front first.", "error");
   return;
 }
-const form=document.getElementById('profileForm'),saveBtn=document.getElementById('saveProfileBtn');const formData=new FormData(form);try{saveBtn.disabled=true;loadingOverlay.style.display='flex';const res=await fetch(`${API_BASE}/api/user/profile/update`,{method:'PUT',credentials:'include',body:formData});const data=await res.json();loadingOverlay.style.display='none';saveBtn.disabled=false;if(data.success){showAlert(data.message||'Profile submitted successfully.');form.reset();document.querySelectorAll('.file-success').forEach(item=>{item.style.display='none';item.textContent=''});loadProfile()}else{showAlert(data.message||'Failed to update profile.','error')}}catch(error){console.error(error);loadingOverlay.style.display='none';saveBtn.disabled=false;showAlert('Failed to update profile.','error')}});document.getElementById('passwordForm').addEventListener('submit',async(e)=>{e.preventDefault();const body={current_password:document.getElementById('current_password').value.trim(),new_password:document.getElementById('new_password').value.trim(),confirm_password:document.getElementById('confirm_password').value.trim()};try{const res=await fetch(`${API_BASE}/api/user/profile/change-password`,{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});const data=await res.json();if(data.success){showAlert(data.message);document.getElementById('passwordForm').reset()}else{showAlert(data.message,'error')}}catch(error){console.error(error);showAlert('Failed to change password.','error')}});function openImage(src){if(!src)return;document.getElementById('modalImage').src=src;document.getElementById('imageModal').style.display='flex'}function closeImageModal(){document.getElementById('imageModal').style.display='none';document.getElementById('modalImage').src=''}loadProfile();
+
+
+const form=document.getElementById('profileForm'),saveBtn=document.getElementById('saveProfileBtn');const formData=new FormData(form);try{saveBtn.disabled=true;loadingOverlay.style.display='flex';const res=await fetch(`${API_BASE}/api/user/profile/update`,{method:'PUT',credentials:'include',body:formData});const data=await res.json();loadingOverlay.style.display='none';saveBtn.disabled=false;if(data.success){showAlert(data.message||'Profile submitted successfully.');form.reset();document.querySelectorAll('.file-success').forEach(item=>{item.style.display='none';item.textContent=''});loadProfile()}else{showAlert(data.message||'Failed to update profile.','error')}}catch(error){console.error(error);loadingOverlay.style.display='none';saveBtn.disabled=false;showAlert('Failed to update profile.','error')}});document.getElementById('passwordTab').addEventListener('submit',async(e)=>{e.preventDefault();const body={current_password:document.getElementById('current_password').value.trim(),new_password:document.getElementById('new_password').value.trim(),confirm_password:document.getElementById('confirm_password').value.trim()};try{const res=await fetch(`${API_BASE}/api/user/profile/change-password`,{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});const data=await res.json();if(data.success){showAlert(data.message);document.getElementById('passwordTab').reset()}else{showAlert(data.message,'error')}}catch(error){console.error(error);showAlert('Failed to change password.','error')}});function openImage(src){if(!src)return;document.getElementById('modalImage').src=src;document.getElementById('imageModal').style.display='flex'}function closeImageModal(){document.getElementById('imageModal').style.display='none';document.getElementById('modalImage').src=''}
+
+
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
+  });
+});
+
+loadProfile();
 </script>
 </body>
 </html>
