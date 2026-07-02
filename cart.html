@@ -326,7 +326,11 @@
         return sum + (Number(item.price) * Number(item.quantity));
       }, 0);
 
-      document.getElementById("totalAmount").textContent = `GH₵${total.toFixed(2)}`;
+      document.getElementById("totalAmount").textContent =
+`GH₵${total.toLocaleString(undefined,{
+  minimumFractionDigits:2,
+  maximumFractionDigits:2
+})}`;
 
       if (items.length === 0) {
         cartList.innerHTML = `
@@ -357,9 +361,12 @@
               <p>Condition: ${item.item_condition || "N/A"}</p>
               <p>Quantity: ${item.quantity}</p>
 
-              <div class="price">
-                GH₵${Number(item.price).toFixed(2)}
-              </div>
+           <div class="price">
+  GH₵${Number(item.price).toLocaleString(undefined,{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  })}
+</div>
 
               <div class="actions">
                 <button class="btn view-btn" onclick="window.location.href='product-details.html?id=${item.product_id}'">
