@@ -7595,57 +7595,50 @@ app.post("/api/password/send-code", async (req, res) => {
     console.log("Message:");
     console.log(message);
 
-    try{
+  try {
+  console.log("Sending SMS to GiantSMS...");
 
-      console.log("Sending SMS to GiantSMS...");
+  const smsUrl = "https://api.giantsms.com/api/v1/send";
 
-      const smsResponse=await axios.post(
-        "https://app.giantsms.com/api/sms/send",
-        {
-          username:"pAdLSXDa",
-          password:"nEMqaseCAY",
-          token:"cEFkTFNYRGE6bkVNcWFzZUNBWQ==",
-          sender_id:"Didwapa App",
-          recipient,
-          message
-        }
-      );
-
-      console.log("================================");
-      console.log("GIANTSMS SUCCESS");
-      console.log(smsResponse.data);
-      console.log("================================");
-
-      return res.json({
-        success:true,
-        message:"Verification code sent."
-      });
-
-    }catch(smsErr){
-
-      console.error("================================");
-      console.error("GIANTSMS FAILED");
-
-      if(smsErr.response){
-
-        console.error("Status:",smsErr.response.status);
-        console.error("Headers:",smsErr.response.headers);
-        console.error("Response:",smsErr.response.data);
-
-      }else{
-
-        console.error("Message:",smsErr.message);
-
-      }
-
-      console.error("================================");
-
-      return res.status(500).json({
-        success:false,
-        message:"Failed to send SMS. Please try again."
-      });
-
+  const smsResponse = await axios.get(smsUrl, {
+    params: {
+      username: "pAdLSXDa",
+      password: "nEMqaseCAY",
+      from: "Didwapa App",
+      to: recipient.replace("+", ""),
+      msg: message
     }
+  });
+
+  console.log("================================");
+  console.log("GIANTSMS RESPONSE");
+  console.log(smsResponse.data);
+  console.log("================================");
+
+  if (!smsResponse.data.status) {
+    return res.status(500).json({
+      success: false,
+      message: smsResponse.data.message || "Failed to send SMS."
+    });
+  }
+
+  return res.json({
+    success: true,
+    message: "Verification code sent."
+  });
+
+} catch (smsErr) {
+  console.error("================================");
+  console.error("GIANTSMS FAILED");
+  console.error("Status:", smsErr.response?.status);
+  console.error("Response:", smsErr.response?.data || smsErr.message);
+  console.error("================================");
+
+  return res.status(500).json({
+    success: false,
+    message: "Failed to send SMS. Please try again."
+  });
+}
 
   });
 
