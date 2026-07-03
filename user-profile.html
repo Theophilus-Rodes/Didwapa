@@ -430,6 +430,84 @@ body{background:var(--bg);color:var(--text);padding-bottom:30px}.app{max-width:7
   font-weight:900;
   pointer-events:none;
 }
+
+
+.camera-fullscreen{
+  position:fixed;
+  inset:0;
+  background:#000;
+  z-index:10000;
+  display:none;
+  flex-direction:column;
+}
+
+.camera-fullscreen.active{
+  display:flex;
+}
+
+.camera-top{
+  height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  color:#fff;
+  padding:0 16px;
+  font-weight:900;
+}
+
+.camera-close{
+  background:none;
+  border:none;
+  color:#fff;
+  font-size:1.5rem;
+  cursor:pointer;
+}
+
+.camera-fullscreen .camera-frame-wrap{
+  display:block!important;
+  flex:1;
+  position:relative;
+}
+
+.camera-fullscreen video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:0;
+}
+
+.camera-bottom{
+  padding:18px;
+  background:linear-gradient(transparent,rgba(0,0,0,.85));
+}
+
+.flip-guide{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.82);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:5;
+  color:#fff;
+  text-align:center;
+  padding:20px;
+}
+
+.flip-card-icon{
+  width:170px;
+  height:105px;
+  border:3px solid #fff;
+  border-radius:18px;
+  margin:0 auto 18px;
+  animation:flipCard 1.2s ease-in-out infinite;
+}
+
+@keyframes flipCard{
+  0%{transform:rotateY(0deg)}
+  50%{transform:rotateY(180deg)}
+  100%{transform:rotateY(360deg)}
+}
 </style>
 </head>
 <body>
@@ -507,33 +585,40 @@ body{background:var(--bg);color:var(--text);padding-bottom:30px}.app{max-width:7
 </div>
 
 <div class="camera-box">
-  <div class="camera-step" id="cameraStepText">
-    Step 1: Click Start Camera and show the FRONT of your Ghana Card.
-  </div>
-
-<div class="camera-frame-wrap" id="cameraFrameWrap">
-  <video id="verifyCamera" autoplay playsinline></video>
-  <div class="camera-card-frame" id="cameraOverlayFrame"></div>
-  <div class="camera-center-text" id="cameraOverlayText">Center your card</div>
+  <button type="button" class="btn primary-btn" onclick="startCameraVerification()" style="width:100%;">
+    Start Guided Verification
+  </button>
 </div>
 
-<canvas id="verifyCanvas" style="display:none;"></canvas>
-
-  <div class="camera-actions">
-    <button type="button" class="btn blue-btn" onclick="startCameraVerification()">
-      Start Camera
-    </button>
-
-    <button type="button" class="btn primary-btn" id="captureVerifyBtn" onclick="captureVerificationStep()" disabled>
-      Capture Front
-    </button>
-
-    <button type="button" class="btn light-btn" onclick="stopCameraVerification()">
-      Stop
-    </button>
+<div class="camera-fullscreen" id="cameraFullscreen">
+  <div class="camera-top">
+    <button type="button" class="camera-close" onclick="stopCameraVerification()">←</button>
+    <span id="cameraStepText">Front of card</span>
+    <span>Tips</span>
   </div>
 
-  <div class="captured-note" id="capturedNote"></div>
+  <div class="camera-frame-wrap" id="cameraFrameWrap">
+    <video id="verifyCamera" autoplay playsinline></video>
+    <div class="camera-card-frame" id="cameraOverlayFrame"></div>
+    <div class="camera-center-text" id="cameraOverlayText">Center your card</div>
+
+    <div class="flip-guide" id="flipGuide">
+      <div>
+        <div class="flip-card-icon"></div>
+        <h3>Turn your card</h3>
+        <p>Now show the back of your Ghana Card clearly.</p>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="verifyCanvas" style="display:none;"></canvas>
+
+  <div class="camera-bottom">
+    <button type="button" class="btn primary-btn" id="captureVerifyBtn" onclick="captureVerificationStep()" style="width:100%;">
+      Capture Front
+    </button>
+    <div class="captured-note" id="capturedNote"></div>
+  </div>
 </div>
 
 </div>
@@ -676,6 +761,7 @@ let capturedBackFile = null;
 let capturedSelfieFile = null;
 
 async function startCameraVerification(){
+  document.getElementById("cameraFullscreen").classList.add("active");
   try{
     cameraStep = 1;
     capturedFrontFile = null;
@@ -712,6 +798,7 @@ document.getElementById("cameraOverlayText").textContent = "Center your card";
 }
 
 function stopCameraVerification(){
+  document.getElementById("cameraFullscreen").classList.remove("active");
   const video = document.getElementById("verifyCamera");
 
   if(cameraStream){
@@ -765,6 +852,12 @@ async function captureVerificationStep(){
 
     note.style.display = "block";
     note.textContent = "Front captured. Now turn the card and show the BACK.";
+
+    document.getElementById("flipGuide").style.display = "flex";
+
+setTimeout(()=>{
+  document.getElementById("flipGuide").style.display = "none";
+}, 1800);
 
     cameraStep = 2;
     captureBtn.textContent = "Capture Back";
