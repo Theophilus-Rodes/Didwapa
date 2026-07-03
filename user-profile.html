@@ -381,6 +381,55 @@ body{background:var(--bg);color:var(--text);padding-bottom:30px}.app{max-width:7
   font-size:.78rem;
   font-weight:900;
 }
+
+.camera-frame-wrap{
+  position:relative;
+  display:none;
+}
+
+.camera-frame-wrap video{
+  display:block!important;
+}
+
+.camera-card-frame{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:82%;
+  height:42%;
+  transform:translate(-50%,-50%);
+  border:3px solid #fff;
+  border-radius:22px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.35);
+  pointer-events:none;
+}
+
+.camera-face-frame{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:58%;
+  height:58%;
+  transform:translate(-50%,-50%);
+  border:3px solid #fff;
+  border-radius:50%;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.35);
+  pointer-events:none;
+}
+
+.camera-center-text{
+  position:absolute;
+  left:50%;
+  bottom:22px;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,.65);
+  color:#fff;
+  padding:10px 18px;
+  border-radius:999px;
+  font-size:.8rem;
+  font-weight:900;
+  pointer-events:none;
+}
 </style>
 </head>
 <body>
@@ -462,8 +511,13 @@ body{background:var(--bg);color:var(--text);padding-bottom:30px}.app{max-width:7
     Step 1: Click Start Camera and show the FRONT of your Ghana Card.
   </div>
 
+<div class="camera-frame-wrap" id="cameraFrameWrap">
   <video id="verifyCamera" autoplay playsinline></video>
-  <canvas id="verifyCanvas" style="display:none;"></canvas>
+  <div class="camera-card-frame" id="cameraOverlayFrame"></div>
+  <div class="camera-center-text" id="cameraOverlayText">Center your card</div>
+</div>
+
+<canvas id="verifyCanvas" style="display:none;"></canvas>
 
   <div class="camera-actions">
     <button type="button" class="btn blue-btn" onclick="startCameraVerification()">
@@ -642,6 +696,10 @@ async function startCameraVerification(){
 
     video.srcObject = cameraStream;
     video.style.display = "block";
+document.getElementById("cameraFrameWrap").style.display = "block";
+document.getElementById("cameraOverlayFrame").className = "camera-card-frame";
+document.getElementById("cameraOverlayText").textContent = "Center your card";
+
     captureBtn.disabled = false;
     captureBtn.textContent = "Capture Front";
 
@@ -663,6 +721,7 @@ function stopCameraVerification(){
 
   video.srcObject = null;
   video.style.display = "none";
+  document.getElementById("cameraFrameWrap").style.display = "none";
 }
 
 function canvasToFile(canvas, filename){
@@ -735,10 +794,14 @@ async function captureVerificationStep(){
 
     video.srcObject = cameraStream;
 
-    cameraStep = 3;
-    captureBtn.textContent = "Capture Face";
-    document.getElementById("cameraStepText").textContent =
-      "Step 3: Show your face clearly and look into the camera.";
+   cameraStep = 3;
+captureBtn.textContent = "Capture Face";
+
+document.getElementById("cameraOverlayFrame").className = "camera-face-frame";
+document.getElementById("cameraOverlayText").textContent = "Place your face here";
+
+document.getElementById("cameraStepText").textContent =
+  "Step 3: Show your face clearly and look into the camera.";
     return;
   }
 
