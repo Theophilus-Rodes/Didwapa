@@ -339,6 +339,48 @@ body{background:var(--bg);color:var(--text);padding-bottom:30px}.app{max-width:7
 .verify-result li{
     margin-bottom:4px;
 }
+
+.camera-box{
+  background:#f8fafc;
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:12px;
+  margin-bottom:14px;
+}
+
+.camera-step{
+  font-weight:900;
+  color:var(--secondary);
+  margin-bottom:10px;
+  font-size:.9rem;
+}
+
+.camera-box video{
+  width:100%;
+  max-height:360px;
+  background:#111;
+  border-radius:16px;
+  object-fit:cover;
+  display:none;
+}
+
+.camera-actions{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+.captured-note{
+  display:none;
+  margin-top:10px;
+  background:#ecfdf5;
+  color:#166534;
+  padding:10px;
+  border-radius:12px;
+  font-size:.78rem;
+  font-weight:900;
+}
 </style>
 </head>
 <body>
@@ -413,6 +455,31 @@ body{background:var(--bg);color:var(--text);padding-bottom:30px}.app{max-width:7
 <div class="verify-result" id="verifyResult" style="display:none;">
     <h4 id="verifyTitle">Verification Result</h4>
     <ul id="verifyList"></ul>
+</div>
+
+<div class="camera-box">
+  <div class="camera-step" id="cameraStepText">
+    Step 1: Click Start Camera and show the FRONT of your Ghana Card.
+  </div>
+
+  <video id="verifyCamera" autoplay playsinline></video>
+  <canvas id="verifyCanvas" style="display:none;"></canvas>
+
+  <div class="camera-actions">
+    <button type="button" class="btn blue-btn" onclick="startCameraVerification()">
+      Start Camera
+    </button>
+
+    <button type="button" class="btn primary-btn" id="captureVerifyBtn" onclick="captureVerificationStep()" disabled>
+      Capture Front
+    </button>
+
+    <button type="button" class="btn light-btn" onclick="stopCameraVerification()">
+      Stop
+    </button>
+  </div>
+
+  <div class="captured-note" id="capturedNote"></div>
 </div>
 
 </div>
@@ -546,6 +613,149 @@ function showVerificationResult(type, messages){
         list.appendChild(li);
     });
 
+}
+
+let cameraStream = null;
+let cameraStep = 1;
+let capturedFrontFile = null;
+let capturedBackFile = null;
+let capturedSelfieFile = null;
+
+async function startCameraVerification(){
+  try{
+    cameraStep = 1;
+    capturedFrontFile = null;
+    capturedBackFile = null;
+    capturedSelfieFile = null;
+
+    identityVerified = false;
+    document.getElementById("face_match_confirmed").value = "no";
+    updateSubmitButton();
+
+    const video = document.getElementById("verifyCamera");
+    const captureBtn = document.getElementById("captureVerifyBtn");
+
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:"environment" },
+      audio:false
+    });
+
+    video.srcObject = cameraStream;
+    video.style.display = "block";
+    captureBtn.disabled = false;
+    captureBtn.textContent = "Capture Front";
+
+    document.getElementById("cameraStepText").textContent =
+      "Step 1: Show the FRONT of your Ghana Card clearly.";
+  }catch(error){
+    console.error(error);
+    showAlert("Camera access failed. Please allow camera permission.", "error");
+  }
+}
+
+function stopCameraVerification(){
+  const video = document.getElementById("verifyCamera");
+
+  if(cameraStream){
+    cameraStream.getTracks().forEach(track=>track.stop());
+    cameraStream = null;
+  }
+
+  video.srcObject = null;
+  video.style.display = "none";
+}
+
+function canvasToFile(canvas, filename){
+  return new Promise(resolve=>{
+    canvas.toBlob(blob=>{
+      const file = new File([blob], filename, { type:"image/jpeg" });
+      resolve(file);
+    }, "image/jpeg", 0.92);
+  });
+}
+
+function putFileIntoInput(inputId, file){
+  const input = document.getElementById(inputId);
+  const dataTransfer = new DataTransfer();
+  dataTransfer.items.add(file);
+  input.files = dataTransfer.files;
+}
+
+async function captureVerificationStep(){
+  const video = document.getElementById("verifyCamera");
+  const canvas = document.getElementById("verifyCanvas");
+  const ctx = canvas.getContext("2d");
+  const note = document.getElementById("capturedNote");
+  const captureBtn = document.getElementById("captureVerifyBtn");
+
+  if(!cameraStream){
+    showAlert("Please start camera first.", "error");
+    return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  if(cameraStep === 1){
+    capturedFrontFile = await canvasToFile(canvas, "gh_card_front.jpg");
+    putFileIntoInput("gh_card_front", capturedFrontFile);
+
+    document.getElementById("frontSuccess").style.display = "block";
+    document.getElementById("frontSuccess").textContent = "✅ Ghana Card front captured";
+
+    note.style.display = "block";
+    note.textContent = "Front captured. Now turn the card and show the BACK.";
+
+    cameraStep = 2;
+    captureBtn.textContent = "Capture Back";
+    document.getElementById("cameraStepText").textContent =
+      "Step 2: Turn the card and show the BACK clearly.";
+    return;
+  }
+
+  if(cameraStep === 2){
+    capturedBackFile = await canvasToFile(canvas, "gh_card_back.jpg");
+    putFileIntoInput("gh_card_back", capturedBackFile);
+
+    document.getElementById("backSuccess").style.display = "block";
+    document.getElementById("backSuccess").textContent = "✅ Ghana Card back captured";
+
+    note.style.display = "block";
+    note.textContent = "Back captured. Now show your FACE clearly.";
+
+    if(cameraStream){
+      cameraStream.getTracks().forEach(track=>track.stop());
+    }
+
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:"user" },
+      audio:false
+    });
+
+    video.srcObject = cameraStream;
+
+    cameraStep = 3;
+    captureBtn.textContent = "Capture Face";
+    document.getElementById("cameraStepText").textContent =
+      "Step 3: Show your face clearly and look into the camera.";
+    return;
+  }
+
+  if(cameraStep === 3){
+    capturedSelfieFile = await canvasToFile(canvas, "selfie_image.jpg");
+    putFileIntoInput("selfie_image", capturedSelfieFile);
+
+    document.getElementById("selfieSuccess").style.display = "block";
+    document.getElementById("selfieSuccess").textContent = "✅ Selfie captured";
+
+    note.style.display = "block";
+    note.textContent = "All images captured. Checking face match...";
+
+    stopCameraVerification();
+
+    await verifyFaceMatch();
+  }
 }
 
 async function verifyFaceMatch(){
