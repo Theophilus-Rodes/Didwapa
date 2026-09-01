@@ -7878,6 +7878,20 @@ app.post("/api/password/reset",async(req,res)=>{
 });
 
 
+
+// ==========================================
+// MOBILE APP CONNECTION TEST
+// ==========================================
+app.get("/api/mobile-test", (req, res) => {
+  res.json({
+    success: true,
+    message: "DIDWAPA mobile app connected successfully",
+    server: "DIDWAPA Node.js API",
+    database: "didwapadb"
+  });
+});
+
+
 app.use(express.static(path.join(__dirname)));
 
 app.get("/", (req, res) => {
