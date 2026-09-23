@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Delete Account | DIDWAPA</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f8fb;
+      color: #111827;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: #0a2d73;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 24px;
+    }
+
+    .header span {
+      color: #ff6600;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+      margin-bottom: 15px;
+      color: #111827;
+    }
+
+    .warning {
+      background: #fff4f4;
+      border: 1px solid #fecaca;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 22px;
+      color: #991b1b;
+      line-height: 1.6;
+    }
+
+    p {
+      line-height: 1.6;
+      margin-bottom: 15px;
+      color: #4b5563;
+    }
+
+    ul {
+      margin: 0 0 20px 22px;
+      color: #4b5563;
+      line-height: 1.8;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 18px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #0a2d73;
+    }
+
+    .delete-btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 8px;
+      background: #dc2626;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background: #b91c1c;
+    }
+
+    .delete-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .message {
+      display: none;
+      padding: 13px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .success {
+      display: block;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .error {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .support {
+      margin-top: 25px;
+      text-align: center;
+      font-size: 14px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>DID<span>WAPA</span></h1>
+  </div>
+
+  <div class="container">
+
+    <div class="card">
+
+      <h2>Delete Your Account</h2>
+
+      <div class="warning">
+        <strong>Warning:</strong>
+        Deleting your DIDWAPA account is permanent.
+        Once your account has been deleted, you will no
+        longer be able to access it.
+      </div>
+
+      <p>
+        When you delete your account, personal account
+        information and associated marketplace content
+        will be removed where applicable.
+      </p>
+
+      <p>
+        Some transaction information may be retained where
+        required for security, fraud prevention, legal,
+        accounting or regulatory purposes.
+      </p>
+
+      <ul>
+        <li>Your DIDWAPA account will be deleted.</li>
+        <li>Your active product listings will be removed.</li>
+        <li>Your saved product drafts will be removed.</li>
+        <li>Your cart information will be removed.</li>
+        <li>You will be signed out.</li>
+      </ul>
+
+      <div id="message" class="message"></div>
+
+      <label for="password">
+        Enter your password to confirm
+      </label>
+
+      <input
+        type="password"
+        id="password"
+        placeholder="Enter your password"
+        autocomplete="current-password"
+      >
+
+      <button
+        id="deleteBtn"
+        class="delete-btn"
+        onclick="deleteAccount()"
+      >
+        Permanently Delete My Account
+      </button>
+
+      <div class="support">
+        Need help? Contact support@didwapa.com
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+
+    const API_BASE = "https://didwapa.com";
+
+    async function deleteAccount() {
+
+      const password =
+        document.getElementById("password").value.trim();
+
+      const message =
+        document.getElementById("message");
+
+      const button =
+        document.getElementById("deleteBtn");
+
+      message.className = "message";
+      message.textContent = "";
+
+      if (!password) {
+
+        message.textContent =
+          "Please enter your password.";
+
+        message.className = "message error";
+
+        return;
+      }
+
+      const confirmed = confirm(
+        "Are you sure you want to permanently delete your DIDWAPA account? This action cannot be undone."
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Deleting Account...";
+
+      try {
+
+        const response = await fetch(
+          `${API_BASE}/api/user/delete-account`,
+          {
+            method: "DELETE",
+
+            credentials: "include",
+
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+              password: password
+            })
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+
+          throw new Error(
+            data.message || "Unable to delete account."
+          );
+        }
+
+        message.textContent =
+          data.message ||
+          "Your account has been deleted successfully.";
+
+        message.className = "message success";
+
+        document.getElementById("password").value = "";
+
+        button.style.display = "none";
+
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 3000);
+
+      } catch (error) {
+
+        console.error(error);
+
+        message.textContent =
+          error.message ||
+          "Unable to delete account. Please try again.";
+
+        message.className = "message error";
+
+        button.disabled = false;
+
+        button.textContent =
+          "Permanently Delete My Account";
+      }
+    }
+
+  </script>
+
+</body>
+</html>

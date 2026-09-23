@@ -7879,6 +7879,180 @@ app.post("/api/password/reset",async(req,res)=>{
 
 
 
+////////////////////////////DELETE ACCOUNT 
+// ======================================================
+// DELETE LOGGED-IN USER ACCOUNT
+// ======================================================
+app.delete("/api/user/delete-account", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Please login first."
+    });
+  }
+
+  const userId = req.session.user.id;
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).json({
+      success: false,
+      message: "Password is required."
+    });
+  }
+
+  // First verify the user's password
+  db.query(
+    "SELECT id, pin_hash FROM users WHERE id = ? LIMIT 1",
+    [userId],
+    async (err, users) => {
+      if (err) {
+        console.error("Delete account lookup error:", err);
+
+        return res.status(500).json({
+          success: false,
+          message: "Database error."
+        });
+      }
+
+      if (!users.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Account not found."
+        });
+      }
+
+      try {
+        const passwordCorrect = await bcrypt.compare(
+          password,
+          users[0].pin_hash
+        );
+
+        if (!passwordCorrect) {
+          return res.status(400).json({
+            success: false,
+            message: "Incorrect password."
+          });
+        }
+
+        // Delete records belonging directly to this user.
+        // These tables are already used by the DIDWAPA backend.
+        db.query(
+          "DELETE FROM product_drafts WHERE user_id = ?",
+          [userId],
+          (draftErr) => {
+            if (draftErr) {
+              console.error("Delete drafts error:", draftErr);
+            }
+
+            db.query(
+              "DELETE FROM carts WHERE user_id = ?",
+              [userId],
+              (cartErr) => {
+                if (cartErr) {
+                  console.error("Delete carts error:", cartErr);
+                }
+
+                db.query(
+                  `DELETE FROM product_messages
+                   WHERE sender_id = ? OR receiver_id = ?`,
+                  [userId, userId],
+                  (messageErr) => {
+                    if (messageErr) {
+                      console.error(
+                        "Delete product messages error:",
+                        messageErr
+                      );
+                    }
+
+                    db.query(
+                      "DELETE FROM report_messages WHERE user_id = ?",
+                      [userId],
+                      (reportErr) => {
+                        if (reportErr) {
+                          console.error(
+                            "Delete report messages error:",
+                            reportErr
+                          );
+                        }
+
+                        // Remove user's listings
+                        db.query(
+                          "DELETE FROM products WHERE posted_by = ?",
+                          [userId],
+                          (productErr) => {
+                            if (productErr) {
+                              console.error(
+                                "Delete products error:",
+                                productErr
+                              );
+                            }
+
+                            // Finally remove user account
+                            db.query(
+                              "DELETE FROM users WHERE id = ?",
+                              [userId],
+                              (deleteErr, result) => {
+                                if (deleteErr) {
+                                  console.error(
+                                    "Delete account error:",
+                                    deleteErr
+                                  );
+
+                                  return res.status(500).json({
+                                    success: false,
+                                    message:
+                                      "Unable to delete account. Please contact support."
+                                  });
+                                }
+
+                                if (result.affectedRows === 0) {
+                                  return res.status(404).json({
+                                    success: false,
+                                    message: "Account not found."
+                                  });
+                                }
+
+                                req.session.destroy((sessionErr) => {
+                                  if (sessionErr) {
+                                    console.error(
+                                      "Session destroy error:",
+                                      sessionErr
+                                    );
+                                  }
+
+                                  return res.json({
+                                    success: true,
+                                    message:
+                                      "Your DIDWAPA account has been deleted successfully."
+                                  });
+                                });
+                              }
+                            );
+                          }
+                        );
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          }
+        );
+      } catch (error) {
+        console.error("Delete account verification error:", error);
+
+        return res.status(500).json({
+          success: false,
+          message: "Unable to delete account."
+        });
+      }
+    }
+  );
+});
+
+
+
 // ==========================================
 // MOBILE APP CONNECTION TEST
 // ==========================================
