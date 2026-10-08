@@ -8016,7 +8016,7 @@ app.post("/api/user/delete-account", async (req, res) => {
   }
 
   const userId = Number(sessionUser.id);
-  const { pin, confirmation } = req.body || {};
+const { password, confirmation } = req.body || {};
 
   if (!Number.isSafeInteger(userId) || userId <= 0) {
     return res.status(401).json({
@@ -8025,12 +8025,12 @@ app.post("/api/user/delete-account", async (req, res) => {
     });
   }
 
-  if (!/^\d{6}$/.test(String(pin || ""))) {
-    return res.status(400).json({
-      success: false,
-      message: "Enter your current 6-digit PIN."
-    });
-  }
+if (typeof password !== "string" || !password.trim()) {
+  return res.status(400).json({
+    success: false,
+    message: "Enter your current password."
+  });
+}
 
   if (confirmation !== "DELETE") {
     return res.status(400).json({
@@ -8039,13 +8039,13 @@ app.post("/api/user/delete-account", async (req, res) => {
     });
   }
 
-  if (!checkDeletionPinLimit(userId)) {
-    return res.status(429).json({
-      success: false,
-      message:
-        "Too many incorrect PIN attempts. Please try again later."
-    });
-  }
+if (!checkDeletionPinLimit(userId)) {
+  return res.status(429).json({
+    success: false,
+    message:
+      "Too many incorrect password attempts. Please try again later."
+  });
+}
 
   let connection;
   let transactionStarted = false;
@@ -8097,22 +8097,22 @@ app.post("/api/user/delete-account", async (req, res) => {
       });
     }
 
-    const validPin = await bcrypt.compare(
-      String(pin),
-      user.pin_hash
-    );
+const validPassword = await bcrypt.compare(
+  password,
+  user.pin_hash
+);
 
-    if (!validPin) {
-      recordDeletionPinFailure(userId);
+if (!validPassword) {
+  recordDeletionPinFailure(userId);
 
-      await connection.rollback();
-      transactionStarted = false;
+  await connection.rollback();
+  transactionStarted = false;
 
-      return res.status(403).json({
-        success: false,
-        message: "Incorrect 6-digit PIN."
-      });
-    }
+  return res.status(403).json({
+    success: false,
+    message: "Incorrect password."
+  });
+}
 
     // Block deletion while an order is unfinished.
     const [orders] = await connection.query(
