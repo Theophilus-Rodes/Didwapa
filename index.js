@@ -101,6 +101,47 @@ const resetCodes = {};
 //     { console.error("Database connection failed:", err); return; } 
 //     console.log("Connected to MySQL database: didwapadb"); });
 
+// Prevent deleted customer accounts from using old sessions.
+app.use("/api", (req, res, next) => {
+  const user = req.session?.user;
+
+  if (!user || user.role !== "user") {
+    return next();
+  }
+
+  db.query(
+    `SELECT user_id
+     FROM deleted_user_accounts
+     WHERE user_id = ?
+     LIMIT 1`,
+    [user.id],
+    (err, rows) => {
+      if (err) {
+        console.error("Account status check failed:", err);
+        return res.status(503).json({
+          success: false,
+          message: "Unable to verify account status."
+        });
+      }
+
+      if (!rows.length) return next();
+
+      req.session.destroy(() => {
+        res.clearCookie("connect.sid");
+
+        if (req.path === "/check-user-login") {
+          return res.json({ loggedIn: false });
+        }
+
+        return res.status(401).json({
+          success: false,
+          message: "This account has been deleted."
+        });
+      });
+    }
+  );
+});
+
 app.post("/api/create-account", async (req, res) => {
   try {
     const {
@@ -1117,12 +1158,23 @@ app.post("/api/user/login", (req, res) => {
     });
   }
 
-  const sql = `
-    SELECT id, firstname, lastname, email, telephone, role, status, pin_hash
-    FROM users
-    WHERE email = ? OR telephone = ?
+const sql = `
+    SELECT
+      u.id,
+      u.firstname,
+      u.lastname,
+      u.email,
+      u.telephone,
+      u.role,
+      u.status,
+      u.pin_hash
+    FROM users AS u
+    LEFT JOIN deleted_user_accounts AS d
+      ON d.user_id = u.id
+    WHERE (u.email = ? OR u.telephone = ?)
+      AND d.user_id IS NULL
     LIMIT 1
-  `;
+`;
 
   db.query(sql, [login, login], async (err, results) => {
 
@@ -7878,198 +7930,448 @@ app.post("/api/password/reset",async(req,res)=>{
 });
 
 
-
-////////////////////////////DELETE ACCOUNT 
-// ======================================================
-// DELETE LOGGED-IN USER ACCOUNT
-// ======================================================
-app.delete("/api/user/delete-account", async (req, res) => {
-  if (!req.session.user) {
-    return res.status(401).json({
-      success: false,
-      message: "Please login first."
-    });
-  }
-
-  const userId = req.session.user.id;
-  const { password } = req.body;
-
-  if (!password) {
-    return res.status(400).json({
-      success: false,
-      message: "Password is required."
-    });
-  }
-
-  // First verify the user's password
-  db.query(
-    "SELECT id, pin_hash FROM users WHERE id = ? LIMIT 1",
-    [userId],
-    async (err, users) => {
-      if (err) {
-        console.error("Delete account lookup error:", err);
-
-        return res.status(500).json({
-          success: false,
-          message: "Database error."
-        });
-      }
-
-      if (!users.length) {
-        return res.status(404).json({
-          success: false,
-          message: "Account not found."
-        });
-      }
-
-      try {
-        const passwordCorrect = await bcrypt.compare(
-          password,
-          users[0].pin_hash
-        );
-
-        if (!passwordCorrect) {
-          return res.status(400).json({
-            success: false,
-            message: "Incorrect password."
-          });
-        }
-
-        // Delete records belonging directly to this user.
-        // These tables are already used by the DIDWAPA backend.
-        db.query(
-          "DELETE FROM product_drafts WHERE user_id = ?",
-          [userId],
-          (draftErr) => {
-            if (draftErr) {
-              console.error("Delete drafts error:", draftErr);
-            }
-
-            db.query(
-              "DELETE FROM carts WHERE user_id = ?",
-              [userId],
-              (cartErr) => {
-                if (cartErr) {
-                  console.error("Delete carts error:", cartErr);
-                }
-
-                db.query(
-                  `DELETE FROM product_messages
-                   WHERE sender_id = ? OR receiver_id = ?`,
-                  [userId, userId],
-                  (messageErr) => {
-                    if (messageErr) {
-                      console.error(
-                        "Delete product messages error:",
-                        messageErr
-                      );
-                    }
-
-                    db.query(
-                      "DELETE FROM report_messages WHERE user_id = ?",
-                      [userId],
-                      (reportErr) => {
-                        if (reportErr) {
-                          console.error(
-                            "Delete report messages error:",
-                            reportErr
-                          );
-                        }
-
-                        // Remove user's listings
-                        db.query(
-                          "DELETE FROM products WHERE posted_by = ?",
-                          [userId],
-                          (productErr) => {
-                            if (productErr) {
-                              console.error(
-                                "Delete products error:",
-                                productErr
-                              );
-                            }
-
-                            // Finally remove user account
-                            db.query(
-                              "DELETE FROM users WHERE id = ?",
-                              [userId],
-                              (deleteErr, result) => {
-                                if (deleteErr) {
-                                  console.error(
-                                    "Delete account error:",
-                                    deleteErr
-                                  );
-
-                                  return res.status(500).json({
-                                    success: false,
-                                    message:
-                                      "Unable to delete account. Please contact support."
-                                  });
-                                }
-
-                                if (result.affectedRows === 0) {
-                                  return res.status(404).json({
-                                    success: false,
-                                    message: "Account not found."
-                                  });
-                                }
-
-                                req.session.destroy((sessionErr) => {
-                                  if (sessionErr) {
-                                    console.error(
-                                      "Session destroy error:",
-                                      sessionErr
-                                    );
-                                  }
-
-                                  return res.json({
-                                    success: true,
-                                    message:
-                                      "Your DIDWAPA account has been deleted successfully."
-                                  });
-                                });
-                              }
-                            );
-                          }
-                        );
-                      }
-                    );
-                  }
-                );
-              }
-            );
-          }
-        );
-      } catch (error) {
-        console.error("Delete account verification error:", error);
-
-        return res.status(500).json({
-          success: false,
-          message: "Unable to delete account."
-        });
-      }
-    }
-  );
-});
-
-
-
-// ==========================================
-// MOBILE APP CONNECTION TEST
-// ==========================================
-app.get("/api/mobile-test", (req, res) => {
-  res.json({
-    success: true,
-    message: "DIDWAPA mobile app connected successfully",
-    server: "DIDWAPA Node.js API",
-    database: "didwapadb"
-  });
-});
-
-
 app.use(express.static(path.join(__dirname)));
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
+
+
+});
+// ============================================
+// DIDWAPA - CUSTOMER ACCOUNT DELETION
+// ============================================
+
+const crypto = require("crypto");
+
+const { DeleteObjectCommand } =
+  require("@aws-sdk/client-s3");
+
+// Separate connection pool for account deletion.
+// Reuses the existing database connection settings.
+const deletionPool = mysql.createPool({
+  host: db.config.host,
+  port: db.config.port,
+  user: db.config.user,
+  password: db.config.password,
+  database: db.config.database,
+  ssl: db.config.ssl,
+  waitForConnections: true,
+  connectionLimit: 5,
+  queueLimit: 0
+}).promise();
+
+const accountDeletionAttempts = new Map();
+
+function checkDeletionPinLimit(userId) {
+  const now = Date.now();
+  const entry = accountDeletionAttempts.get(userId);
+
+  if (!entry || now >= entry.resetAt) {
+    accountDeletionAttempts.set(userId, {
+      count: 0,
+      resetAt: now + 15 * 60 * 1000
+    });
+    return true;
+  }
+
+  return entry.count < 5;
+}
+
+function recordDeletionPinFailure(userId) {
+  const entry = accountDeletionAttempts.get(userId);
+  if (entry) entry.count++;
+}
+
+// Only delete objects that belong to our DIDWAPA Spaces bucket.
+function getSpacesObjectKey(url) {
+  if (!url || typeof url !== "string") return null;
+
+  try {
+    const parsed = new URL(url);
+
+    const allowedHost =
+      `${SPACES_BUCKET}.${SPACES_REGION}.digitaloceanspaces.com`;
+
+    if (parsed.hostname !== allowedHost) return null;
+
+    const key = decodeURIComponent(
+      parsed.pathname.replace(/^\/+/, "")
+    );
+
+    if (!key.startsWith("users/")) return null;
+
+    return key;
+  } catch {
+    return null;
+  }
+}
+
+app.post("/api/user/delete-account", async (req, res) => {
+  const sessionUser = req.session?.user;
+
+  if (!sessionUser || sessionUser.role !== "user") {
+    return res.status(401).json({
+      success: false,
+      message: "Please log in to your customer account."
+    });
+  }
+
+  const userId = Number(sessionUser.id);
+  const { pin, confirmation } = req.body || {};
+
+  if (!Number.isSafeInteger(userId) || userId <= 0) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid login session."
+    });
+  }
+
+  if (!/^\d{6}$/.test(String(pin || ""))) {
+    return res.status(400).json({
+      success: false,
+      message: "Enter your current 6-digit PIN."
+    });
+  }
+
+  if (confirmation !== "DELETE") {
+    return res.status(400).json({
+      success: false,
+      message: "Please confirm account deletion."
+    });
+  }
+
+  if (!checkDeletionPinLimit(userId)) {
+    return res.status(429).json({
+      success: false,
+      message:
+        "Too many incorrect PIN attempts. Please try again later."
+    });
+  }
+
+  let connection;
+  let transactionStarted = false;
+  let committed = false;
+  let imageUrls = [];
+
+  try {
+    connection = await deletionPool.getConnection();
+
+    await connection.beginTransaction();
+    transactionStarted = true;
+
+    // Lock customer record for this deletion.
+    const [users] = await connection.query(
+      `SELECT *
+       FROM users
+       WHERE id = ? AND role = 'user'
+       FOR UPDATE`,
+      [userId]
+    );
+
+    if (!users.length) {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(404).json({
+        success: false,
+        message: "Customer account not found."
+      });
+    }
+
+    const user = users[0];
+
+    const [deleted] = await connection.query(
+      `SELECT user_id
+       FROM deleted_user_accounts
+       WHERE user_id = ?
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (deleted.length) {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(403).json({
+        success: false,
+        message: "This account has already been deleted."
+      });
+    }
+
+    const validPin = await bcrypt.compare(
+      String(pin),
+      user.pin_hash
+    );
+
+    if (!validPin) {
+      recordDeletionPinFailure(userId);
+
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(403).json({
+        success: false,
+        message: "Incorrect 6-digit PIN."
+      });
+    }
+
+    // Block deletion while an order is unfinished.
+    const [orders] = await connection.query(
+      `SELECT COUNT(*) AS total
+       FROM purchased_products
+       WHERE (buyer_id = ? OR seller_id = ?)
+       AND (
+         payment_status IS NULL
+         OR payment_status <> 'paid'
+         OR order_status IS NULL
+         OR order_status <> 'delivered'
+         OR buyer_confirm_status IS NULL
+         OR buyer_confirm_status <> 'received'
+       )`,
+      [userId, userId]
+    );
+
+    if (Number(orders[0].total) > 0) {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(409).json({
+        success: false,
+        message:
+          "You have unfinished purchases or deliveries. " +
+          "Please contact DIDWAPA support to settle them " +
+          "before deleting your account."
+      });
+    }
+
+    // Block deletion during unresolved disputes.
+    const [disputes] = await connection.query(
+      `SELECT COUNT(*) AS total
+       FROM disputes
+       WHERE (buyer_id = ? OR seller_id = ?)
+       AND status IN ('open', 'reviewing')`,
+      [userId, userId]
+    );
+
+    if (Number(disputes[0].total) > 0) {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(409).json({
+        success: false,
+        message:
+          "Please resolve your outstanding dispute " +
+          "before deleting your account."
+      });
+    }
+
+    // Prevent losing a remaining wallet balance.
+    const [wallets] = await connection.query(
+      `SELECT COALESCE(SUM(balance), 0) AS balance
+       FROM user_wallets
+       WHERE user_id = ?`,
+      [userId]
+    );
+
+    if (Number(wallets[0].balance) !== 0) {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(409).json({
+        success: false,
+        message:
+          "Please settle your wallet balance " +
+          "before deleting your account."
+      });
+    }
+
+    // Keep identity image references for cleanup.
+    imageUrls = [
+      user.selfie_image,
+      user.gh_card_front,
+      user.gh_card_back,
+      user.business_logo,
+      user.business_registration_cert
+    ].filter(Boolean);
+
+    // Preserve historical product IDs but hide listings.
+    await connection.query(
+      `UPDATE products
+       SET status = 'denied',
+           phone_number = 'Removed',
+           seller_name = 'Deleted User'
+       WHERE posted_by = ?`,
+      [userId]
+    );
+
+    // Remove disposable data.
+    await connection.query(
+      `DELETE FROM product_drafts
+       WHERE user_id = ?`,
+      [userId]
+    );
+
+    await connection.query(
+      `DELETE FROM carts
+       WHERE user_id = ?`,
+      [userId]
+    );
+
+    // Randomize PIN so old credentials never work.
+    const disabledPin = await bcrypt.hash(
+      crypto.randomBytes(32).toString("hex"),
+      12
+    );
+
+    // Use only actual nullable columns in this database.
+    const [columns] = await connection.query(
+      "SHOW COLUMNS FROM users"
+    );
+
+    const nullableColumns = new Set(
+      columns
+        .filter(c => c.Null === "YES")
+        .map(c => c.Field)
+    );
+
+    const personalFields = [
+      "other_telephone",
+      "dob",
+      "selfie_image",
+      "gh_card_front",
+      "gh_card_back",
+      "digital_address",
+      "address",
+      "alt_number",
+      "alt_number_name",
+      "verification_other_tel",
+      "business_name",
+      "business_type",
+      "business_category",
+      "business_description",
+      "business_whatsapp",
+      "business_email",
+      "business_address",
+      "business_region",
+      "business_district",
+      "business_logo",
+      "business_registration_number",
+      "business_registration_cert",
+      "business_tin",
+      "business_website",
+      "business_hours",
+      "delivery_available",
+      "delivery_coverage",
+      "gender"
+    ];
+
+    const assignments = [
+      "firstname = ?",
+      "lastname = ?",
+      "email = ?",
+      "telephone = ?",
+      "pin_hash = ?"
+    ];
+
+    const values = [
+      "Deleted",
+      "User",
+      `deleted-${userId}@deleted.invalid`,
+      `deleted-${userId}`,
+      disabledPin
+    ];
+
+    for (const field of personalFields) {
+      if (nullableColumns.has(field)) {
+        assignments.push(`\`${field}\` = NULL`);
+      }
+    }
+
+    values.push(userId);
+
+    const [updated] = await connection.query(
+      `UPDATE users
+       SET ${assignments.join(", ")}
+       WHERE id = ? AND role = 'user'`,
+      values
+    );
+
+    if (updated.affectedRows !== 1) {
+      throw new Error("Customer anonymization failed.");
+    }
+
+    // Record deletion in the same transaction.
+    await connection.query(
+      `INSERT INTO deleted_user_accounts (user_id)
+       VALUES (?)`,
+      [userId]
+    );
+
+    await connection.commit();
+    transactionStarted = false;
+    committed = true;
+
+  } catch (error) {
+    if (transactionStarted && connection) {
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        console.error("Deletion rollback error:", rollbackError);
+      }
+    }
+
+    console.error("Account deletion error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Unable to delete account. Please contact support."
+    });
+
+  } finally {
+    if (connection) connection.release();
+  }
+
+  if (committed) {
+    accountDeletionAttempts.delete(userId);
+
+    // Delete identity documents from DigitalOcean Spaces.
+    // These files are removed after the database commits.
+    for (const url of imageUrls) {
+      const key = getSpacesObjectKey(url);
+
+      if (!key) continue;
+
+      try {
+        await spacesClient.send(
+          new DeleteObjectCommand({
+            Bucket: SPACES_BUCKET,
+            Key: key
+          })
+        );
+      } catch (error) {
+        console.error(
+          "Identity document cleanup failed:",
+          key,
+          error
+        );
+      }
+    }
+
+    return req.session.destroy(err => {
+      if (err) {
+        console.error("Session logout error:", err);
+      }
+
+      res.clearCookie("connect.sid");
+
+      return res.json({
+        success: true,
+        message:
+          "Your DIDWAPA account has been deleted."
+      });
+    });
+  }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
