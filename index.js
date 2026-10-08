@@ -7941,7 +7941,6 @@ app.get("/", (req, res) => {
 // DIDWAPA - CUSTOMER ACCOUNT DELETION
 // ============================================
 
-const crypto = require("crypto");
 
 const { DeleteObjectCommand } =
   require("@aws-sdk/client-s3");
