@@ -1021,6 +1021,7 @@ app.get("/api/admin/check-session", (req, res) => {
 
 
 
+
 app.post("/api/user/create-account", upload.none(), async (req, res) => {
   try {
     const {
@@ -1037,10 +1038,17 @@ app.post("/api/user/create-account", upload.none(), async (req, res) => {
       confirm_password
     } = req.body;
 
+    // Gender and Date of Birth are OPTIONAL.
+    // All other existing required fields remain required.
     if (
-      !firstname || !lastname || !gender || !dob ||
-      !digital_address || !address || !telephone ||
-      !email || !password || !confirm_password
+      !firstname ||
+      !lastname ||
+      !digital_address ||
+      !address ||
+      !telephone ||
+      !email ||
+      !password ||
+      !confirm_password
     ) {
       return res.status(400).json({
         success: false,
@@ -1055,15 +1063,32 @@ app.post("/api/user/create-account", upload.none(), async (req, res) => {
       });
     }
 
+    // Store optional fields as NULL when not provided.
+    const optionalGender =
+      typeof gender === "string" && gender.trim()
+        ? gender.trim()
+        : null;
+
+    const optionalDob =
+      typeof dob === "string" && dob.trim()
+        ? dob.trim()
+        : null;
+
+    const optionalOtherTelephone =
+      typeof other_telephone === "string" && other_telephone.trim()
+        ? other_telephone.trim()
+        : null;
+
     const checkSql = `
-      SELECT id FROM users 
+      SELECT id FROM users
       WHERE email = ? OR telephone = ?
       LIMIT 1
     `;
 
-    db.query(checkSql, [email, telephone], async (checkErr, existingUser) => {
+    db.query(checkSql, [email, telephone], (checkErr, existingUser) => {
       if (checkErr) {
         console.error("Check user error:", checkErr);
+
         return res.status(500).json({
           success: false,
           message: "Database error while checking account."
@@ -1077,66 +1102,78 @@ app.post("/api/user/create-account", upload.none(), async (req, res) => {
         });
       }
 
-      const pinHash = await bcrypt.hash(password, 10);
+      bcrypt.hash(password, 10, (hashErr, pinHash) => {
+        if (hashErr) {
+          console.error("Password hashing error:", hashErr);
 
-      const sql = `
-        INSERT INTO users 
-        (
-          firstname,
-          lastname,
-          gender,
-          dob,
-          digital_address,
-          address,
-          telephone,
-          other_telephone,
-          email,
-          pin_hash,
-          role,
-          status,
-          verification_status,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-      `;
-
-      db.query(
-        sql,
-        [
-          firstname,
-          lastname,
-          gender,
-          dob,
-          digital_address,
-          address,
-          telephone,
-          other_telephone || null,
-          email,
-          pinHash,
-          "user",
-          "pending",
-          "pending"
-        ],
-        (err) => {
-          if (err) {
-            console.error("Create user error:", err);
-            return res.status(500).json({
-              success: false,
-              message: "Database error while creating account."
-            });
-          }
-
-          res.json({
-            success: true,
-            message: "Account created successfully. Please wait for approval."
+          return res.status(500).json({
+            success: false,
+            message: "Error securing account password."
           });
         }
-      );
+
+        const sql = `
+          INSERT INTO users
+          (
+            firstname,
+            lastname,
+            gender,
+            dob,
+            digital_address,
+            address,
+            telephone,
+            other_telephone,
+            email,
+            pin_hash,
+            role,
+            status,
+            verification_status,
+            created_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        `;
+
+        db.query(
+          sql,
+          [
+            firstname,
+            lastname,
+            optionalGender,
+            optionalDob,
+            digital_address,
+            address,
+            telephone,
+            optionalOtherTelephone,
+            email,
+            pinHash,
+            "user",
+            "pending",
+            "pending"
+          ],
+          (err) => {
+            if (err) {
+              console.error("Create user error:", err);
+
+              return res.status(500).json({
+                success: false,
+                message: "Database error while creating account."
+              });
+            }
+
+            return res.json({
+              success: true,
+              message:
+                "Account created successfully. Please wait for approval."
+            });
+          }
+        );
+      });
     });
 
   } catch (error) {
     console.error("Create account error:", error);
-    res.status(500).json({
+
+    return res.status(500).json({
       success: false,
       message: "Server error while creating account."
     });
